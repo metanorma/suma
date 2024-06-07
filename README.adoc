@@ -1,0 +1,83 @@
+= Suma: utility for the STEP Unified Model-driven Architecture
+
+== Purpose
+
+SUMA, the "STEP Unified Model-Based Standards Architecture", is a authoring and
+publication system developed for the management of EXPRESS schemas and its
+documentation.
+
+This utility is used by the
+https://github.com/metanorma/iso-10303[ISO 10303 collection]
+to build the following artifacts:
+
+* the STEP Resource Library (SRL)
+
+
+== Install
+
+[source,sh]
+----
+$ gem install suma
+----
+
+== Usage
+
+=== General
+
+[source,sh]
+----
+# Defaults to `suma help`
+$ suma
+Commands:
+  suma build METANORMA_SITE_MANIFEST  # Build collection specified in site manifest (`metanorma*.yml`)
+  suma help [COMMAND]                 # Describe available commands or one specific command
+----
+
+Where:
+
+`METANORMA_SITE_MANIFEST`:: This is the path to the Metanorma site manifest,
+typically `metanorma.yml`.
+
+
+=== Compilation
+
+.To compile SRL subset test collection
+[source,sh]
+----
+$ bundle exec suma build metanorma-test.yml
+----
+
+.To build SRL collection
+[source,sh]
+----
+$ bundle exec suma build metanorma-srl.yml
+----
+
+// .To compile all STEPmod migrated docs (without detached) individually
+// [source,sh]
+// ----
+// $ bundle exec metanorma site generate
+// ----
+
+
+=== Generating full schema listing files
+
+We generate the full schema collection listing using the `--no-compile`
+option in the `suma` command.
+
+The generated `schemas-*.yaml` file name is derived from the input file name
+with the word `metanorma` replaced with `schemas`.
+
+[source,sh]
+----
+$ bundle exec suma build --no-compile metanorma-srl.yml
+# => generates schemas-srl.yml
+----
+
+All documents need to have a `schemas.yaml` in their document root that lists
+out which schemas the document includes.
+
+
+== License
+
+Copyright Ribose. BSD 2-clause license.
