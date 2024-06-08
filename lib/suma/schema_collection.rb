@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 require_relative "express_schema"
-require_relative "schema_doc"
+require_relative "schema_attachment"
+require_relative "schema_document"
 require_relative "schema_config"
 require_relative "utils"
 
@@ -9,7 +10,7 @@ module Suma
   class SchemaCollection
     attr_accessor :config, :schemas, :docs, :output_path_docs, :output_path_schemas
 
-    def initialize(config: nil, config_yaml: nil, output_path_docs: nil, output_path_schemas: nil)
+    def initialize(config: nil, config_yaml: nil, output_path_docs: nil, output_path_schemas: nil, document_paths: nil)
       @schemas = []
       @docs = []
       @schema_name_to_docs = {}
@@ -37,10 +38,17 @@ module Suma
           path: config_schema.path,
           output_path: @output_path_schemas
         )
-        doc = SchemaDoc.new(
-          schema: s,
-          output_path: @output_path_docs.join(s.id)
-        )
+        doc = if config_schema.schemas_only
+                SchemaDocument.new(
+                  schema: s,
+                  output_path: @output_path_docs.join(s.id)
+                )
+              else
+                SchemaAttachment.new(
+                  schema: s,
+                  output_path: @output_path_docs.join(s.id)
+                )
+              end
         @docs << doc
         @schemas << s
         @schema_name_to_docs[s.id] = doc
@@ -57,7 +65,7 @@ module Suma
       docs.each(&:compile)
 
       # TODO: make this parallel
-      # puts "Starting Ractor processing"
+      # Utils.log"Starting Ractor processing"
       # pool = Ractor.new do
       #   loop do
       #     Ractor.yield(Ractor.receive)
@@ -67,7 +75,7 @@ module Suma
       #   Ractor.new(pool, name: "r#{i}") do |p|
       #     loop do
       #       input = p.take
-      #       puts "compiling in ractor for #{input.filename_adoc}"
+      #       Utils.log"compiling in ractor for #{input.filename_adoc}"
       #       output_value = input.compile
       #       Ractor.yield(output_value)
       #     end

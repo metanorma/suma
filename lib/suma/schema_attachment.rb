@@ -5,28 +5,33 @@ require "fileutils"
 require_relative "schema_config"
 
 module Suma
-  class SchemaDoc
+  class SchemaAttachment
     attr_accessor :schema, :output_path, :config
 
     def initialize(schema:, output_path:)
       @schema = schema
+      @id = schema.id
       @output_path = output_path
+    end
+
+    def output_extensions
+      "xml,html"
     end
 
     def to_adoc(path_to_schema_yaml)
       <<~HEREDOC
-        = #{@schema.id}
+        = #{@id}
         :lutaml-express-index: schemas; #{path_to_schema_yaml};
         :bare: true
         :mn-document-class: iso
-        :mn-output-extensions: xml,html
+        :mn-output-extensions: #{output_extensions}
 
         [lutaml,schemas,context]
         ----
         {% for schema in context.schemas %}
 
         [%unnumbered]
-        == #{@schema.id}
+        == #{@id}
 
         [source%unnumbered]
         --
@@ -88,7 +93,8 @@ module Suma
 
     # Compile Metanorma adoc per EXPRESS schema
     def compile
-      return self if File.exist?(output_xml_path)
+      # I am commenting out because I'm playing with the schemas-only status
+      # return self if File.exist?(output_xml_path)
 
       save_config
       save_adoc

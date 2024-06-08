@@ -8,7 +8,7 @@ module Suma
   module SchemaConfig
     class Config < Shale::Mapper
       attribute :schemas, Schema, collection: true
-      attr_accessor :base_path, :path
+      attr_accessor :base_path, :path, :schemas_only
 
       def initialize(path: nil, **args)
         @path = path
@@ -35,15 +35,21 @@ module Suma
         end
       end
 
+      def set_schemas_only
+        schemas.each do |e|
+          e.schemas_only = true
+        end
+      end
+
       def schemas_from_yaml(model, value)
         model.schemas = value.map do |k, v|
-          Schema.new(id: k, path: v["path"])
+          Schema.new(id: k, path: v["path"], schemas_only: v["schemas-only"])
         end
       end
 
       def schemas_to_yaml(model, doc)
         doc["schemas"] = model.schemas.sort_by(&:id).to_h do |schema|
-          [schema.id, { "path" => schema.path }]
+          [schema.id, { "path" => schema.path, "schemas-only" => schema.schemas_only }]
         end
       end
 

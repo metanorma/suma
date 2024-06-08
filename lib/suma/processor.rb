@@ -3,8 +3,8 @@
 require_relative "schema_config"
 require_relative "schema_collection"
 require_relative "utils"
-require_relative "to_replace/collection_config"
-require_relative "to_replace/site_config"
+require_relative "collection_config"
+require_relative "site_config"
 require "metanorma/cli"
 require "metanorma/cli/collection"
 require "metanorma/collection/collection"
@@ -33,15 +33,15 @@ module Suma
         Utils.log "Current directory: #{Dir.getwd}"
 
         # This reads the metanorma.yml file
-        site_config = Suma::ToReplace::SiteConfig::Config.from_file(metanorma_yaml_path)
+        site_config = Suma::SiteConfig::Config.from_file(metanorma_yaml_path)
 
         # TODO: only reading the first file, which is a collection.yml, which is a hack...
         collection_config_path = site_config.metanorma.source.files.first
-        collection_config = Suma::ToReplace::CollectionConfig::Config.from_file(collection_config_path)
+        collection_config = Suma::CollectionConfig.from_file(collection_config_path)
         collection_config.path = collection_config_path
 
         # Gather all the inner (per-document) collection.yml files
-        document_paths = collection_config.manifest.docref.map(&:file)
+        document_paths = collection_config.manifest.entry.map(&:file)
 
         write_all_schemas(schemas_all_path, document_paths)
 
