@@ -11,7 +11,7 @@ module Suma
       attr_accessor :path
 
       def initialize(path: nil, **args)
-        @path = path
+        @path = path_relative_to_absolute(path) if path
         super(**args)
       end
 
@@ -25,7 +25,7 @@ module Suma
 
       def self.from_file(path)
         from_yaml(File.read(path)).tap do |x|
-          x.path = path
+          x.set_initial_path(path)
         end
       end
 
@@ -35,27 +35,58 @@ module Suma
         end
       end
 
-      def set_schemas_only(schema_name)
-        schema = schemas.detect do |e|
-          e.id == schema_name
+      def set_initial_path(new_path)
+        @path = path_relative_to_absolute(new_path)
+        schemas.each do |schema|
+          schema.path = path_relative_to_absolute(schema.path)
         end
-
-        schema.schemas_only = true
       end
 
       def schemas_from_yaml(model, value)
+        puts "*"*30
         model.schemas = value.map do |k, v|
-          Schema.new(id: k, path: v["path"], schemas_only: v["schemas-only"])
+          Schema.new(id: k, path: path_relative_to_absolute(v["path"]))
         end
       end
 
       def schemas_to_yaml(model, doc)
+        puts "^"*30
+        pp self
         doc["schemas"] = model.schemas.sort_by(&:id).to_h do |schema|
-          [schema.id, { "path" => schema.path, "schemas-only" => schema.schemas_only }]
+          [schema.id, { "path" => path_absolute_to_relative(schema.path) }]
         end
       end
 
+      def path_relative_to_absolute(relative_path)
+        eval_path = Pathname.new(relative_path)
+        return relative_path if eval_path.absolute?
+
+        # Or based on current working directory?
+        return relative_path unless @path
+
+        Pathname.new(File.dirname(@path)).join(eval_path).expand_path.to_s
+      end
+
+      def path_absolute_to_relative(absolute_path)
+        puts "path_absolute_to_relative 1 #{absolute_path}"
+        return absolute_path unless @path
+
+        eval_path = Pathname.new(absolute_path)
+
+        puts "path_absolute_to_relative 2 #{eval_path}"
+        # Or based on current working directory?
+
+        x = Pathname.new(absolute_path).relative_path_from(File.dirname(@path)).to_s
+        puts "path_absolute_to_relative x #{x}"
+        x
+      end
+
       def update_path(new_path)
+        if @path.nil?
+          @path = new_path
+          return @path
+        end
+
         old_base_path = File.dirname(@path)
         new_base_path = File.dirname(new_path)
 
@@ -76,8 +107,8 @@ module Suma
           raise StandardError, "Can only concatenate a non SchemaConfig::Config object."
         end
 
-        # We need to update the relative paths
-        if path != another_config.path
+        # We need to update the relative paths when paths exist
+        if path && another_config.path && path != another_config.path
           new_config = another_config.dup
           new_config.update_path(path)
         end

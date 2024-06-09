@@ -12,31 +12,6 @@ require "metanorma/collection/collection"
 module Suma
   class Processor
     class << self
-      # Can move to schema_config.rb
-      def write_all_schemas(schemas_all_path, collection_config)
-        # Gather all the inner (per-document) collection.yml files
-        document_paths = collection_config.manifest.entry.map(&:file).compact
-
-        all_schemas = Suma::SchemaConfig::Config.new(path: schemas_all_path)
-
-        document_paths.each do |path|
-          schemas_yaml = File.join(File.dirname(path), "schemas.yaml")
-          next unless File.exist?(schemas_yaml)
-
-          schemas_config = Suma::SchemaConfig::Config.from_file(schemas_yaml)
-          all_schemas.concat(schemas_config)
-        end
-
-        schemas_only_list = collection_config.manifest.all_express_docs
-        schemas_only_list.each do |mani|
-          all_schemas.set_schemas_only(mani.identifier)
-        end
-
-        Utils.log "Writing #{schemas_all_path}..."
-        all_schemas.to_file
-        Utils.log "Done."
-      end
-
       def run(metanorma_yaml_path:, schemas_all_path:, compile:, output_directory: "_site")
         Utils.log "Current directory: #{Dir.getwd}"
 
@@ -49,12 +24,20 @@ module Suma
         collection_config.path = collection_config_path
         collection_config.manifest.expand_schemas_only("plain_schemas")
 
-        write_all_schemas(schemas_all_path, collection_config)
+        exported_schema_config = collection_config.manifest.export_schema_config(schemas_all_path)
+        exported_schema_config.path = schemas_all_path
+
+        pp exported_schema_config
+
+        Utils.log "Writing #{schemas_all_path}..."
+        exported_schema_config.to_file
+        Utils.log "Done."
 
         col = Suma::SchemaCollection.new(
           config_yaml: schemas_all_path,
+          manifest: collection_config.manifest,
           output_path_docs: "schema_docs",
-          output_path_schemas: "plain_schemas"
+          output_path_schemas: "plain_schemas",
         )
 
         if compile
@@ -111,9 +94,9 @@ module Suma
             format: [:html],
             output_folder: output_directory,
             compile: {
-              no_install_fonts: true
+              no_install_fonts: true,
             },
-            coverpage: "cover.html"
+            coverpage: "cover.html",
           }
           metanorma_collection.render(collection_opts)
 
