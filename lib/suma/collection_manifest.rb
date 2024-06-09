@@ -44,9 +44,12 @@ module Suma
 
     def expand_schemas_only(schema_output_path)
       unless schemas_only
-        return entry&.each do |e|
-                 e.expand_schemas_only(schema_output_path)
+        entry or return [self]
+        ret = entry.each_with_object([]) do |e|
+                 add = e.expand_schemas_only(schema_output_path)
+                 add.each { |x| ret << x }
                end
+        self.entry = ret
       end
 
       # This is the collection.yml file path
@@ -60,11 +63,14 @@ module Suma
 
       # The schemas can't load if the file is removed
       # self.file = nil
-      self.title = "Collection"
-      self.type = "collection"
+      # If we are going to keep the schemas-only file and compile it, we can't have it showing up in output
+      self.index = false
+      #self.title = "Collection"
+      #self.type = "collection"
 
       entries = schema_config.schemas.map do |schema|
         # TODO: We compile these later, but where is the actual compile command?
+        # Answer: in manifest_compile_adoc, on postprocess, end of initialisation of manifest object
         fname = [File.basename(schema.path, ".exp"), ".xml"].join
         CollectionManifest.new(
           identifier: schema.id,
@@ -74,13 +80,23 @@ module Suma
         )
       end
 
-      self.entry = [
+      # we need to separate this file from the following new entries
+      
+      added = CollectionManifest.new(
+        added.title = "Collection",
+        added.type = "collection",
+        added.identifier = self.identifier + "_"
+      )
+
+      added.entry = [
         CollectionManifest.new(
           title: doc_id,
           type: "document",
           entry: entries
         )
       ]
+
+      [self, added]
     end
   end
 end
