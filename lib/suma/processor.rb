@@ -15,7 +15,7 @@ module Suma
       # Can move to schema_config.rb
       def write_all_schemas(schemas_all_path, collection_config)
         # Gather all the inner (per-document) collection.yml files
-        document_paths = collection_config.manifest.entry.map(&:file)
+        document_paths = collection_config.manifest.entry.map(&:file).compact
 
         all_schemas = Suma::SchemaConfig::Config.new(path: schemas_all_path)
 
