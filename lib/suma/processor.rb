@@ -23,7 +23,7 @@ module Suma
         collection_config_path = site_config.metanorma.source.files.first
         collection_config = Suma::CollectionConfig.from_file(collection_config_path)
         collection_config.path = collection_config_path
-        collection_config.manifest.expand_schemas_only("plain_schemas")
+        collection_config.manifest.expand_schemas_only("schema_docs")
 
         exported_schema_config = collection_config.manifest.export_schema_config(schemas_all_path)
         exported_schema_config.path = schemas_all_path

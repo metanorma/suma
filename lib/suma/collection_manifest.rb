@@ -91,7 +91,7 @@ module Suma
         CollectionManifest.new(
           identifier: schema.id,
           title: schema.id,
-          file: File.join(schema_output_path, "doc_#{schema.id}", fname),
+          file: File.join(schema_output_path, schema.id, "doc_#{fname}"),
           # schema_source: schema.path
         )
       end
