@@ -32,23 +32,58 @@ module Suma
       model.entry = CollectionManifest.from_yaml(value.to_yaml)
     end
 
-    def expand_schemas_only(path)
-      if schemas_only
-        doc = YAML.safe_load(File.read(file))
-        schemas = YAML.safe_load(File.read(File.join(File.dirname(file), "schemas.yaml")))
-        self.file = nil
-        self.title = "ISO Collection"
-        self.type = "collection"
-        entries = schemas["schemas"].each_with_object([]) do |(k, v), m|
-          fname = Pathname(v["path"]).each_filename.to_a
-          fname[-1].sub!(/exp$/, "xml") # we compile these in col.compile below
-          m << CollectionManifest.new(identifier: k, title: k, file: File.join(path, fname[-2], "doc_#{fname[-1]}"))
-        end
-        doc = Array(CollectionManifest.new(title: doc["bibdata"]["docid"]["id"], type: "document", entry: entries))
-        self.entry = doc
-      else
-        entry&.each { |e| e.expand_schemas_only(path) }
+    def is_express_doc
+      type == "express_doc"
+    end
+
+    def all_express_docs
+      puts "self is_express_doc (#{is_express_doc}): #{self}"
+      entry&.map do |manifest|
+        manifest.all_express_docs
+      end.flatten.compact + (is_express_doc ? [self] : [])
+    end
+
+    attr_accessor :schema_xml_files
+
+    def expand_schemas_only(schema_output_path)
+      unless schemas_only
+        return entry&.each do |e|
+                 e.expand_schemas_only(schema_output_path)
+               end
       end
+
+      # This is the collection.yml file path
+      # doc = YAML.safe_load(File.read(file))
+      doc = CollectionConfig.from_file(file)
+      doc_id = doc.bibdata.id
+
+      # This is the schemas.yml file path
+      schemas_yaml_path = File.join(File.dirname(file), "schemas.yaml")
+      schema_config = SchemaConfig::Config.from_file(schemas_yaml_path)
+
+      # The schemas can't load if the file is removed
+      # self.file = nil
+      self.title = "Collection"
+      self.type = "collection"
+
+      entries = schema_config.schemas.map do |schema|
+        # TODO: We compile these later, but where is the actual compile command?
+        fname = [File.basename(schema.path, ".exp"), ".xml"].join
+        CollectionManifest.new(
+          identifier: schema.id,
+          title: schema.id,
+          file: File.join(schema_output_path, "doc_#{schema.id}", fname),
+          type: "express_doc", # This means this schema is a SchemaDocument
+        )
+      end
+
+      self.entry = [
+        CollectionManifest.new(
+          title: doc_id,
+          type: "document",
+          entry: entries,
+        ),
+      ]
     end
   end
 end

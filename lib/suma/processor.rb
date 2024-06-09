@@ -13,7 +13,11 @@ module Suma
   class Processor
     class << self
       # Can move to schema_config.rb
-      def write_all_schemas(schemas_all_path, document_paths)
+      def write_all_schemas(schemas_all_path, collection_config)
+
+        # Gather all the inner (per-document) collection.yml files
+        document_paths = collection_config.manifest.entry.map(&:file)
+
         all_schemas = Suma::SchemaConfig::Config.new(path: schemas_all_path)
 
         document_paths.each do |path|
@@ -22,6 +26,11 @@ module Suma
 
           schemas_config = Suma::SchemaConfig::Config.from_file(schemas_yaml)
           all_schemas.concat(schemas_config)
+        end
+
+        schemas_only_list = collection_config.manifest.all_express_docs
+        schemas_only_list.each do |mani|
+          all_schemas.set_schemas_only(mani.identifier)
         end
 
         Utils.log "Writing #{schemas_all_path}..."
@@ -39,16 +48,16 @@ module Suma
         collection_config_path = site_config.metanorma.source.files.first
         collection_config = Suma::CollectionConfig.from_file(collection_config_path)
         collection_config.path = collection_config_path
+        collection_config.manifest.expand_schemas_only("plain_schemas")
 
-        # Gather all the inner (per-document) collection.yml files
-        document_paths = collection_config.manifest.entry.map(&:file)
+        pp collection_config
 
-        write_all_schemas(schemas_all_path, document_paths)
+        write_all_schemas(schemas_all_path, collection_config)
 
         col = Suma::SchemaCollection.new(
           config_yaml: schemas_all_path,
           output_path_docs: "schema_docs",
-          output_path_schemas: "plain_schemas"
+          output_path_schemas: "plain_schemas",
         )
 
         if compile
@@ -97,6 +106,7 @@ module Suma
         if compile
           Utils.log "Compiling complete collection..."
 
+          # TODO: Why will defining a collection immediately compile??
           metanorma_collection = Metanorma::Collection.parse(collection_config_path)
 
           # TODO: Somehow this is no longer used
@@ -104,9 +114,9 @@ module Suma
             format: [:html],
             output_folder: output_directory,
             compile: {
-              no_install_fonts: true
+              no_install_fonts: true,
             },
-            coverpage: "cover.html"
+            coverpage: "cover.html",
           }
           metanorma_collection.render(collection_opts)
 

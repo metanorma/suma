@@ -10,58 +10,54 @@ module Suma
   class SchemaCollection
     attr_accessor :config, :schemas, :docs, :output_path_docs, :output_path_schemas
 
-    def initialize(config: nil, config_yaml: nil, output_path_docs: nil, output_path_schemas: nil, document_paths: nil)
+    def initialize(config: nil, config_yaml: nil, output_path_docs: nil, output_path_schemas: nil)
       @schemas = []
       @docs = []
       @schema_name_to_docs = {}
       @output_path_docs = if output_path_docs
-                            Pathname.new(output_path_docs).expand_path
-                          else
-                            Pathname.new(Dir.pwd)
-                          end
+          Pathname.new(output_path_docs).expand_path
+        else
+          Pathname.new(Dir.pwd)
+        end
       @output_path_schemas = if output_path_schemas
-                               Pathname.new(output_path_schemas).expand_path
-                             else
-                               Pathname.new(Dir.pwd)
-                             end
+          Pathname.new(output_path_schemas).expand_path
+        else
+          Pathname.new(Dir.pwd)
+        end
 
       @config = if config
-                  config
-                elsif config_yaml
-                  SchemaConfig::Config.from_file(config_yaml)
-                end
-
-      return self unless @config
-
-      @config.schemas.each do |config_schema|
-        s = ExpressSchema.new(
-          path: config_schema.path,
-          output_path: @output_path_schemas
-        )
-        doc = if config_schema.schemas_only
-                SchemaDocument.new(
-                  schema: s,
-                  output_path: @output_path_docs.join(s.id)
-                )
-              else
-                SchemaAttachment.new(
-                  schema: s,
-                  output_path: @output_path_docs.join(s.id)
-                )
-              end
-        @docs << doc
-        @schemas << s
-        @schema_name_to_docs[s.id] = doc
-      end
+          config
+        elsif config_yaml
+          SchemaConfig::Config.from_file(config_yaml)
+        end
     end
 
     def doc_from_schema_name(schema_name)
       @schema_name_to_docs[schema_name]
     end
 
-    def compile
-      schemas.map(&:save_exp)
+    def finalize
+      @config.schemas.each do |config_schema|
+        s = ExpressSchema.new(
+          path: config_schema.path,
+          output_path: @output_path_schemas,
+        )
 
+        klass = config_schema.schemas_only ? SchemaDocument : SchemaAttachment
+        doc = klass.new(
+          schema: s,
+          output_path: @output_path_docs.join(s.id),
+        )
+
+        @docs << doc
+        @schemas << s
+        @schema_name_to_docs[s.id] = doc
+      end
+    end
+
+    def compile
+      finalize
+      schemas.map(&:save_exp)
       docs.each(&:compile)
 
       # TODO: make this parallel
