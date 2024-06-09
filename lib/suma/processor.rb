@@ -12,6 +12,7 @@ require "metanorma/collection/collection"
 module Suma
   class Processor
     class << self
+
       def run(metanorma_yaml_path:, schemas_all_path:, compile:, output_directory: "_site")
         Utils.log "Current directory: #{Dir.getwd}"
 
@@ -26,8 +27,6 @@ module Suma
 
         exported_schema_config = collection_config.manifest.export_schema_config(schemas_all_path)
         exported_schema_config.path = schemas_all_path
-
-        pp exported_schema_config
 
         Utils.log "Writing #{schemas_all_path}..."
         exported_schema_config.to_file

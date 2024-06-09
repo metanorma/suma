@@ -8,9 +8,9 @@ module Suma
   module SchemaConfig
     class Config < Shale::Mapper
       attribute :schemas, Schema, collection: true
-      attr_accessor :path
+      attribute :path, Shale::Type::String
 
-      def initialize(path: nil, **args)
+      def initialize(**args)
         @path = path_relative_to_absolute(path) if path
         super(**args)
       end
@@ -43,15 +43,20 @@ module Suma
       end
 
       def schemas_from_yaml(model, value)
-        puts "*"*30
         model.schemas = value.map do |k, v|
           Schema.new(id: k, path: path_relative_to_absolute(v["path"]))
         end
       end
 
+      # TODO: I can't get the relative path working. The schemas-*.yaml file is
+      # meant to contain the "path" key, which is a relative path to its
+      # location, then sets the base path to each schema path, which is supposed
+      # to be relative to "path" key. Somehow, the @path variable is always
+      # missing in to_yaml...
       def schemas_to_yaml(model, doc)
-        puts "^"*30
-        pp self
+        # puts "^"*30
+        # pp self
+        # pp @path
         doc["schemas"] = model.schemas.sort_by(&:id).to_h do |schema|
           [schema.id, { "path" => path_absolute_to_relative(schema.path) }]
         end
@@ -68,17 +73,15 @@ module Suma
       end
 
       def path_absolute_to_relative(absolute_path)
-        puts "path_absolute_to_relative 1 #{absolute_path}"
+        # puts "path_absolute_to_relative 1 #{absolute_path}"
+        # pp self
+        # pp path
+        # pp @hello
         return absolute_path unless @path
 
-        eval_path = Pathname.new(absolute_path)
-
-        puts "path_absolute_to_relative 2 #{eval_path}"
-        # Or based on current working directory?
-
-        x = Pathname.new(absolute_path).relative_path_from(File.dirname(@path)).to_s
-        puts "path_absolute_to_relative x #{x}"
-        x
+        relative_path = Pathname.new(absolute_path).relative_path_from(Pathname.new(@path).dirname).to_s
+        # puts "path_absolute_to_relative x #{relative_path}"
+        relative_path
       end
 
       def update_path(new_path)
