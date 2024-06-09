@@ -73,7 +73,7 @@ module Suma
       @config = SchemaConfig::Config.new
       @config.schemas << SchemaConfig::Schema.new(
         id: @schema.id,
-        path: @schema.path,
+        path: @schema.path
       )
 
       @config
@@ -104,7 +104,7 @@ module Suma
       Metanorma::Compile.new.compile(
         filename_adoc,
         agree_to_terms: true,
-        no_install_fonts: true,
+        no_install_fonts: true
       )
       Utils.log "Compiling schema (id: #{id}, type: #{self.class}) => #{relative_path}... done!"
 
@@ -124,7 +124,7 @@ module Suma
         filename_adoc,
         filename_adoc("presentation.xml"),
         filename_adoc("adoc.lutaml.log.txt"),
-        filename_adoc("err.html"),
+        filename_adoc("err.html")
       ].each do |filename|
         FileUtils.rm_rf(filename)
       end

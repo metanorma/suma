@@ -14,7 +14,6 @@ module Suma
     class << self
       # Can move to schema_config.rb
       def write_all_schemas(schemas_all_path, collection_config)
-
         # Gather all the inner (per-document) collection.yml files
         document_paths = collection_config.manifest.entry.map(&:file)
 
@@ -50,14 +49,12 @@ module Suma
         collection_config.path = collection_config_path
         collection_config.manifest.expand_schemas_only("plain_schemas")
 
-        pp collection_config
-
         write_all_schemas(schemas_all_path, collection_config)
 
         col = Suma::SchemaCollection.new(
           config_yaml: schemas_all_path,
           output_path_docs: "schema_docs",
-          output_path_schemas: "plain_schemas",
+          output_path_schemas: "plain_schemas"
         )
 
         if compile
@@ -114,9 +111,9 @@ module Suma
             format: [:html],
             output_folder: output_directory,
             compile: {
-              no_install_fonts: true,
+              no_install_fonts: true
             },
-            coverpage: "cover.html",
+            coverpage: "cover.html"
           }
           metanorma_collection.render(collection_opts)
 

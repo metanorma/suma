@@ -15,21 +15,21 @@ module Suma
       @docs = []
       @schema_name_to_docs = {}
       @output_path_docs = if output_path_docs
-          Pathname.new(output_path_docs).expand_path
-        else
-          Pathname.new(Dir.pwd)
-        end
+                            Pathname.new(output_path_docs).expand_path
+                          else
+                            Pathname.new(Dir.pwd)
+                          end
       @output_path_schemas = if output_path_schemas
-          Pathname.new(output_path_schemas).expand_path
-        else
-          Pathname.new(Dir.pwd)
-        end
+                               Pathname.new(output_path_schemas).expand_path
+                             else
+                               Pathname.new(Dir.pwd)
+                             end
 
       @config = if config
-          config
-        elsif config_yaml
-          SchemaConfig::Config.from_file(config_yaml)
-        end
+                  config
+                elsif config_yaml
+                  SchemaConfig::Config.from_file(config_yaml)
+                end
     end
 
     def doc_from_schema_name(schema_name)
@@ -40,13 +40,13 @@ module Suma
       @config.schemas.each do |config_schema|
         s = ExpressSchema.new(
           path: config_schema.path,
-          output_path: @output_path_schemas,
+          output_path: @output_path_schemas
         )
 
         klass = config_schema.schemas_only ? SchemaDocument : SchemaAttachment
         doc = klass.new(
           schema: s,
-          output_path: @output_path_docs.join(s.id),
+          output_path: @output_path_docs.join(s.id)
         )
 
         @docs << doc

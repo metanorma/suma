@@ -37,10 +37,7 @@ module Suma
     end
 
     def all_express_docs
-      puts "self is_express_doc (#{is_express_doc}): #{self}"
-      entry&.map do |manifest|
-        manifest.all_express_docs
-      end.flatten.compact + (is_express_doc ? [self] : [])
+      entry&.map(&:all_express_docs)&.flatten&.compact&.+ (is_express_doc ? [self] : [])
     end
 
     attr_accessor :schema_xml_files
@@ -73,7 +70,7 @@ module Suma
           identifier: schema.id,
           title: schema.id,
           file: File.join(schema_output_path, "doc_#{schema.id}", fname),
-          type: "express_doc", # This means this schema is a SchemaDocument
+          type: "express_doc" # This means this schema is a SchemaDocument
         )
       end
 
@@ -81,8 +78,8 @@ module Suma
         CollectionManifest.new(
           title: doc_id,
           type: "document",
-          entry: entries,
-        ),
+          entry: entries
+        )
       ]
     end
   end
