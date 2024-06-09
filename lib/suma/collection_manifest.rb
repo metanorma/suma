@@ -50,6 +50,7 @@ module Suma
                  add.each { |x| ret << x }
                end
         self.entry = ret
+        return [self]
       end
 
       # This is the collection.yml file path
