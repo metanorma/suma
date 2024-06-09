@@ -8,12 +8,9 @@ module Suma
   class ExpressSchema
     attr_accessor :path, :id, :parsed, :output_path
 
-    def initialize(path:, output_path:)
+    def initialize(id:, path:, output_path:)
       @path = Pathname.new(path).expand_path
-      @parsed = Expressir::Express::Parser.from_file(@path.to_s)
-      Utils.log "Loaded EXPRESS schema: #{path}"
-
-      @id = @parsed.schemas.first.id
+      @id = id
       @output_path = output_path
     end
 
@@ -28,8 +25,17 @@ module Suma
       end
     end
 
+    def parsed
+      return @parsed if @parsed
+
+      @parsed = Expressir::Express::Parser.from_file(@path.to_s)
+      Utils.log "Loaded EXPRESS schema: #{path}"
+      @id = @parsed.schemas.first.id
+      @parsed
+    end
+
     def to_plain
-      @parsed.to_s(no_remarks: true)
+      parsed.to_s(no_remarks: true)
     end
 
     def filename_plain

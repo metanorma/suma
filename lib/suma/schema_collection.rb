@@ -39,8 +39,9 @@ module Suma
     def finalize
       @config.schemas.each do |config_schema|
         s = ExpressSchema.new(
-          path: config_schema.path,
-          output_path: @output_path_schemas
+          id: config_schema.id,
+          path: config_schema.path.to_s,
+          output_path: @output_path_schemas.to_s
         )
 
         klass = config_schema.schemas_only ? SchemaDocument : SchemaAttachment
