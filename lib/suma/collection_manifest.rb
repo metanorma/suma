@@ -83,9 +83,9 @@ module Suma
       # we need to separate this file from the following new entries
       
       added = CollectionManifest.new(
-        added.title = "Collection",
-        added.type = "collection",
-        added.identifier = self.identifier + "_"
+        title: "Collection",
+        type:  "collection",
+        identifier: self.identifier + "_"
       )
 
       added.entry = [
