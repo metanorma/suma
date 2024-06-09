@@ -113,5 +113,12 @@ module Suma
 
       [self, added]
     end
+
+    def remove_schemas_only_sources
+      ret = entry.each_with_object([]) do |e, m|
+        e.schemas_only or m << e
+      end
+      self.entry = ret
+    end
   end
 end
