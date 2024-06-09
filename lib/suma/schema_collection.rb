@@ -80,9 +80,9 @@ module Suma
 
       # DISABLING FOLLOWING CODE AS MISCONCEIVED. THE SCHEMA DOCUMENTS
       # BELONG IN THE MAIN COLLECTION NOT HERE
-      #docs.each_pair do |schema_id, entry|
-      #  entry.compile
-      #end
+      docs.each_pair do |schema_id, entry|
+        entry.compile
+      end
 
       # TODO: make this parallel
       # Utils.log"Starting Ractor processing"
