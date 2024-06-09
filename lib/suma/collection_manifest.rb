@@ -45,9 +45,9 @@ module Suma
     def expand_schemas_only(schema_output_path)
       unless schemas_only
         entry or return [self]
-        ret = entry.each_with_object([]) do |e|
+        ret = entry.each_with_object([]) do |e, m|
                  add = e.expand_schemas_only(schema_output_path)
-                 add.each { |x| ret << x }
+                 add.each { |x| m << x }
                end
         self.entry = ret
         return [self]
