@@ -23,7 +23,7 @@ module Suma
         collection_config_path = site_config.metanorma.source.files.first
         collection_config = Suma::CollectionConfig.from_file(collection_config_path)
         collection_config.path = collection_config_path
-        collection_config.manifest.expand_schemas_only("plain_schemas")
+        collection_config.manifest.expand_schemas_only("schema_docs")
 
         exported_schema_config = collection_config.manifest.export_schema_config(schemas_all_path)
         exported_schema_config.path = schemas_all_path
@@ -31,6 +31,8 @@ module Suma
         Utils.log "Writing #{schemas_all_path}..."
         exported_schema_config.to_file
         Utils.log "Done."
+
+        # now get rid of the source documents for schema sources
 
         col = Suma::SchemaCollection.new(
           config_yaml: schemas_all_path,
@@ -45,6 +47,10 @@ module Suma
         else
           Utils.log "No compile option set. Skipping schema compilation."
         end
+
+        new_collection_config_path = "collection-output.yaml"
+        collection_config.manifest.remove_schemas_only_sources
+        collection_config.to_file(new_collection_config_path)
 
         # TODO: Do we still need this?
         # Define Proc to resolve fileref
@@ -86,7 +92,7 @@ module Suma
           Utils.log "Compiling complete collection..."
 
           # TODO: Why will defining a collection immediately compile??
-          metanorma_collection = Metanorma::Collection.parse(collection_config_path)
+          metanorma_collection = Metanorma::Collection.parse(new_collection_config_path)
 
           # TODO: Somehow this is no longer used
           collection_opts = {
