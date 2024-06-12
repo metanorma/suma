@@ -91,7 +91,7 @@ module Suma
         CollectionManifest.new(
           identifier: schema.id,
           title: schema.id,
-          file: File.join(schema_output_path, "doc_#{schema.id}", fname),
+          file: File.join(schema_output_path, schema.id, "doc_#{fname}"),
           # schema_source: schema.path
         )
       end
@@ -112,6 +112,13 @@ module Suma
       ]
 
       [self, added]
+    end
+
+    def remove_schemas_only_sources
+      ret = entry.each_with_object([]) do |e, m|
+        e.schemas_only or m << e
+      end
+      self.entry = ret
     end
   end
 end
