@@ -6,7 +6,7 @@ require_relative "schema_config"
 
 module Suma
   class SchemaAttachment
-    attr_accessor :schema, :output_path, :config
+    attr_accessor :schema, :output_path, :config, :id
 
     def initialize(schema:, output_path:)
       @schema = schema
@@ -100,13 +100,13 @@ module Suma
       save_adoc
 
       relative_path = Pathname.new(filename_adoc).relative_path_from(Dir.pwd)
-      Utils.log "Compiling schema #{relative_path}..."
+      Utils.log "Compiling schema (id: #{id}, type: #{self.class}) => #{relative_path}"
       Metanorma::Compile.new.compile(
         filename_adoc,
         agree_to_terms: true,
         no_install_fonts: true
       )
-      Utils.log "Compiling schema #{filename_adoc}...done!"
+      Utils.log "Compiling schema (id: #{id}, type: #{self.class}) => #{relative_path}... done!"
 
       # clean_artifacts
 

@@ -8,11 +8,12 @@ require_relative "utils"
 
 module Suma
   class SchemaCollection
-    attr_accessor :config, :schemas, :docs, :output_path_docs, :output_path_schemas
+    attr_accessor :config, :schemas, :docs, :output_path_docs, :output_path_schemas,
+      :manifest
 
-    def initialize(config: nil, config_yaml: nil, output_path_docs: nil, output_path_schemas: nil, document_paths: nil)
-      @schemas = []
-      @docs = []
+    def initialize(config: nil, config_yaml: nil, output_path_docs: nil, output_path_schemas: nil, manifest: nil)
+      @schemas = {}
+      @docs = {}
       @schema_name_to_docs = {}
       @output_path_docs = if output_path_docs
                             Pathname.new(output_path_docs).expand_path
@@ -31,38 +32,55 @@ module Suma
                   SchemaConfig::Config.from_file(config_yaml)
                 end
 
-      return self unless @config
-
-      @config.schemas.each do |config_schema|
-        s = ExpressSchema.new(
-          path: config_schema.path,
-          output_path: @output_path_schemas
-        )
-        doc = if config_schema.schemas_only
-                SchemaDocument.new(
-                  schema: s,
-                  output_path: @output_path_docs.join(s.id)
-                )
-              else
-                SchemaAttachment.new(
-                  schema: s,
-                  output_path: @output_path_docs.join(s.id)
-                )
-              end
-        @docs << doc
-        @schemas << s
-        @schema_name_to_docs[s.id] = doc
-      end
+      @manifest = manifest
     end
 
     def doc_from_schema_name(schema_name)
       @schema_name_to_docs[schema_name]
     end
 
-    def compile
-      schemas.map(&:save_exp)
+    def process_schemas(schemas, klass)
+      schemas.each do |config_schema|
+        s = ExpressSchema.new(
+          id: config_schema.id,
+          path: config_schema.path.to_s,
+          output_path: @output_path_schemas.to_s
+        )
 
-      docs.each(&:compile)
+        doc = klass.new(
+          schema: s,
+          output_path: @output_path_docs.join(s.id)
+        )
+
+        @docs[s.id] = doc
+        @schemas[s.id] = s
+        @schema_name_to_docs[s.id] = doc
+      end
+    end
+
+    def finalize
+      # Process each schema in @config.schemas
+      process_schemas(@config.schemas, SchemaAttachment)
+
+      manifest_entry = @manifest.lookup(:schemas_only, true)
+
+      manifest_entry.each do |entry|
+        next unless entry.schema_config
+
+        # Process each schema in entry.schema_config.schemas
+        process_schemas(entry.schema_config.schemas, SchemaDocument)
+      end
+    end
+
+    def compile
+      finalize
+      schemas.each_pair do |schema_id, entry|
+        entry.save_exp
+      end
+
+      docs.each_pair do |schema_id, entry|
+        entry.compile
+      end
 
       # TODO: make this parallel
       # Utils.log"Starting Ractor processing"

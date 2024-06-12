@@ -8,6 +8,8 @@ module Suma
   class CollectionManifest < Metanorma::Collection::Config::Manifest
     attribute :schemas_only, Shale::Type::Boolean
     attribute :entry, CollectionManifest, collection: true
+    # attribute :schema_source, Shale::Type::String
+    attr_accessor :schema_config
 
     yaml do
       map "identifier", to: :identifier
@@ -32,23 +34,84 @@ module Suma
       model.entry = CollectionManifest.from_yaml(value.to_yaml)
     end
 
-    def expand_schemas_only(path)
-      if schemas_only
-        doc = YAML.safe_load(File.read(file))
-        schemas = YAML.safe_load(File.read(File.join(File.dirname(file), "schemas.yaml")))
-        self.file = nil
-        self.title = "ISO Collection"
-        self.type = "collection"
-        entries = schemas["schemas"].each_with_object([]) do |(k, v), m|
-          fname = Pathname(v["path"]).each_filename.to_a
-          fname[-1].sub!(/exp$/, "xml") # we compile these in col.compile below
-          m << CollectionManifest.new(identifier: k, title: k, file: File.join(path, fname[-2], "doc_#{fname[-1]}"))
-        end
-        doc = Array(CollectionManifest.new(title: doc["bibdata"]["docid"]["id"], type: "document", entry: entries))
-        self.entry = doc
-      else
-        entry&.each { |e| e.expand_schemas_only(path) }
+    def export_schema_config(path)
+      export_config = @schema_config || Suma::SchemaConfig::Config.new
+      return export_config unless entry
+
+      entry.each do |x|
+        child_config = x.export_schema_config(path)
+        export_config.concat(child_config) if child_config
       end
+
+      export_config
+    end
+
+    def lookup(attr_sym, match)
+      results = entry.select { |e| e.send(attr_sym) == match }
+      results << self if send(attr_sym) == match
+      results
+    end
+
+    def process_entry(schema_output_path)
+      return [self] unless entry
+
+      ret = entry.each_with_object([]) do |e, m|
+        add = e.expand_schemas_only(schema_output_path)
+        m.concat(add)
+      end
+
+      self.entry = ret
+      [self]
+    end
+
+    def expand_schemas_only(schema_output_path)
+      return process_entry(schema_output_path) unless file
+
+      # If there is collection.yml, this is a document collection, we process
+      # schemas.yaml.
+      if File.basename(file) == 'collection.yml'
+        schemas_yaml_path = File.join(File.dirname(file), "schemas.yaml")
+        if schemas_yaml_path && File.exist?(schemas_yaml_path)
+          @schema_config = Suma::SchemaConfig::Config.from_file(schemas_yaml_path)
+        end
+      end
+
+      return process_entry(schema_output_path) unless schemas_only
+
+      # If we are going to keep the schemas-only file and compile it, we can't
+      # have it showing up in output.
+      self.index = false
+
+      doc = CollectionConfig.from_file(file)
+      doc_id = doc.bibdata.id
+
+      entries = @schema_config.schemas.map do |schema|
+        fname = [File.basename(schema.path, ".exp"), ".xml"].join
+
+        CollectionManifest.new(
+          identifier: schema.id,
+          title: schema.id,
+          file: File.join(schema_output_path, "doc_#{schema.id}", fname),
+          # schema_source: schema.path
+        )
+      end
+
+      # we need to separate this file from the following new entries
+      added = CollectionManifest.new(
+        title: "Collection",
+        type:  "collection",
+        identifier: self.identifier + "_"
+      )
+
+      added.entry = [
+        CollectionManifest.new(
+          title: doc_id,
+          type: "document",
+          entry: entries,
+        ),
+      ]
+
+      [self, added]
     end
   end
 end

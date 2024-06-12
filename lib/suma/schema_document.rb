@@ -4,16 +4,6 @@ require_relative "schema_attachment"
 
 module Suma
   class SchemaDocument < SchemaAttachment
-    def empty_title1(anchor)
-      a = anchor.gsub(/\}\}/, ' | replace: "\", "-"}}')
-      <<~HEREDOC
-        [[#{@id}.#{a}]]
-        [%unnumbered,type=express]
-        === {blank}
-
-      HEREDOC
-    end
-
     def bookmark(anchor)
       a = anchor.gsub(/\}\}/, ' | replace: "\", "-"}}')
       "[[#{@id}.#{a}]]"

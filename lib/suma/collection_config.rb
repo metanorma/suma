@@ -18,9 +18,5 @@ module Suma
     def to_file(path)
       File.open(path, "w") { |f| f.write to_yaml }
     end
-
-    def expand_schemas_only(path)
-      manifest.expand_schemas_only(path)
-    end
   end
 end
