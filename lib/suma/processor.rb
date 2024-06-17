@@ -99,7 +99,7 @@ module Suma
             format: [:html],
             output_folder: output_directory,
             compile: {
-              no_install_fonts: true,
+              install_fonts: false,
             },
             coverpage: "cover.html",
           }

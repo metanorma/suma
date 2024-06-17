@@ -104,7 +104,7 @@ module Suma
       Metanorma::Compile.new.compile(
         filename_adoc,
         agree_to_terms: true,
-        no_install_fonts: true
+        install_fonts: false
       )
       Utils.log "Compiling schema (id: #{id}, type: #{self.class}) => #{relative_path}... done!"
 
