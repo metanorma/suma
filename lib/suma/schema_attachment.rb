@@ -68,13 +68,14 @@ module Suma
       File.join(@output_path, "schema_#{@schema.id}.yaml")
     end
 
-    def to_config
+    def to_config(path: nil)
       # return @config unless @config
       @config = SchemaConfig::Config.new
       @config.schemas << SchemaConfig::Schema.new(
         id: @schema.id,
-        path: @schema.path
+        path: @schema.path,
       )
+      path and @config.path = path
 
       @config
     end
@@ -86,9 +87,10 @@ module Suma
       # return if File.exist?(filename_config)
       FileUtils.mkdir_p(File.dirname(filename_config))
 
-      File.open(filename_config, "w") do |file|
-        file.write(to_config.to_yaml)
-      end
+      #File.open(filename_config, "w") do |file|
+        #file.write(to_config(path: filename_config).to_yaml)
+        to_config.save_to_path(filename_config)
+      #end
     end
 
     # Compile Metanorma adoc per EXPRESS schema

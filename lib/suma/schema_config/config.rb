@@ -9,6 +9,7 @@ module Suma
     class Config < Shale::Mapper
       attribute :schemas, Schema, collection: true
       attribute :path, Shale::Type::String
+      attr_accessor :output_path
 
       def initialize(**args)
         @path = path_relative_to_absolute(path) if path
@@ -39,6 +40,7 @@ module Suma
         @path = path_relative_to_absolute(new_path)
         schemas.each do |schema|
           schema.path = path_relative_to_absolute(schema.path)
+          schema.container_path = File.expand_path(@path)
         end
       end
 
@@ -48,17 +50,16 @@ module Suma
         end
       end
 
-      # TODO: I can't get the relative path working. The schemas-*.yaml file is
-      # meant to contain the "path" key, which is a relative path to its
-      # location, then sets the base path to each schema path, which is supposed
-      # to be relative to "path" key. Somehow, the @path variable is always
-      # missing in to_yaml...
       def schemas_to_yaml(model, doc)
         # puts "^"*30
         # pp self
         # pp @path
         doc["schemas"] = model.schemas.sort_by(&:id).to_h do |schema|
-          [schema.id, { "path" => path_absolute_to_relative(schema.path) }]
+          # [schema.id, { "path" => path_absolute_to_relative(schema.path, schema.container_path) }]
+          # we are not outputting schemas.yaml to the directory we sourced the manifest from, e.g. documents/iso-10303-41/schemas.yaml,
+          # but to the home directory. So the schema.container_path = @config.path is not in fact needed,
+          # as the files are already absolute. This notion of using @path to create relative paths was misconceived
+          [schema.id, { "path" => path_absolute_to_relative(schema.path, model.output_path || FileUtils.pwd) }]
         end
       end
 
@@ -68,18 +69,22 @@ module Suma
 
         # Or based on current working directory?
         return relative_path unless @path
+        # ... but if this calculates path, we end up expanding it anyway
 
         Pathname.new(File.dirname(@path)).join(eval_path).expand_path.to_s
       end
 
-      def path_absolute_to_relative(absolute_path)
+      def path_absolute_to_relative(absolute_path, container_path)
         # puts "path_absolute_to_relative 1 #{absolute_path}"
         # pp self
         # pp path
         # pp @hello
-        return absolute_path unless @path
+        container_path ||= @path
+        return absolute_path unless container_path
 
-        relative_path = Pathname.new(absolute_path).relative_path_from(Pathname.new(@path).dirname).to_s
+        p = Pathname.new(container_path)
+        container = p.directory? ? p.to_s : p.dirname
+        relative_path = Pathname.new(absolute_path).relative_path_from(container).to_s
         # puts "path_absolute_to_relative x #{relative_path}"
         relative_path
       end
@@ -122,11 +127,12 @@ module Suma
       def save_to_path(filename)
         new_config = dup
         new_config.path = filename
-        new_config.update_base_path(File.dirname(filename))
+        new_config.update_path(File.dirname(filename))
+        new_config.output_path = filename
 
         File.open(filename, "w") do |f|
           Utils.log "Writing #{filename}..."
-          f.write(to_yaml)
+          f.write(new_config.to_yaml)
           Utils.log "Done."
         end
       end
