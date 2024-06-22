@@ -51,15 +51,24 @@ module Suma
       end
 
       def schemas_to_yaml(model, doc)
-        # puts "^"*30
-        # pp self
-        # pp @path
         doc["schemas"] = model.schemas.sort_by(&:id).to_h do |schema|
-          # [schema.id, { "path" => path_absolute_to_relative(schema.path, schema.container_path) }]
-          # we are not outputting schemas.yaml to the directory we sourced the manifest from, e.g. documents/iso-10303-41/schemas.yaml,
-          # but to the home directory. So the schema.container_path = @config.path is not in fact needed,
-          # as the files are already absolute. This notion of using @path to create relative paths was misconceived
-          [schema.id, { "path" => path_absolute_to_relative(schema.path, model.output_path || FileUtils.pwd) }]
+          # We are outputting the schemas collection file to the directory where
+          # the collection config is at (assumed to be Dir.pwd), not to the
+          # directory we sourced the manifest from, e.g.
+          # documents/iso-10303-41/schemas.yaml.
+
+          # So the schema.container_path = @config.path is not
+          # in fact needed, as the files are already absolute. This notion of
+          # using @path to create relative paths was misconceived
+          [
+            schema.id,
+            {
+              "path" => path_absolute_to_relative(
+                schema.path,
+                model.output_path || Dir.pwd,
+              ),
+            },
+          ]
         end
       end
 
@@ -75,18 +84,12 @@ module Suma
       end
 
       def path_absolute_to_relative(absolute_path, container_path)
-        # puts "path_absolute_to_relative 1 #{absolute_path}"
-        # pp self
-        # pp path
-        # pp @hello
         container_path ||= @path
         return absolute_path unless container_path
 
         p = Pathname.new(container_path)
         container = p.directory? ? p.to_s : p.dirname
-        relative_path = Pathname.new(absolute_path).relative_path_from(container).to_s
-        # puts "path_absolute_to_relative x #{relative_path}"
-        relative_path
+        Pathname.new(absolute_path).relative_path_from(container).to_s
       end
 
       def update_path(new_path)
@@ -103,8 +106,8 @@ module Suma
           next if schema_path.absolute?
 
           schema_path = (Pathname.new(old_base_path) + schema_path).cleanpath
-          new_relative_schema_path = schema_path.relative_path_from(new_base_path)
-          schema.path = new_relative_schema_path
+          # This is the new relative schema_path
+          schema.path = schema_path.relative_path_from(new_base_path)
         end
 
         @path = new_path
@@ -112,7 +115,7 @@ module Suma
 
       def concat(another_config)
         unless another_config.is_a?(self.class)
-          raise StandardError, "Can only concatenate a non SchemaConfig::Config object."
+          raise StandardError, "Can only concat a SchemaConfig::Config object."
         end
 
         # We need to update the relative paths when paths exist
@@ -125,10 +128,11 @@ module Suma
       end
 
       def save_to_path(filename)
-        new_config = dup
-        new_config.path = filename
-        new_config.update_path(File.dirname(filename))
-        new_config.output_path = filename
+        new_config = dup.tap do |c|
+          c.path = filename
+          c.update_path(File.dirname(filename))
+          c.output_path = filename
+        end
 
         File.open(filename, "w") do |f|
           Utils.log "Writing #{filename}..."
