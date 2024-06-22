@@ -84,17 +84,16 @@ module Suma
       relative_path = Pathname.new(filename_config).relative_path_from(Dir.pwd)
       Utils.log "Save schema config: #{relative_path}"
 
+      # Still overwrite even if the file exists
       # return if File.exist?(filename_config)
       FileUtils.mkdir_p(File.dirname(filename_config))
 
-      #File.open(filename_config, "w") do |file|
-        #file.write(to_config(path: filename_config).to_yaml)
-        to_config.save_to_path(filename_config)
-      #end
+      to_config.save_to_path(filename_config)
     end
 
     # Compile Metanorma adoc per EXPRESS schema
     def compile
+      # TODO: Clean artifacts after compiling
       # I am commenting out because I'm playing with the schemas-only status
       # return self if File.exist?(output_xml_path)
 
@@ -106,7 +105,7 @@ module Suma
       Metanorma::Compile.new.compile(
         filename_adoc,
         agree_to_terms: true,
-        install_fonts: false
+        install_fonts: false,
       )
       Utils.log "Compiling schema (id: #{id}, type: #{self.class}) => #{relative_path}... done!"
 
@@ -126,7 +125,7 @@ module Suma
         filename_adoc,
         filename_adoc("presentation.xml"),
         filename_adoc("adoc.lutaml.log.txt"),
-        filename_adoc("err.html")
+        filename_adoc("err.html"),
       ].each do |filename|
         FileUtils.rm_rf(filename)
       end
