@@ -52,18 +52,6 @@ module Suma
         collection_config.manifest.remove_schemas_only_sources
         collection_config.to_file(new_collection_config_path)
 
-        # TODO: Do we still need this?
-        # Define Proc to resolve fileref
-        my_fileref_proc = proc do |ref_folder, fileref|
-          # move schemas to modified_schemas
-          if File.extname(fileref) == ".exp"
-            fileref.gsub!(
-              "../../schemas",
-              "modified_schemas"
-            )
-          end
-          File.join(ref_folder, fileref)
-        end
 
         # TODO: Do we still need this?
         # Define Proc to resolve identifier
