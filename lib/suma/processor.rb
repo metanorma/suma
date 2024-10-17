@@ -69,9 +69,10 @@ module Suma
           }
           metanorma_collection.render(collection_opts)
 
-          # remove xml files
+          # TODO: Temporarily disable removal of XML files
           Dir.glob(File.join(Dir.getwd, output_directory, "*.xml")).each do |file|
-            File.delete(file)
+            puts "NOT DELETING ANY FILE #{file.inspect}"
+            # File.delete(file)
           end
         else
           Utils.log "No compile option set. Skipping collection compilation."
