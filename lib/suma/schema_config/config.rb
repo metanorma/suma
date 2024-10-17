@@ -78,6 +78,7 @@ module Suma
 
         # Or based on current working directory?
         return relative_path unless @path
+
         # ... but if this calculates path, we end up expanding it anyway
 
         Pathname.new(File.dirname(@path)).join(eval_path).expand_path.to_s

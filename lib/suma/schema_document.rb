@@ -16,23 +16,23 @@ module Suma
 
         // _constants.liquid
         {% if schema.constants.size > 0 %}
-        #{bookmark("constants")}
+        #{bookmark('constants')}
         {% for thing in schema.constants %}
-        #{bookmark("{{thing.id}}")}
+        #{bookmark('{{thing.id}}')}
         {% endfor %}
         {% endif %}
 
         // _types.liquid
         {% if schema.types.size > 0 %}
-        #{bookmark("types")}
+        #{bookmark('types')}
         // _type.liquid
         {% for thing in schema.types %}
-        #{bookmark("{{thing.id}}")}
+        #{bookmark('{{thing.id}}')}
         {% if thing.items.size > 0 %}
         // _type_items.liquid
-        #{bookmark("{{thing.id}}.items")}
+        #{bookmark('{{thing.id}}.items')}
         {% for item in thing.items %}
-        #{bookmark("{{thing.id}}.items.{{item.id}}")}
+        #{bookmark('{{thing.id}}.items.{{item.id}}')}
         {% endfor %}
         {% endif %}
         {% endfor %}
@@ -40,46 +40,46 @@ module Suma
 
         // _entities.liquid
         {% if schema.entities.size > 0 %}
-        #{bookmark("entities")}
+        #{bookmark('entities')}
         {% for thing in schema.entities %}
         // _entity.liquid
-        #{bookmark("{{thing.id}}")}
+        #{bookmark('{{thing.id}}')}
         {% endfor %}
         {% endif %}
 
         // _subtype_constraints.liquid
         {% if schema.subtype_constraints.size > 0 %}
-        #{bookmark("subtype_constraints")}
+        #{bookmark('subtype_constraints')}
         // _subtype_constraint.liquid
         {% for thing in schema.subtype_constraints %}
-        #{bookmark("{{thing.id}}")}
+        #{bookmark('{{thing.id}}')}
         {% endfor %}
         {% endif %}
 
         // _functions.liquid
         {% if schema.functions.size > 0 %}
-        #{bookmark("functions")}
+        #{bookmark('functions')}
         // _function.liquid
         {% for thing in schema.functions %}
-        #{bookmark("{{thing.id}}")}
+        #{bookmark('{{thing.id}}')}
         {% endfor %}
         {% endif %}
 
         // _procedures.liquid
         {% if schema.procedures.size > 0 %}
-        #{bookmark("procedures")}
+        #{bookmark('procedures')}
         // _procedure.liquid
         {% for thing in schema.procedures %}
-        #{bookmark("{{thing.id}}")}
+        #{bookmark('{{thing.id}}')}
         {% endfor %}
         {% endif %}
 
         // _rules.liquid
         {% if schema.rules.size > 0 %}
-        #{bookmark("rules")}
+        #{bookmark('rules')}
         // _rule.liquid
         {% for thing in schema.rules %}
-        #{bookmark("{{thing.id}}")}
+        #{bookmark('{{thing.id}}')}
         {% endfor %}
         {% endif %}
       HEREDOC
@@ -117,7 +117,7 @@ module Suma
 
         [[#{@id}]]
         [%unnumbered,type=express]
-        == #{@id} #{schema_anchors.gsub(%r{//[^\r\n]+}, "").gsub(/[\n\r]+/, "").gsub(/^[\n\r]/, "")}
+        == #{@id} #{schema_anchors.gsub(%r{//[^\r\n]+}, '').gsub(/[\n\r]+/, '').gsub(/^[\n\r]/, '')}
 
         [source%unnumbered]
         --

@@ -9,9 +9,10 @@ require_relative "utils"
 module Suma
   class SchemaCollection
     attr_accessor :config, :schemas, :docs, :output_path_docs, :output_path_schemas,
-      :manifest
+                  :manifest
 
-    def initialize(config: nil, config_yaml: nil, output_path_docs: nil, output_path_schemas: nil, manifest: nil)
+    def initialize(config: nil, config_yaml: nil, output_path_docs: nil,
+output_path_schemas: nil, manifest: nil)
       @schemas = {}
       @docs = {}
       @schema_name_to_docs = {}
@@ -44,12 +45,12 @@ module Suma
         s = ExpressSchema.new(
           id: config_schema.id,
           path: config_schema.path.to_s,
-          output_path: @output_path_schemas.to_s
+          output_path: @output_path_schemas.to_s,
         )
 
         doc = klass.new(
           schema: s,
-          output_path: @output_path_docs.join(s.id)
+          output_path: @output_path_docs.join(s.id),
         )
 
         @docs[s.id] = doc
@@ -74,11 +75,11 @@ module Suma
 
     def compile
       finalize
-      schemas.each_pair do |schema_id, entry|
+      schemas.each_pair do |_schema_id, entry|
         entry.save_exp
       end
 
-      docs.each_pair do |schema_id, entry|
+      docs.each_pair do |_schema_id, entry|
         entry.compile
       end
 
