@@ -52,42 +52,6 @@ module Suma
         collection_config.manifest.remove_schemas_only_sources
         collection_config.to_file(new_collection_config_path)
 
-        # TODO: Do we still need this?
-        # Define Proc to resolve fileref
-        my_fileref_proc = proc do |ref_folder, fileref|
-          # move schemas to modified_schemas
-          if File.extname(fileref) == ".exp"
-            fileref.gsub!(
-              "../../schemas",
-              "modified_schemas"
-            )
-          end
-          File.join(ref_folder, fileref)
-        end
-
-        # TODO: Do we still need this?
-        # Define Proc to resolve identifier
-        my_identifier_proc = proc do |identifier|
-          case identifier
-          when %r{^documents/}
-            identifier.gsub("documents/", "")
-          else
-            identifier
-          end
-        end
-
-        # TODO: Do we still need this?
-        # Define Proc to handle the compilation of express schemas
-        express_schemas_renderer = proc do |collection_model|
-        end
-
-        # TODO: Do we still need this?
-        Metanorma::Collection.tap do |mn|
-          mn.set_identifier_resolver(&my_identifier_proc)
-          mn.set_fileref_resolver(&my_fileref_proc)
-          mn.set_pre_parse_model(&express_schemas_renderer)
-        end
-
         if compile
           Utils.log "Compiling complete collection..."
 
