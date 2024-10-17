@@ -69,7 +69,7 @@ module Suma
 
       # If there is collection.yml, this is a document collection, we process
       # schemas.yaml.
-      if File.basename(file) == 'collection.yml'
+      if File.basename(file) == "collection.yml"
         schemas_yaml_path = File.join(File.dirname(file), "schemas.yaml")
         if schemas_yaml_path && File.exist?(schemas_yaml_path)
           @schema_config = Suma::SchemaConfig::Config.from_file(schemas_yaml_path)
@@ -99,8 +99,8 @@ module Suma
       # we need to separate this file from the following new entries
       added = CollectionManifest.new(
         title: "Collection",
-        type:  "collection",
-        identifier: self.identifier + "_"
+        type: "collection",
+        identifier: "#{identifier}_",
       )
 
       added.entry = [

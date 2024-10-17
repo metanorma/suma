@@ -12,8 +12,8 @@ require "metanorma/collection/collection"
 module Suma
   class Processor
     class << self
-
-      def run(metanorma_yaml_path:, schemas_all_path:, compile:, output_directory: "_site")
+      def run(metanorma_yaml_path:, schemas_all_path:, compile:,
+output_directory: "_site")
         Utils.log "Current directory: #{Dir.getwd}"
 
         # This reads the metanorma.yml file
@@ -70,7 +70,8 @@ module Suma
           metanorma_collection.render(collection_opts)
 
           # TODO: Temporarily disable removal of XML files
-          Dir.glob(File.join(Dir.getwd, output_directory, "*.xml")).each do |file|
+          Dir.glob(File.join(Dir.getwd, output_directory,
+                             "*.xml")).each do |file|
             puts "NOT DELETING ANY FILE #{file.inspect}"
             # File.delete(file)
           end

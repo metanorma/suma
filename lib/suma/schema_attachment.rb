@@ -55,7 +55,7 @@ module Suma
       FileUtils.mkdir_p(File.dirname(filename_adoc))
 
       relative_path = Pathname.new(filename_config)
-                              .relative_path_from(Pathname.new(File.dirname(filename_adoc)))
+        .relative_path_from(Pathname.new(File.dirname(filename_adoc)))
 
       # Utils.log "relative_path #{relative_path}"
 
