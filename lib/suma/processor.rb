@@ -55,12 +55,9 @@ output_directory: "_site")
         if compile
           Utils.log "Compiling complete collection..."
 
-          # TODO: Why will defining a collection immediately compile??
           metanorma_collection = Metanorma::Collection.parse(new_collection_config_path)
 
-          # TODO: Somehow this is no longer used
           collection_opts = {
-            format: [:html],
             output_folder: output_directory,
             compile: {
               install_fonts: false,

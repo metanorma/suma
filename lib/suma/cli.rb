@@ -37,7 +37,7 @@ module Suma
         Utils.log "[ERROR] Error occurred during processing. See details below."
         Utils.log e
         Utils.log e.inspect
-        Utils.log e.backtrace
+        Utils.log e.backtrace.join("\n")
       end
     end
   end
