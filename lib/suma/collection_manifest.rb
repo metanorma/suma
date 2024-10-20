@@ -67,14 +67,7 @@ module Suma
     def expand_schemas_only(schema_output_path)
       return process_entry(schema_output_path) unless file
 
-      # If there is collection.yml, this is a document collection, we process
-      # schemas.yaml.
-      if File.basename(file) == "collection.yml"
-        schemas_yaml_path = File.join(File.dirname(file), "schemas.yaml")
-        if schemas_yaml_path && File.exist?(schemas_yaml_path)
-          @schema_config = Suma::SchemaConfig::Config.from_file(schemas_yaml_path)
-        end
-      end
+      update_schema_config
 
       return process_entry(schema_output_path) unless schemas_only
 
@@ -82,10 +75,18 @@ module Suma
       # have it showing up in output.
       self.index = false
 
-      doc = CollectionConfig.from_file(file)
-      doc_id = doc.bibdata.id
+      [self, added_collection_manifest]
+    end
 
-      entries = @schema_config.schemas.map do |schema|
+    def remove_schemas_only_sources
+      ret = entry.each_with_object([]) do |e, m|
+        e.schemas_only or m << e
+      end
+      self.entry = ret
+    end
+
+    def entries(schema_output_path)
+      @schema_config.schemas.map do |schema|
         fname = [File.basename(schema.path, ".exp"), ".xml"].join
 
         CollectionManifest.new(
@@ -95,6 +96,11 @@ module Suma
           # schema_source: schema.path
         )
       end
+    end
+
+    def added_collection_manifest
+      doc = CollectionConfig.from_file(file)
+      doc_id = doc.bibdata.id
 
       # we need to separate this file from the following new entries
       added = CollectionManifest.new(
@@ -111,14 +117,18 @@ module Suma
         ),
       ]
 
-      [self, added]
+      added
     end
 
-    def remove_schemas_only_sources
-      ret = entry.each_with_object([]) do |e, m|
-        e.schemas_only or m << e
+    def update_schema_config
+      # If there is collection.yml, this is a document collection, we process
+      # schemas.yaml.
+      if File.basename(file) == "collection.yml"
+        schemas_yaml_path = File.join(File.dirname(file), "schemas.yaml")
+        if schemas_yaml_path && File.exist?(schemas_yaml_path)
+          @schema_config = Suma::SchemaConfig::Config.from_file(schemas_yaml_path)
+        end
       end
-      self.entry = ret
     end
   end
 end

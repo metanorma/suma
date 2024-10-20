@@ -101,15 +101,7 @@ module Suma
 
         old_base_path = File.dirname(@path)
         new_base_path = File.dirname(new_path)
-
-        schemas.each do |schema|
-          schema_path = Pathname.new(schema.path)
-          next if schema_path.absolute?
-
-          schema_path = (Pathname.new(old_base_path) + schema_path).cleanpath
-          # This is the new relative schema_path
-          schema.path = schema_path.relative_path_from(new_base_path)
-        end
+        update_schema_path(old_base_path, new_base_path)
 
         @path = new_path
       end
@@ -139,6 +131,17 @@ module Suma
           Utils.log "Writing #{filename}..."
           f.write(new_config.to_yaml)
           Utils.log "Done."
+        end
+      end
+
+      def update_schema_path(old_base_path, new_base_path)
+        schemas.each do |schema|
+          schema_path = Pathname.new(schema.path)
+          next if schema_path.absolute?
+
+          schema_path = (Pathname.new(old_base_path) + schema_path).cleanpath
+          # This is the new relative schema_path
+          schema.path = schema_path.relative_path_from(new_base_path)
         end
       end
     end
