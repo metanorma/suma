@@ -1,0 +1,10 @@
+
+metanorma:
+  source:
+    files:
+    - ./collection.yml
+    - ./sample.adoc
+
+  collection:
+    organization: "Metanorma : Rake tests"
+    name: "Metanorma: Rake tests"
