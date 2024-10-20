@@ -12,27 +12,14 @@ module Suma
                   :manifest
 
     def initialize(config: nil, config_yaml: nil, output_path_docs: nil,
-output_path_schemas: nil, manifest: nil)
+                   output_path_schemas: nil, manifest: nil)
       @schemas = {}
       @docs = {}
       @schema_name_to_docs = {}
-      @output_path_docs = if output_path_docs
-                            Pathname.new(output_path_docs).expand_path
-                          else
-                            Pathname.new(Dir.pwd)
-                          end
-      @output_path_schemas = if output_path_schemas
-                               Pathname.new(output_path_schemas).expand_path
-                             else
-                               Pathname.new(Dir.pwd)
-                             end
-
-      @config = if config
-                  config
-                elsif config_yaml
-                  SchemaConfig::Config.from_file(config_yaml)
-                end
-
+      @output_path_docs = Pathname.new(output_path_docs || Dir.pwd).expand_path
+      @output_path_schemas = Pathname.new(output_path_schemas || Dir.pwd).expand_path
+      @config = config
+      @config ||= config_yaml && SchemaConfig::Config.from_file(config_yaml)
       @manifest = manifest
     end
 
@@ -42,21 +29,23 @@ output_path_schemas: nil, manifest: nil)
 
     def process_schemas(schemas, klass)
       schemas.each do |config_schema|
-        s = ExpressSchema.new(
-          id: config_schema.id,
-          path: config_schema.path.to_s,
-          output_path: @output_path_schemas.to_s,
-        )
-
-        doc = klass.new(
-          schema: s,
-          output_path: @output_path_docs.join(s.id),
-        )
-
-        @docs[s.id] = doc
-        @schemas[s.id] = s
-        @schema_name_to_docs[s.id] = doc
+        process_schema(config_schema, klass)
       end
+    end
+
+    def process_schema(config_schema, klass)
+      s = ExpressSchema.new(
+        id: config_schema.id, path: config_schema.path.to_s,
+        output_path: @output_path_schemas.to_s
+      )
+
+      doc = klass.new(
+        schema: s, output_path: @output_path_docs.join(s.id),
+      )
+
+      @docs[s.id] = doc
+      @schemas[s.id] = s
+      @schema_name_to_docs[s.id] = doc
     end
 
     def finalize

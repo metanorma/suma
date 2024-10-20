@@ -22,23 +22,33 @@ module Suma
           "`#{metanorma_site_manifest}` not found."
       end
 
+      begin
+        run(metanorma_site_manifest, options)
+      rescue StandardError => e
+        log_error(e)
+      end
+    end
+
+    private
+
+    def run(manifest, options)
       # Set schemas_all_path to match metanorma_yaml_path
       schemas_all_path = options[:schemas_all_path] ||
-        metanorma_site_manifest.gsub("metanorma", "schemas")
+        manifest.gsub("metanorma", "schemas")
 
-      begin
-        Processor.run(
-          metanorma_yaml_path: metanorma_site_manifest,
-          schemas_all_path: schemas_all_path,
-          compile: options[:compile],
-          output_directory: "_site",
-        )
-      rescue StandardError => e
-        Utils.log "[ERROR] Error occurred during processing. See details below."
-        Utils.log e
-        Utils.log e.inspect
-        Utils.log e.backtrace.join("\n")
-      end
+      Processor.run(
+        metanorma_yaml_path: manifest,
+        schemas_all_path: schemas_all_path,
+        compile: options[:compile],
+        output_directory: "_site",
+      )
+    end
+
+    def log_error(error)
+      Utils.log "[ERROR] Error occurred during processing. See details below."
+      Utils.log error
+      Utils.log error.inspect
+      Utils.log error.backtrace.join("\n")
     end
   end
 end

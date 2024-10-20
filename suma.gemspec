@@ -2,7 +2,7 @@
 
 require_relative "lib/suma/version"
 
-Gem::Specification.new do |spec|
+Gem::Specification.new do |spec| # rubocop:disable Metrics/BlockLength
   spec.name = "suma"
   spec.version = Suma::VERSION
   spec.authors = ["Ribose Inc."]
