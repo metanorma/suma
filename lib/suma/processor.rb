@@ -13,7 +13,7 @@ module Suma
   class Processor
     class << self
       def run(metanorma_yaml_path:, schemas_all_path:, compile:, output_directory: "_site")
-        Utils.log "Writing #{schemas_all_path}..."
+        Utils.log "Current directory: #{Dir.getwd}, writing #{schemas_all_path}..."
         collection_config = export_schema_config(metanorma_yaml_path, schemas_all_path)
 
         unless compile
