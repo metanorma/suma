@@ -26,7 +26,7 @@ module Suma
         :mn-document-class: iso
         :mn-output-extensions: #{output_extensions}
 
-        [lutaml,schemas,context]
+        [lutaml_express_liquid,schemas,context]
         ----
         {% for schema in context.schemas %}
 
