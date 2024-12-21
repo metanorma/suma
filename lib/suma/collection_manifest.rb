@@ -6,15 +6,15 @@ require "metanorma/collection/collection"
 
 module Suma
   class CollectionManifest < Metanorma::Collection::Config::Manifest
-    attribute :schemas_only, Shale::Type::Boolean
+    attribute :schemas_only, Lutaml::Model::Type::Boolean
     attribute :entry, CollectionManifest, collection: true
-    # attribute :schema_source, Shale::Type::String
+    # attribute :schema_source, Lutaml::Model::Type::String
     attr_accessor :schema_config
 
     yaml do
       map "identifier", to: :identifier
       map "type", to: :type
-      map "level", using: { from: :level_from_yaml, to: :nop_to_yaml }
+      map "level", with: { from: :level_from_yaml, to: :nop_to_yaml }
       map "title", to: :title
       map "url", to: :url
       map "attachment", to: :attachment
@@ -22,12 +22,12 @@ module Suma
       map "schemas-only", to: :schemas_only
       map "index", to: :index
       map "file", to: :file
-      map "fileref", using: { from: :fileref_from_yaml, to: :nop_to_yaml }
+      map "fileref", with: { from: :fileref_from_yaml, to: :nop_to_yaml }
       map "entry", to: :entry
-      map "docref", using: { from: :docref_from_yaml, to: :nop_to_yaml }
-      map "manifest", using: { from: :docref_from_yaml, to: :nop_to_yaml }
-      map "bibdata", using: { from: :bibdata_from_yaml,
-                              to: :bibdata_to_yaml }
+      map "docref", with: { from: :docref_from_yaml, to: :nop_to_yaml }
+      map "manifest", with: { from: :docref_from_yaml, to: :nop_to_yaml }
+      map "bibdata", with: { from: :bibdata_from_yaml,
+                             to: :bibdata_to_yaml }
     end
 
     def docref_from_yaml(model, value)

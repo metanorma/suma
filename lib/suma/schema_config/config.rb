@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-require "shale"
+require "lutaml/model"
 require_relative "schema"
 require_relative "../utils"
 
 module Suma
   module SchemaConfig
-    class Config < Shale::Mapper
+    class Config < Lutaml::Model::Serializable
       attribute :schemas, Schema, collection: true
-      attribute :path, Shale::Type::String
+      attribute :path, Lutaml::Model::Type::String
       attr_accessor :output_path
 
       def initialize(**args)
@@ -21,7 +21,7 @@ module Suma
       end
 
       yaml do
-        map "schemas", using: { from: :schemas_from_yaml, to: :schemas_to_yaml }
+        map "schemas", with: { from: :schemas_from_yaml, to: :schemas_to_yaml }
       end
 
       def self.from_file(path)

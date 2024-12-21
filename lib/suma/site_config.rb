@@ -1,24 +1,24 @@
 # frozen_string_literal: true
 
-require "shale"
+require "lutaml/model"
 
 module Suma
   module SiteConfig
-    class SiteInfo < Shale::Mapper
-      attribute :organization, Shale::Type::String
-      attribute :name, Shale::Type::String
+    class SiteInfo < Lutaml::Model::Serializable
+      attribute :organization, Lutaml::Model::Type::String
+      attribute :name, Lutaml::Model::Type::String
     end
 
-    class Sources < Shale::Mapper
-      attribute :files, Shale::Type::String, collection: true
+    class Sources < Lutaml::Model::Serializable
+      attribute :files, Lutaml::Model::Type::String, collection: true
     end
 
-    class Base < Shale::Mapper
+    class Base < Lutaml::Model::Serializable
       attribute :source, Sources
       attribute :collection, SiteInfo
     end
 
-    class Config < Shale::Mapper
+    class Config < Lutaml::Model::Serializable
       attribute :metanorma, Base
 
       def self.from_file(path)
