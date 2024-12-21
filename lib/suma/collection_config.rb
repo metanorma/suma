@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "utils"
-require "shale"
+require "lutaml/model"
 require_relative "collection_manifest"
 require "metanorma/cli"
 require "metanorma/cli/collection"
