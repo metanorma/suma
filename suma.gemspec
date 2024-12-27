@@ -35,7 +35,7 @@ Gem::Specification.new do |spec| # rubocop:disable Metrics/BlockLength
   spec.require_paths = ["lib"]
 
   spec.add_dependency "expressir"
-  spec.add_dependency "metanorma-cli"
   spec.add_dependency "lutaml-model"
+  spec.add_dependency "metanorma-cli"
   spec.add_dependency "thor", ">= 0.20"
 end
