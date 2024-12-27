@@ -111,7 +111,7 @@ module Suma
         :mn-document-class: iso
         :mn-output-extensions: xml,html
 
-        [lutaml,schemas,context]
+        [lutaml_express_liquid,schemas,context]
         ----
         {% for schema in context.schemas %}
 
