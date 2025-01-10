@@ -39,7 +39,7 @@ module Suma
     end
 
     def filename_plain
-      File.join(@output_path, type, id, "#{id}.exp")
+      File.join(@output_path, type, id, File.basename(@path))
     end
 
     def save_exp
