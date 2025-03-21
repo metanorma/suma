@@ -8,6 +8,7 @@ module Suma
   class Links < Thor
     desc "extract_and_validate SCHEMAS_FILE DOCUMENTS_PATH [OUTPUT_FILE]",
          "Extract and validate express links without creating intermediate file"
+    # rubocop:disable Metrics/MethodLength
     def extract_and_validate(schemas_file = "schemas-srl.yml",
                             documents_path = "documents",
                             output_file = "validation_results.txt")
@@ -109,7 +110,7 @@ module Suma
       # Try to load all schemas with progress tracking
       repo = nil
       begin
-        repo = Expressir::Express::Parser.from_files(schema_paths.values) do |filename, schemas, error|
+        repo = Expressir::Express::Parser.from_files(schema_paths.values) do |filename, _schemas, error|
           loading_progress.increment
           if error
             puts "\nWarning: Error loading schema #{filename}: #{error.message}"
@@ -127,7 +128,7 @@ module Suma
       total_links = 0
 
       # Get total number of links for progress bar
-      links_by_file.each do |_file, links|
+      links_by_file.each_value do |links|
         total_links += links.size
       end
 
@@ -141,10 +142,12 @@ module Suma
         length: 80,
       )
 
+      # rubocop:disable Metrics/BlockLength
       links_by_file.each do |file, links|
         file_content = File.read(file)
         file_lines = file_content.lines
 
+        # rubocop:disable Metrics/BlockLength
         links.each do |link|
           # Update progress
           progress.increment
@@ -252,9 +255,11 @@ module Suma
             }
           end
         end
+        # rubocop:enable Metrics/BlockLength
       rescue StandardError => e
         puts "Warning: Error processing file #{file}: #{e.message}"
       end
+      # rubocop:enable Metrics/BlockLength
 
       # Prepare results for output
       results = []
@@ -279,5 +284,6 @@ module Suma
         puts results
       end
     end
+    # rubocop:enable Metrics/MethodLength
   end
 end

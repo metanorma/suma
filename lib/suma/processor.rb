@@ -12,9 +12,12 @@ require "metanorma/collection/collection"
 module Suma
   class Processor
     class << self
-      def run(metanorma_yaml_path:, schemas_all_path:, compile:, output_directory: "_site")
+      # rubocop:disable Metrics/MethodLength
+      def run(metanorma_yaml_path:, schemas_all_path:, compile:,
+output_directory: "_site")
         Utils.log "Current directory: #{Dir.getwd}, writing #{schemas_all_path}..."
-        collection_config = export_schema_config(metanorma_yaml_path, schemas_all_path)
+        collection_config = export_schema_config(metanorma_yaml_path,
+                                                 schemas_all_path)
 
         unless compile
           Utils.log "No compile option set. Skipping schema compilation."
@@ -27,6 +30,7 @@ module Suma
         Utils.log "Compiling complete collection..."
         compile_collection(collection_config, output_directory)
       end
+      # rubocop:enable Metrics/MethodLength
 
       private
 
@@ -61,7 +65,9 @@ module Suma
       end
 
       def compile_collection(collection_config, output_directory)
-        metanorma_collection, collection_opts = build_collection(collection_config, output_directory)
+        metanorma_collection, collection_opts = build_collection(
+          collection_config, output_directory
+        )
 
         metanorma_collection.render(collection_opts)
 
