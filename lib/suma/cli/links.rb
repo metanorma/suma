@@ -96,13 +96,29 @@ module Suma
 
       puts "Loading #{schema_paths.size} EXPRESS schemas for validation..."
 
-      # Try to load all schemas at once
+      # Setup progress bar for schema loading
+      loading_progress = ProgressBar.create(
+        title: "Loading schemas",
+        total: schema_paths.size,
+        format: "%t: [%B] %p%% %c/%C %e",
+        progress_mark: "=",
+        remainder_mark: " ",
+        length: 80,
+      )
+
+      # Try to load all schemas with progress tracking
       repo = nil
       begin
-        repo = Expressir::Express::Parser.from_files(schema_paths.values)
+        repo = Expressir::Express::Parser.from_files(schema_paths.values) do |filename, schemas, error|
+          loading_progress.increment
+          if error
+            puts "\nWarning: Error loading schema #{filename}: #{error.message}"
+          end
+        end
+
         puts "Successfully loaded #{repo.schemas.size} schemas"
       rescue StandardError => e
-        puts "Error loading schemas: #{e.message}" # Added error message output
+        puts "Error loading schemas: #{e.message}"
         exit(1)
       end
 
