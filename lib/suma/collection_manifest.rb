@@ -7,7 +7,8 @@ require "metanorma/collection/collection"
 module Suma
   class CollectionManifest < Metanorma::Collection::Config::Manifest
     attribute :schemas_only, Lutaml::Model::Type::Boolean
-    attribute :entry, CollectionManifest, collection: true
+    attribute :entry, CollectionManifest, collection: true,
+                                          initialize_empty: true
     # attribute :schema_source, Lutaml::Model::Type::String
     attr_accessor :schema_config
 

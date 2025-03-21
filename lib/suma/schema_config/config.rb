@@ -7,7 +7,7 @@ require_relative "../utils"
 module Suma
   module SchemaConfig
     class Config < Lutaml::Model::Serializable
-      attribute :schemas, Schema, collection: true
+      attribute :schemas, Schema, collection: true, initialize_empty: true
       attribute :path, Lutaml::Model::Type::String
       attr_accessor :output_path
 

@@ -10,7 +10,8 @@ module Suma
     end
 
     class Sources < Lutaml::Model::Serializable
-      attribute :files, Lutaml::Model::Type::String, collection: true
+      attribute :files, Lutaml::Model::Type::String, collection: true,
+                                                     initialize_empty: true
     end
 
     class Base < Lutaml::Model::Serializable
