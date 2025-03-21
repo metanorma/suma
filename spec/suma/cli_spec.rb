@@ -3,7 +3,7 @@
 require "suma/cli"
 require "suma/utils"
 
-RSpec.describe Suma do
+RSpec.describe Suma::Cli do
   around do |suite|
     Dir.mktmpdir do |tmpdir|
       fixtures_dir = File.expand_path("../fixtures", __dir__)
@@ -20,27 +20,29 @@ RSpec.describe Suma do
     end
   end
 
-  it "Build simple metanorma.yml manifest" do
-    require "suma/cli/build"
-    Suma::Build.start(["default_build", "metanorma.yml"])
+  describe "Build command" do
+    it "builds simple metanorma.yml manifest" do
+      require "suma/cli/build"
+      Suma::Cli::Build.start(["default_build", "metanorma.yml"])
 
-    expect(File.exist?("schemas.yml")).to be true
-    expect(File.exist?("collection-output.yaml")).to be true
-  end
+      expect(File.exist?("schemas.yml")).to be true
+      expect(File.exist?("collection-output.yaml")).to be true
+    end
 
-  it "raise ENOENT for missing manifest" do
-    require "suma/cli/build"
-    build = Suma::Build.new
+    it "raises ENOENT for missing manifest" do
+      require "suma/cli/build"
+      build = Suma::Cli::Build.new
 
-    expect do
-      build.default_build("not-found.yml")
-    end.to raise_error(Errno::ENOENT)
-  end
+      expect do
+        build.default_build("not-found.yml")
+      end.to raise_error(Errno::ENOENT)
+    end
 
-  it "non-zero exit code for missing manifest" do
-    require "suma/cli/build"
-    expect do
-      Suma::Build.start(%w[default_build not-found.yml])
-    end.to raise_error(Errno::ENOENT)
+    it "returns non-zero exit code for missing manifest" do
+      require "suma/cli/build"
+      expect do
+        Suma::Cli::Build.start(%w[default_build not-found.yml])
+      end.to raise_error(Errno::ENOENT)
+    end
   end
 end
