@@ -9,7 +9,7 @@ Gem::Specification.new do |spec| # rubocop:disable Metrics/BlockLength
   spec.email = ["open.source@ribose.com"]
 
   spec.summary = "Utility for SUMA " \
-  "(STEP Unified Model-Based Standards Architecture)"
+                 "(STEP Unified Model-Based Standards Architecture)"
   spec.description = <<~DESCRIPTION
     Utility for SUMA (STEP Unified Model-Based Standards Architecture)
   DESCRIPTION
@@ -20,7 +20,6 @@ Gem::Specification.new do |spec| # rubocop:disable Metrics/BlockLength
   spec.bindir = "bin"
   spec.require_paths = ["lib"]
   spec.files = `git ls-files`.split("\n")
-  spec.test_files = `git ls-files -- {spec}/*`.split("\n")
   spec.required_ruby_version = Gem::Requirement.new(">= 3.0.0")
 
   # Specify which files should be added to the gem when it is released.
@@ -39,4 +38,5 @@ Gem::Specification.new do |spec| # rubocop:disable Metrics/BlockLength
   spec.add_dependency "metanorma-cli"
   spec.add_dependency "ruby-progressbar"
   spec.add_dependency "thor", ">= 0.20"
+  spec.metadata["rubygems_mfa_required"] = "true"
 end

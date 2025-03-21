@@ -59,9 +59,7 @@ module Suma
 
       # Utils.log "relative_path #{relative_path}"
 
-      File.open(filename_adoc, "w") do |file|
-        file.write(to_adoc(relative_path))
-      end
+      File.write(filename_adoc, to_adoc(relative_path))
     end
 
     def filename_config

@@ -5,7 +5,7 @@ require_relative "schema_attachment"
 module Suma
   class SchemaDocument < SchemaAttachment
     def bookmark(anchor)
-      a = anchor.gsub(/\}\}/, ' | replace: "\", "-"}}')
+      a = anchor.gsub("}}", ' | replace: "\", "-"}}')
       "[[#{@id}.#{a}]]"
     end
 
