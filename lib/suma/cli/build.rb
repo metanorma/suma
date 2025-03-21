@@ -6,6 +6,11 @@ require_relative "../thor_ext"
 module Suma
   # Build command for building collections
   class Build < Thor
+    # Return true to exit with non-zero status on errors
+    def self.exit_on_failure?
+      true
+    end
+
     default_command :default_build
 
     desc "default_build METANORMA_SITE_MANIFEST",
@@ -25,11 +30,8 @@ module Suma
           "`#{metanorma_site_manifest}` not found."
       end
 
-      begin
-        run(metanorma_site_manifest, options)
-      rescue StandardError => e
-        log_error(e)
-      end
+      # Allow errors to propagate
+      run(metanorma_site_manifest, options)
     end
 
     private
