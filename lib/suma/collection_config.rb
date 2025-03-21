@@ -16,7 +16,7 @@ module Suma
     end
 
     def to_file(path)
-      File.open(path, "w") { |f| f.write to_yaml }
+      File.write(path, to_yaml)
     end
   end
 end

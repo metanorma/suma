@@ -13,7 +13,7 @@ module Suma
 
       def initialize(**args)
         @path = path_relative_to_absolute(path) if path
-        super(**args)
+        super
       end
 
       def base_path
@@ -31,9 +31,7 @@ module Suma
       end
 
       def to_file(to_path = path)
-        File.open(to_path, "w") do |f|
-          f.write(to_yaml)
-        end
+        File.write(to_path, to_yaml)
       end
 
       def set_initial_path(new_path)

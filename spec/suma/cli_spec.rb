@@ -4,7 +4,7 @@ require "suma/cli"
 require "suma/utils"
 
 RSpec.describe Suma do
-  around(:each) do |suite|
+  around do |suite|
     Dir.mktmpdir do |tmpdir|
       fixtures_dir = File.expand_path("../fixtures", __dir__)
       FileUtils.cp_r(

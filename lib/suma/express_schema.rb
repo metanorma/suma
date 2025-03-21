@@ -49,9 +49,7 @@ module Suma
       # return if File.exist?(filename_plain)
       FileUtils.mkdir_p(File.dirname(filename_plain))
 
-      File.open(filename_plain, "w") do |file|
-        file.write(to_plain)
-      end
+      File.write(filename_plain, to_plain)
     end
   end
 end

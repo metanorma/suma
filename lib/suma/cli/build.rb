@@ -27,7 +27,7 @@ module Suma
 
       unless File.exist?(metanorma_site_manifest)
         raise Errno::ENOENT, "Specified Metanorma site manifest file " \
-          "`#{metanorma_site_manifest}` not found."
+                             "`#{metanorma_site_manifest}` not found."
       end
 
       # Allow errors to propagate
