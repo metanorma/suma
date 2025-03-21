@@ -12,15 +12,23 @@ to build the following artifacts:
 
 * the STEP Resource Library (SRL)
 
+== Features
 
-== Install
+* EXPRESS schema management for STEP standards
+* Document collection building and compilation
+* EXPRESS links validation and extraction
+* Schema listing file generation
+* Integration with the Metanorma ecosystem
+* Progress tracking for schema loading operations
+
+== Installation
 
 [source,sh]
 ----
 $ gem install suma
 ----
 
-== Usage
+== Usage: CLI
 
 === General
 
@@ -30,17 +38,34 @@ $ gem install suma
 $ suma
 Commands:
   suma build METANORMA_SITE_MANIFEST  # Build collection specified in site manifest (`metanorma*.yml`)
+  suma links SUBCOMMAND ...ARGS       # Manage EXPRESS links
   suma help [COMMAND]                 # Describe available commands or one specific command
 ----
 
-Where:
+=== Build command
+
+The `build` command processes a Metanorma site manifest and generates the specified output.
+
+[source,sh]
+----
+$ suma build METANORMA_SITE_MANIFEST [options]
+----
+
+Parameters:
 
 `METANORMA_SITE_MANIFEST`:: This is the path to the Metanorma site manifest,
 typically `metanorma.yml`.
 
+Options:
 
-=== Compilation
+`--[no-]compile`:: Compile or skip compilation of collection (default: true)
+`--schemas-all-path=PATH`, `-s PATH`:: Generate file that contains all schemas in the collection
 
+The generated `schemas-*.yaml` file name is derived from the input file name
+with the word `metanorma` replaced with `schemas`.
+
+[example]
+====
 .To compile SRL subset test collection
 [source,sh]
 ----
@@ -53,31 +78,108 @@ $ bundle exec suma build metanorma-test.yml
 $ bundle exec suma build metanorma-srl.yml
 ----
 
-// .To compile all STEPmod migrated docs (without detached) individually
-// [source,sh]
-// ----
-// $ bundle exec metanorma site generate
-// ----
-
-
-=== Generating full schema listing files
-
-We generate the full schema collection listing using the `--no-compile`
-option in the `suma` command.
-
-The generated `schemas-*.yaml` file name is derived from the input file name
-with the word `metanorma` replaced with `schemas`.
-
+.To generate schema listing without compilation
 [source,sh]
 ----
 $ bundle exec suma build --no-compile metanorma-srl.yml
 # => generates schemas-srl.yml
 ----
+====
 
 All documents need to have a `schemas.yaml` in their document root that lists
 out which schemas the document includes.
 
+=== Links command
 
-== License
+==== General
+
+The `links` command provides utilities for managing EXPRESS links.
+
+==== Extract and validate
+
+Extracts and validates EXPRESS links without creating intermediate files.
+
+[source,sh]
+----
+$ suma links extract_and_validate SCHEMAS_FILE DOCUMENTS_PATH [OUTPUT_FILE]
+----
+
+Parameters:
+
+`SCHEMAS_FILE`:: Path to the schemas file (default: "schemas-srl.yml")
+
+`DOCUMENTS_PATH`:: Path to the documents directory (default: "documents")
+
+`OUTPUT_FILE`:: Path to write validation results (default: "validation_results.txt")
+
+[example]
+====
+.To validate EXPRESS links in documents
+[source,sh]
+----
+$ bundle exec suma links extract_and_validate schemas-srl.yml documents validation_results.txt
+----
+====
+
+This command:
+
+* Loads the schemas specified in the `SCHEMAS_FILE`
+* Searches for EXPRESS links in all AsciiDoc files in the `DOCUMENTS_PATH`
+* Validates these links against the loaded schemas
+* Writes validation results to the `OUTPUT_FILE`
+* Provides progress bars to track schema loading and link validation
+
+
+== Usage: Ruby
+
+=== General
+
+Suma can be used programmatically in your Ruby applications. The following examples demonstrate common usage patterns.
+
+=== Building collections
+
+[source,ruby]
+----
+require 'suma'
+
+# Build a collection with default settings
+Suma::Processor.run(
+  metanorma_yaml_path: "metanorma-srl.yml",
+  schemas_all_path: "schemas-srl.yml",
+  compile: true,
+  output_directory: "_site"
+)
+
+# Generate schema listing without compilation
+Suma::Processor.run(
+  metanorma_yaml_path: "metanorma-srl.yml",
+  schemas_all_path: "schemas-srl.yml",
+  compile: false,
+  output_directory: "_site"
+)
+----
+
+=== Working with schema configurations
+
+[source,ruby]
+----
+require 'suma'
+
+# Load schemas using SchemaConfig
+schemas_file_path = "schemas-srl.yml"
+schemas_config = Suma::SchemaConfig::Config.from_yaml(IO.read(schemas_file_path))
+
+# Set the initial path to resolve relative paths
+schemas_config.set_initial_path(schemas_file_path)
+
+# Access schema information
+schemas_config.schemas.each do |schema|
+  puts "Schema ID: #{schema.id}"
+  puts "Schema path: #{schema.path}"
+end
+----
+
+
+== Copyright and license
 
 Copyright Ribose. BSD 2-clause license.
