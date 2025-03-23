@@ -7,21 +7,14 @@ module Suma
   module Cli
     # Build command for building collections
     class Build < Thor
-      # Return true to exit with non-zero status on errors
-      def self.exit_on_failure?
-        true
-      end
-
-      default_command :default_build
-
-      desc "default_build METANORMA_SITE_MANIFEST",
+      desc "build METANORMA_SITE_MANIFEST",
            "Build collection specified in site manifest (`metanorma*.yml`)"
       option :compile, type: :boolean, default: true,
                        desc: "Compile or skip compile of collection"
       option :schemas_all_path, type: :string, aliases: "-s",
                                 desc: "Generate file that contains all schemas in the collection."
 
-      def default_build(metanorma_site_manifest)
+      def build(metanorma_site_manifest)
         # Lazy-load dependencies only when this command is actually used
         require_relative "../processor"
         require_relative "../utils"

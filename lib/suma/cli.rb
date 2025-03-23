@@ -11,17 +11,21 @@ module Suma
 
       desc "build METANORMA_SITE_MANIFEST",
            "Build collection specified in site manifest (`metanorma*.yml`)"
-      def build(*args)
-        # If no arguments, add an empty array to ensure the default command is triggered
-        args = [] if args.empty?
+      option :compile, type: :boolean, default: true,
+                       desc: "Compile or skip compile of collection"
+      option :schemas_all_path, type: :string, aliases: "-s",
+                                desc: "Generate file that contains all schemas in the collection."
+      def build(_site_manifest)
+        # # If no arguments, add an empty array to ensure the default command is triggered
+        # args = [] if args.empty?
         require_relative "cli/build"
-        Cli::Build.start(args)
+        Cli::Build.start
       end
 
       desc "links SUBCOMMAND ...ARGS", "Manage EXPRESS links"
-      def links(*args)
+      def links(*_args)
         require_relative "cli/links"
-        Cli::Links.start(args)
+        Cli::Links.start
       end
     end
   end
