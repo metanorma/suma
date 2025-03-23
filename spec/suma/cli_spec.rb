@@ -23,7 +23,7 @@ RSpec.describe Suma::Cli do
   describe "Build command" do
     it "builds simple metanorma.yml manifest" do
       require "suma/cli/build"
-      Suma::Cli::Build.start(["default_build", "metanorma.yml"])
+      Suma::Cli::Build.start(["build", "metanorma.yml"])
 
       expect(File.exist?("schemas.yml")).to be true
       expect(File.exist?("collection-output.yaml")).to be true
@@ -34,14 +34,14 @@ RSpec.describe Suma::Cli do
       build = Suma::Cli::Build.new
 
       expect do
-        build.default_build("not-found.yml")
+        build.build("not-found.yml")
       end.to raise_error(Errno::ENOENT)
     end
 
     it "returns non-zero exit code for missing manifest" do
       require "suma/cli/build"
       expect do
-        Suma::Cli::Build.start(%w[default_build not-found.yml])
+        Suma::Cli::Build.start(%w[build not-found.yml])
       end.to raise_error(Errno::ENOENT)
     end
   end
