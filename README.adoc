@@ -130,6 +130,42 @@ This command:
 * Provides progress bars to track schema loading and link validation
 
 
+=== Reformat command
+
+==== General
+
+The `reformat` command provides utilities for reformatting EXPRESS files.
+
+[source,sh]
+----
+$ suma reformat EXPRESS_FILE_PATH [options]
+----
+
+Parameters:
+
+`EXPRESS_FILE_PATH`:: Path to an EXPRESS file or a folder containing EXPRESS
+files
+
+Options:
+
+`--[no-]recursive`:: Select EXPRESS files recursively based on the specified
+folder path (default: false)
+
+[example]
+====
+.To reformat all EXPRESS files under the current directory recursively
+[source,sh]
+----
+$ bundle exec suma reformat `pwd` -r
+----
+====
+
+This command:
+
+* Loads the EXPRESS files specified in the `EXPRESS_FILE_PATH`
+* Reformats and saves the loaded EXPRESS files
+
+
 == Usage: Ruby
 
 === General
