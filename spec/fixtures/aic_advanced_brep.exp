@@ -1,0 +1,393 @@
+(*
+$Id: aic_advanced_brep.exp,v 1.4 2015/06/25 20:04:43 dgnedwards Exp $
+ISO 10303 TC184/SC4/WG12 N0413
+
+EXPRESS Source:
+ISO 10303-514 ed1 Advanced boundary representation - Aic advanced brep
+
+The following permission notice and disclaimer shall be included in all copies of this EXPRESS schema ("the Schema"), 
+and derivations of the Schema:
+
+Copyright ISO 2014  All rights reserved
+Permission is hereby granted, free of charge in perpetuity, to any person obtaining a copy of the Schema,
+to use, copy, modify, merge and distribute free of charge, copies of the Schema for the purposes of developing, 
+implementing, installing and using software based on the Schema, and to permit persons to whom the Schema is furnished to do so, 
+subject to the following conditions:
+
+THE SCHEMA IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, 
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, 
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SCHEMA OR THE 
+USE OR OTHER DEALINGS IN THE SCHEMA.
+
+In addition, any modified copy of the Schema shall include the following notice:
+
+THIS SCHEMA HAS BEEN MODIFIED FROM THE SCHEMA DEFINED IN
+ISO 10303-514 ed1 Advanced boundary representation - Aic advanced brep
+AND SHOULD NOT BE INTERPRETED AS COMPLYING WITH THAT STANDARD
+*)
+
+SCHEMA aic_advanced_brep '{iso standard 10303 part(514) version(1) object(1) aic-advanced-brep(1)}';
+  
+USE FROM aic_topologically_bounded_surface;
+ USE FROM geometry_schema ( cartesian_transformation_operator_3d);
+ USE FROM geometric_model_schema ( manifold_solid_brep, brep_with_voids);
+ REFERENCE FROM geometric_model_schema ( msb_shells);
+ USE FROM topology_schema ( closed_shell, connected_face_set, oriented_closed_shell);
+ USE FROM representation_schema ( mapped_item);
+ USE FROM product_property_representation_schema ( shape_representation);
+  
+ENTITY advanced_brep_shape_representation 
+ SUBTYPE OF ( shape_representation );
+ WHERE 
+WR1 : 
+SIZEOF ( 
+QUERY ( it <* SELF.items| NOT ( SIZEOF ([ 'AIC_ADVANCED_BREP.MANIFOLD_SOLID_BREP', 'AIC_ADVANCED_BREP.FACETED_BREP', 'AIC_ADVANCED_BREP.MAPPED_ITEM', 'AIC_ADVANCED_BREP.AXIS2_PLACEMENT_3D' ] * TYPEOF (it)) = 1) )) = 0;
+WR2 : 
+SIZEOF ( 
+QUERY ( it <* SELF.items| ( SIZEOF ([ 'AIC_ADVANCED_BREP.MANIFOLD_SOLID_BREP', 'AIC_ADVANCED_BREP.MAPPED_ITEM' ] * TYPEOF (it)) = 1) )) > 0;
+WR3 : 
+SIZEOF ( 
+QUERY ( msb <* 
+QUERY ( it <* SELF.items| ('AIC_ADVANCED_BREP.MANIFOLD_SOLID_BREP' IN TYPEOF (it)) )| NOT ( SIZEOF ( 
+QUERY ( csh <* msb_shells(msb)| NOT ( SIZEOF ( 
+QUERY ( fcs <* csh\connected_face_set.cfs_faces| NOT ('AIC_ADVANCED_BREP.ADVANCED_FACE' IN TYPEOF (fcs)) )) = 0) )) = 0) )) = 0;
+WR4 : 
+SIZEOF ( 
+QUERY ( msb <* 
+QUERY ( it <* items| ('AIC_ADVANCED_BREP.MANIFOLD_SOLID_BREP' IN TYPEOF (it)) )| ('AIC_ADVANCED_BREP.ORIENTED_CLOSED_SHELL' IN TYPEOF (msb\manifold_solid_brep.outer)) )) = 0;
+WR5 : 
+SIZEOF ( 
+QUERY ( brv <* 
+QUERY ( it <* items| ('AIC_ADVANCED_BREP.BREP_WITH_VOIDS' IN TYPEOF (it)) )| NOT ( SIZEOF ( 
+QUERY ( csh <* brv\brep_with_voids.voids| csh\oriented_closed_shell.orientation )) = 0) )) = 0;
+WR6 : 
+SIZEOF ( 
+QUERY ( mi <* 
+QUERY ( it <* items| ('AIC_ADVANCED_BREP.MAPPED_ITEM' IN TYPEOF (it)) )| NOT ('AIC_ADVANCED_BREP.ADVANCED_BREP_SHAPE_REPRESENTATION' IN TYPEOF (mi\mapped_item.mapping_source.mapped_representation)) )) = 0;
+ END_ENTITY ;
+END_SCHEMA;
+
+(*"aic_advanced_brep.__published_in"
+ISO 10303-514:1999 ED1
+*)
+
+(*"aic_advanced_brep.__status"
+IS
+*)
+
+(*"aic_advanced_brep.__title"
+advanced_boundary_representation
+*)
+
+(*"aic_advanced_brep.__schema_file"
+data/resource_docs/advanced_boundary_representation/resource.xml
+*)
+
+(*"aic_advanced_brep"
+This clause speciffies the EXPRESS schema that uses elements from the integrated resources
+and contains the types, entity specializations, and functions that are speciffic to this part of
+ISO 10303.
+*)
+
+(*"aic_advanced_brep.__note"
+There may be subtypes and items of select lists that appear in the integrated resources
+that are not imported into the AIC. Constructs are eliminated from the subtype tree or select list
+through the use of the implicit interface rules of ISO 10303-11. References to eliminated constructs
+are outside the scope of the AIC. In some cases, all items of the select list are eliminated. Because
+AICs are intended to be implemented in the context of an application protocol, the items of the
+select list will be deffined by the scope of the application protocol.
+*)
+
+(*"aic_advanced_brep.__note"
+This AIC uses all the entities and types from the topology bounded surface AIC (*aic_topologically_bounded_surface*). ISO 10303-511 should be referred to in order to obtain the
+complete data set.
+*)
+
+(*"aic_advanced_brep.__fund_cons"
+The following entities footnote:[The entities marked [511] are deffined in the aic *topologically_bounded_surface*] are intended to be independently instantiated in the application protocol
+schemas that use this AIC:
+
+- advanced_face [511];
+- axis2_placement_2d [511];
+- axis2_placement_3d [511];
+- brep_with_voids;
+- bezier_curve [511];
+- bezier_surface [511];
+- b_spline_curve_with_knots [511];
+- b_spline_surface_with_knots [511];
+- cartesian_point [511];
+- cartesian_transformation_operator_3d;
+- circle [511];
+- closed_shell;
+- conical_surface [511];
+- deffinitional_representation [511];
+- degenerate_toroidal_surface [511];
+- cylindrical_surface [511];
+- direction [511];
+- edge_curve [511];
+- edge_loop [511];
+- ellipse [511];
+- face_bound [511];
+- face_outer_bound [511];
+- face_surface [511];
+- geometric_representation_context [511];
+- hyperbola [511];
+- line [511];
+- manifold_solid_brep;
+- mapped_item;
+- oriented_closed_shell;
+- parabola [511];
+- parametric_representation_context [511];
+- pcurve [511];
+- plane [511];
+- polyline [511];
+- quasi_uniform_curve [511];
+- quasi_uniform_surface [511];
+- rational_b_spline_curve [511];
+- rational_b_spline_surface [511];
+- representation_map;
+- spherical_surface [511];
+- surface_of_linear_extrusion [511];
+- surface_of_revolution [511];
+- toroidal_surface [511];
+- uniform_curve [511];
+- uniform_surface [511];
+- vector [511];
+- vertex_loop [511];
+- vertex_point [511].
+
+An application protocol that uses this AIC shall ensure that the *shape_representation* entity
+is instantiated as an *advanced_brep_shape_representation*.
+
+*)
+
+(*"aic_advanced_brep.__expressg"
+[[aic_advanced_brep_expg1]]
+[.svgmap]
+====
+image::aic_advanced_brep_expg1.svg[]
+
+* <<express:aic_advanced_brep.advanced_brep_shape_representation>>; 1
+* <<express:geometry_schema.geometric_representation_context>>; 2
+* <<express:representation_schema.parametric_representation_context>>; 3
+* <<express:geometric_model_schema.solid_model>>; 4
+* <<express:geometric_model_schema.manifold_solid_brep>>; 5
+* <<express:geometric_model_schema.faceted_brep>>; 6
+* <<express:geometric_model_schema.brep_with_voids>>; 7
+* <<express:representation_schema.representation_item>>; 8
+* <<express:representation_schema.representation_map>>; 9
+* <<express:representation_schema.mapped_item>>; 10
+* <<express:representation_schema.representation_context>>; 11
+* <<express:representation_schema.representation>>; 12
+* <<express:product_property_representation_schema.shape_representation>>; 13
+* <<express:topology_schema.closed_shell>>; 14
+* <<express:topology_schema.topological_representation_item>>; 15
+* <<express:topology_schema.connected_face_set>>; 16
+* <<express:geometry_schema.geometric_representation_item>>; 17
+* <<express:topology_schema.oriented_closed_shell>>; 18
+* <<express:topology_schema.shell>>; 19
+* <<express:geometry_schema.direction>>; 20
+* <<express:geometry_schema.point>>; 21
+* <<express:geometry_schema.cartesian_point>>; 22
+* <<express:geometry_schema.cartesian_transformation_operator>>; 23
+* <<express:geometry_schema.cartesian_transformation_operator_3d>>; 24
+* <<express:topology_schema.open_shell>>; 25
+====
+*)
+
+(*"aic_advanced_brep.__expressg"
+[[aic_advanced_brep_expg2]]
+[.svgmap]
+====
+image::aic_advanced_brep_expg2.svg[]
+
+* <<express:topology_schema.advanced_face>>; 1
+* <<express:topology_schema.face_surface>>; 2
+* <<express:topology_schema.oriented_face>>; 3
+* <<express:topology_schema.face>>; 4
+* <<express:topology_schema.face_bound>>; 5
+* <<express:topology_schema.face_outer_bound>>; 6
+* <<express:topology_schema.loop>>; 7
+* <<express:topology_schema.path>>; 8
+* <<express:topology_schema.oriented_edge>>; 9
+* <<express:topology_schema.edge_loop>>; 10
+* <<express:topology_schema.vertex_loop>>; 11
+* <<express:topology_schema.vertex>>; 12
+* <<express:topology_schema.edge>>; 13
+* <<express:topology_schema.vertex_point>>; 14
+* <<express:topology_schema.edge_curve>>; 15
+====
+*)
+
+(*"aic_advanced_brep.__expressg"
+[[aic_advanced_brep_expg3]]
+[.svgmap]
+====
+image::aic_advanced_brep_expg3.svg[]
+
+* <<express:geometry_schema.surface>>; 1
+* <<express:geometry_schema.swept_surface>>; 2
+* <<express:geometry_schema.bounded_surface>>; 3
+* <<express:geometry_schema.surface_of_linear_extrusion>>; 4
+* <<express:geometry_schema.surface_of_revolution>>; 5
+* <<express:geometry_schema.placement>>; 6
+* <<express:geometry_schema.axis1_placement>>; 7
+* <<express:geometry_schema.axis2_placement_3d>>; 8
+* <<express:geometry_schema.axis2_placement_2d>>; 9
+
+====
+*)
+
+(*"aic_advanced_brep.__expressg"
+[[aic_advanced_brep_expg4]]
+[.svgmap]
+====
+image::aic_advanced_brep_expg4.svg[]
+
+* <<express:geometry_schema.curve>>; 1
+* <<express:geometry_schema.polyline>>; 2
+* <<express:geometry_schema.line>>; 3
+* <<express:geometry_schema.vector>>; 4
+* <<express:geometry_schema.pcurve>>; 5
+* <<express:geometry_schema.conic>>; 6
+* <<express:geometry_schema.axis2_placement>>; 7
+* <<express:representation_schema.definitional_representation>>; 8
+* <<express:geometry_schema.circle>>; 9
+* <<express:geometry_schema.ellipse>>; 10
+* <<express:geometry_schema.parabola>>; 11
+* <<express:geometry_schema.hyperbola>>; 12
+* <<express:geometry_schema.bounded_curve>>; 13
+====
+*)
+
+(*"aic_advanced_brep.__expressg"
+[[aic_advanced_brep_expg5]]
+[.svgmap]
+====
+image::aic_advanced_brep_expg5.svg[]
+
+* <<express:geometry_schema.elementary_surface>>; 1
+* <<express:geometry_schema.plane>>; 2
+* <<express:geometry_schema.conical_surface>>; 3
+* <<express:geometry_schema.spherical_surface>>; 4
+* <<express:geometry_schema.cylindrical_surface>>; 5
+* <<express:geometry_schema.toroidal_surface>>; 6
+* <<express:geometry_schema.degenerate_toroidal_surface>>; 7
+====
+*)
+
+(*"aic_advanced_brep.__expressg"
+[[aic_advanced_brep_expg6]]
+[.svgmap]
+====
+image::aic_advanced_brep_expg6.svg[]
+
+* <<express:geometry_schema.cartesian_point>>; 1
+* <<express:geometry_schema.b_spline_curve>>; 2
+* <<express:geometry_schema.b_spline_curve_form>>; 3
+* <<express:geometry_schema.rational_b_spline_curve>>; 4
+* <<express:geometry_schema.b_spline_curve_with_knots>>; 5
+* <<express:geometry_schema.uniform_curve>>; 6
+* <<express:geometry_schema.quasi_uniform_curve>>; 7
+* <<express:geometry_schema.bezier_curve>>; 8
+* <<express:geometry_schema.knot_type>>; 9
+====
+*)
+
+(*"aic_advanced_brep.__expressg"
+[[aic_advanced_brep_expg7]]
+[.svgmap]
+====
+image::aic_advanced_brep_expg7.svg[]
+
+* <<express:geometry_schema.cartesian_point>>; 1
+* <<express:geometry_schema.b_spline_surface>>; 2
+* <<express:geometry_schema.b_spline_surface_form>>; 3
+* <<express:geometry_schema.rational_b_spline_surface>>; 4
+* <<express:geometry_schema.b_spline_surface_with_knots>>; 5
+* <<express:geometry_schema.uniform_surface>>; 6
+* <<express:geometry_schema.quasi_uniform_surface>>; 7
+* <<express:geometry_schema.bezier_surface>>; 8
+* <<express:geometry_schema.knot_type>>; 9
+====
+*)
+
+(*"aic_advanced_brep.__expressg"
+[[aic_advanced_brep_expg8]]
+[.svgmap]
+====
+image::aic_advanced_brep_expg8.svg[]
+
+* <<express:geometry_schema.composite_curve>>; 1
+* <<express:geometry_schema.composite_curve_on_surface>>; 2
+* <<express:representation_schema.founded_item>>; 3
+* <<express:geometry_schema.composite_curve_segment>>; 4
+* <<express:geometry_schema.surface_curve>>; 5
+====
+*)
+
+(*"aic_advanced_brep.advanced_brep_shape_representation"
+The *advanced_brep_shape_representation* is a type of *shape_representation* in which the
+representation items are specialisations of *manifold_solid_brep* entities. These specialisations
+differ from the more general B-rep in that they shall only use explicit geometric forms for their
+face and edge geometry. The face geometry is restricted to elementary surfaces, swept surfaces
+or B-spline surfaces.
+
+*)
+
+(*"aic_advanced_brep.advanced_brep_shape_representation.wr:WR1"
+the items attribute of the *representation* supertype shall contain **manifold_solid_brep**s, **mapped_item**s and *axis2_placement_3ds* only; a *faceted_brep* is excluded from the
+items SET since this would be of type *faceted_brep* and of type *manifold_solid_brep*;
+*)
+
+(*"aic_advanced_brep.advanced_brep_shape_representation.wr:WR2"
+at least one item in the *items* set shall be a *manifold_solid_brep* entity or a *mapped_item* (see also WR6).
+*)
+
+(*"aic_advanced_brep.advanced_brep_shape_representation.wr:WR3"
+for each *manifold_solid_brep* in the *items* set each face shall be an advanced face.
+This ensures that the following conditions are met:
+
+- each *face* is a *face_surface*;
+- each *face_surface* has its geometry deffined by an *elementary_surface*, *swept_surface*
+or a *b_spline_surface*;
+- the **edge**s used to deffine the boundaries of the *face* shall all reference an *edge_curve*;
+- each curve used to deffine the geometry of the faces and face bounds shall be either a *conic*,
+or a *line* or a *polyline* or a *b_spline_curve*;
+- the edges used to deffine the *face* boundaries shall all be trimmed by vertices of type
+*vertex_point*;
+- no loop used to deffine a *face_bound* shall be of the oriented subtype.
++
+--
+NOTE: The call to function *msb_shells* in WR3 is correct since, although the generic type of
+the argument `msb' is *representation_item*, `msb' has been selected by QUERY to be of type
+*manifold_solid_brep*.
+--
+
+*)
+
+(*"aic_advanced_brep.advanced_brep_shape_representation.wr:WR4"
+For each *manifold_solid_brep* in the *items* set the outer shell attribute shall not be
+of the oriented subtype.
+*)
+
+(*"aic_advanced_brep.advanced_brep_shape_representation.wr:WR5"
+If a **brep_with_void**s is included in the *items* set then each shell in the *voids* set shall
+be an *oriented_closed_shell* with orientation value FALSE.
+*)
+
+(*"aic_advanced_brep.advanced_brep_shape_representation.wr:WR6"
+If a *mapped_item* is included in the *items* set then the *mapped_representation* of
+the *mapping_source* attribute shall be an *advanced_brep_shape_representation*.
+*)
+
+(*"aic_advanced_brep.advanced_brep_shape_representation.wr:WR6.__note"
+If a *cartesian_transformation_operator_3d* is included as
+*mapped_item.mapping_target* with an *axis2_placement_3d* corresponding to the original
+coordinate system as *mapped_representation.mapping_origin* then the resulting *mapped_item*
+is a transformed copy of the *advanced_brep_shape_representation*. The precise deffinition of the
+transformation, including translation, rotation, scaling and, if appropriate, mirroring, is given by
+the transformation operator.
+*)
