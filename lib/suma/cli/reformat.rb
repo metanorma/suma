@@ -59,14 +59,21 @@ module Suma
 
         if comments.count.positive?
           content_without_comments = file_content.gsub(/\(\*".*?\n\*\)/m, "")
-            .strip
 
           # remove extra newlines
           new_content = content_without_comments.gsub(/(\n\n+)/, "\n\n")
           # Add '(*"' and '\n*)' to enclose the comment block
           new_comments = comments.map { |c| "(*\"#{c}\n*)" }.join("\n\n")
-          # Append the remaining comments to the bottom
+          # Append the comments to the end of the file
           new_content = "#{new_content}\n\n#{new_comments}\n"
+
+          # Compare the changes between the original content with the modified
+          # content, if the changes are just whitespaces, skip modifying the
+          # file
+          if file_content.gsub(/(\n+)/, "\n") == new_content.gsub(/(\n+)/, "\n")
+            puts "No changes made to #{file}"
+            return
+          end
 
           # Write the modified content to a new file
           File.write(file, new_content)
