@@ -27,6 +27,16 @@ module Suma
         require_relative "cli/links"
         Cli::Links.start
       end
+
+      desc "reformat EXPRESS_FILE_PATH",
+           "Reformat EXPRESS files"
+      option :recursive, type: :boolean, default: false, aliases: "-r",
+                         desc: "Reformat EXPRESS files under the specified " \
+                               "path recursively"
+      def reformat(_express_file_path)
+        require_relative "cli/reformat"
+        Cli::Reformat.start
+      end
     end
   end
 end
