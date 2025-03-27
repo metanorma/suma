@@ -75,11 +75,14 @@ module Suma
             return
           end
 
-          # Write the modified content to a new file
-          File.write(file, new_content)
-
-          puts "Reformatted EXPRESS file and saved to #{file}"
+          update_exp(file, new_content)
         end
+      end
+
+      def update_exp(file, content)
+        # Write the modified content to a new file
+        File.write(file, content)
+        puts "Reformatted EXPRESS file and saved to #{file}"
       end
     end
   end
