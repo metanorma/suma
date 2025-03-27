@@ -271,9 +271,9 @@ module Suma
             column = line.index(match)
 
             # Process each character in the sequence
-            char_details = match.chars.map do |c|
+            char_details = match.chars.filter_map do |c|
               process_non_ascii_char(c)
-            end.compact
+            end
 
             # Skip if no non-ASCII characters found
             next if char_details.empty?
