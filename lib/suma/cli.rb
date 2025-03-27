@@ -37,6 +37,18 @@ module Suma
         require_relative "cli/reformat"
         Cli::Reformat.start
       end
+
+      desc "validate-ascii EXPRESS_FILE_PATH",
+           "Validate EXPRESS files for ASCII-only content"
+      option :recursive, type: :boolean, default: false, aliases: "-r",
+                         desc: "Validate EXPRESS files under the specified " \
+                               "path recursively"
+      option :yaml, type: :boolean, default: false, aliases: "-y",
+                    desc: "Output results in YAML format"
+      def validate_ascii(_express_file_path)
+        require_relative "cli/validate_ascii"
+        Cli::ValidateAscii.start
+      end
     end
   end
 end
