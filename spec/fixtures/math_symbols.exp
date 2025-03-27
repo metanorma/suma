@@ -1,0 +1,12 @@
+SCHEMA test_schema;
+
+  ENTITY mathematical_symbols;
+    pi_value     : STRING; -- π symbol
+    lambda_value : STRING; -- λ symbol
+    theta_value  : STRING; -- θ symbol
+    le_operator  : STRING; -- ≤ operator
+    division     : STRING; -- ÷ operator
+    japanese     : STRING; -- 神戸 Japanese characters
+  END_ENTITY;
+
+END_SCHEMA;
