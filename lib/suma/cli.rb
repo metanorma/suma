@@ -2,6 +2,7 @@
 
 require "thor"
 require_relative "thor_ext"
+require_relative "cli/validate"
 
 module Suma
   module Cli
@@ -22,12 +23,6 @@ module Suma
         Cli::Build.start
       end
 
-      desc "links SUBCOMMAND ...ARGS", "Manage EXPRESS links"
-      def links(*_args)
-        require_relative "cli/links"
-        Cli::Links.start
-      end
-
       desc "reformat EXPRESS_FILE_PATH",
            "Reformat EXPRESS files"
       option :recursive, type: :boolean, default: false, aliases: "-r",
@@ -38,16 +33,11 @@ module Suma
         Cli::Reformat.start
       end
 
-      desc "validate-ascii EXPRESS_FILE_PATH",
-           "Validate EXPRESS files for ASCII-only content"
-      option :recursive, type: :boolean, default: false, aliases: "-r",
-                         desc: "Validate EXPRESS files under the specified " \
-                               "path recursively"
-      option :yaml, type: :boolean, default: false, aliases: "-y",
-                    desc: "Output results in YAML format"
-      def validate_ascii(_express_file_path)
-        require_relative "cli/validate_ascii"
-        Cli::ValidateAscii.start
+      desc "validate SUBCOMMAND ...ARGS", "Validate express documents"
+      subcommand "validate", Cli::Validate
+      
+      def self.exit_on_failure?
+        true
       end
     end
   end
