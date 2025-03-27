@@ -37,11 +37,10 @@ $ gem install suma
 # Defaults to `suma help`
 $ suma
 Commands:
-  suma build METANORMA_SITE_MANIFEST  # Build collection specified in site manifest (`metanorma*.yml`)
-  suma links SUBCOMMAND ...ARGS       # Manage EXPRESS links
-  suma validate-ascii EXPRESS_FILE_PATH  # Validate EXPRESS files for ASCII-only content
-  suma reformat EXPRESS_FILE_PATH     # Reformat EXPRESS files
-  suma help [COMMAND]                 # Describe available commands or one specific command
+  suma build METANORMA_SITE_MANIFEST      # Build collection specified in site manifest (`metanorma*.yml`)
+  suma reformat EXPRESS_FILE_PATH         # Reformat EXPRESS files
+  suma validate SUBCOMMAND ...ARGS        # Validate express documents
+  suma help [COMMAND]                     # Describe available commands or one specific command
 ----
 
 === Build command
@@ -91,19 +90,28 @@ $ bundle exec suma build --no-compile metanorma-srl.yml
 All documents need to have a `schemas.yaml` in their document root that lists
 out which schemas the document includes.
 
-=== Links command
+=== Validate command
 
 ==== General
 
-The `links` command provides utilities for managing EXPRESS links.
-
-==== Extract and validate
-
-Extracts and validates EXPRESS links without creating intermediate files.
+The `validate` command groups various validation utilities for EXPRESS documents.
 
 [source,sh]
 ----
-$ suma links extract_and_validate SCHEMAS_FILE DOCUMENTS_PATH [OUTPUT_FILE]
+$ suma validate SUBCOMMAND [options]
+----
+
+Subcommands:
+- `links` - Validate EXPRESS links
+- `ascii` - Check for non-ASCII characters in EXPRESS files
+
+==== Links subcommand
+
+The `links` subcommand extracts and validates EXPRESS links without creating intermediate files.
+
+[source,sh]
+----
+$ suma validate links SCHEMAS_FILE DOCUMENTS_PATH [OUTPUT_FILE]
 ----
 
 Parameters:
@@ -119,7 +127,7 @@ Parameters:
 .To validate EXPRESS links in documents
 [source,sh]
 ----
-$ bundle exec suma links extract_and_validate schemas-srl.yml documents validation_results.txt
+$ bundle exec suma validate links schemas-srl.yml documents validation_results.txt
 ----
 ====
 
@@ -168,15 +176,13 @@ This command:
 * Reformats and saves the loaded EXPRESS files
 
 
-=== Validate-ASCII command
+==== ASCII subcommand
 
-==== General
-
-The `validate-ascii` command detects non-ASCII characters in EXPRESS files and reports on those exact lines, providing replacement suggestions.
+The `ascii` subcommand detects non-ASCII characters in EXPRESS files and reports on those exact lines, providing replacement suggestions.
 
 [source,sh]
 ----
-$ suma validate-ascii EXPRESS_FILE_PATH [options]
+$ suma validate ascii EXPRESS_FILE_PATH [options]
 ----
 
 Parameters:
@@ -195,13 +201,13 @@ folder path (default: false)
 .To validate all EXPRESS files in a specific directory recursively
 [source,sh]
 ----
-$ bundle exec suma validate-ascii ../iso-10303/schemas -r
+$ bundle exec suma validate ascii ../iso-10303/schemas -r
 ----
 
 .To validate and output results in YAML format
 [source,sh]
 ----
-$ bundle exec suma validate-ascii ../iso-10303/schemas -r -y > validation.yml
+$ bundle exec suma validate ascii ../iso-10303/schemas -r -y > validation.yml
 ----
 ====
 

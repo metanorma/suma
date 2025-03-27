@@ -5,8 +5,8 @@ require_relative "../utils"
 
 module Suma
   module Cli
-    # Links command for managing EXPRESS links
-    class Links < Thor
+    # ValidateLinks command for managing EXPRESS links
+    class ValidateLinks < Thor
       desc "extract_and_validate SCHEMAS_FILE DOCUMENTS_PATH [OUTPUT_FILE]",
            "Extract and validate express links without creating intermediate file"
       def extract_and_validate(schemas_file = "schemas-srl.yml",
