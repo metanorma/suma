@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "utils"
+require_relative "schema_cache"
 require "fileutils"
 require "expressir"
 
@@ -28,8 +29,16 @@ module Suma
     def parsed
       return @parsed if @parsed
 
-      @parsed = Expressir::Express::Parser.from_file(@path.to_s)
-      Utils.log "Loaded EXPRESS schema: #{path}"
+      schema_content = File.read(@path.to_s)
+      cache_key = Digest::SHA256.hexdigest(schema_content)
+      @@cache ||= SchemaCache.new
+      if (@parsed = @@cache.cache_get(cache_key))
+        Utils.log "Loaded EXPRESS schema from cache"
+      else
+        @parsed = Expressir::Express::Parser.from_file(@path.to_s)
+        Utils.log "Loaded EXPRESS schema: #{path}"
+        @@cache.cache_put(cache_key, @parsed)
+      end
       @id = @parsed.schemas.first.id
       @parsed
     end
