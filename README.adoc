@@ -90,6 +90,39 @@ $ bundle exec suma build --no-compile metanorma-srl.yml
 All documents need to have a `schemas.yaml` in their document root that lists
 out which schemas the document includes.
 
+=== Reformat command
+
+The `reformat` command provides utilities for reformatting EXPRESS files.
+
+[source,sh]
+----
+$ suma reformat EXPRESS_FILE_PATH [options]
+----
+
+Parameters:
+
+`EXPRESS_FILE_PATH`:: Path to an EXPRESS file or a folder containing EXPRESS
+files
+
+Options:
+
+`--[no-]recursive`, `-r`:: Select EXPRESS files recursively based on the specified
+folder path (default: false)
+
+[example]
+====
+.To reformat all EXPRESS files under the current directory recursively
+[source,sh]
+----
+$ bundle exec suma reformat `pwd` -r
+----
+====
+
+This command:
+
+* Loads the EXPRESS files specified in the `EXPRESS_FILE_PATH`
+* Reformats and saves the loaded EXPRESS files
+
 === Validate command
 
 ==== General
@@ -138,43 +171,6 @@ This command:
 * Validates these links against the loaded schemas
 * Writes validation results to the `OUTPUT_FILE`
 * Provides progress bars to track schema loading and link validation
-
-
-=== Reformat command
-
-==== General
-
-The `reformat` command provides utilities for reformatting EXPRESS files.
-
-[source,sh]
-----
-$ suma reformat EXPRESS_FILE_PATH [options]
-----
-
-Parameters:
-
-`EXPRESS_FILE_PATH`:: Path to an EXPRESS file or a folder containing EXPRESS
-files
-
-Options:
-
-`--[no-]recursive`:: Select EXPRESS files recursively based on the specified
-folder path (default: false)
-
-[example]
-====
-.To reformat all EXPRESS files under the current directory recursively
-[source,sh]
-----
-$ bundle exec suma reformat `pwd` -r
-----
-====
-
-This command:
-
-* Loads the EXPRESS files specified in the `EXPRESS_FILE_PATH`
-* Reformats and saves the loaded EXPRESS files
-
 
 ==== ASCII subcommand
 
@@ -242,13 +238,13 @@ Human-readable output format example:
                                        ^^^^^
       "é" - Hex: 0xe9, UTF-8 bytes: 0xc3 0xa9
       Replacement: ISO 10303-11: "000000E9"
-      
+
       "s" - Hex: 0x73, UTF-8 bytes: 0x73
-      
+
       "u" - Hex: 0x75, UTF-8 bytes: 0x75
-      
+
       "m" - Hex: 0x6d, UTF-8 bytes: 0x6d
-      
+
       "é" - Hex: 0xe9, UTF-8 bytes: 0xc3 0xa9
       Replacement: ISO 10303-11: "000000E9"
 
@@ -257,7 +253,7 @@ Human-readable output format example:
 Summary:
   Scanned 3 EXPRESS file(s)
   Found 1 non-ASCII sequence(s) in 1 file(s)
-  
+
 +------------------+--------------------+-----------------------------+-------------+
 |       File       |       Symbol       |        Replacement          | Occurrences |
 +------------------+--------------------+-----------------------------+-------------+
