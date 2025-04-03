@@ -35,7 +35,7 @@ module Suma
 
       desc "validate SUBCOMMAND ...ARGS", "Validate express documents"
       subcommand "validate", Cli::Validate
-      
+
       def self.exit_on_failure?
         true
       end
