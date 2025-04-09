@@ -29,10 +29,9 @@ module Suma
     end
 
     def process_schemas(schemas, klass)
-      tasks = schemas.map do |s|
-        -> { process_schema(s, klass) }
+      schemas.map do |s|
+        process_schema(s, klass)
       end
-      run_tasks(tasks, "process_schemas")
     end
 
     def process_schema(config_schema, klass)
