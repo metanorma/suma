@@ -24,15 +24,11 @@ output_directory: "_site")
           nil
         end
 
-        before = Time.now
         Utils.log "Compiling schema collection..."
         compile_schema(schemas_all_path, collection_config)
-        Utils.log "Compiled schema collection in #{Time.now - before}"
 
-        before = Time.now
         Utils.log "Compiling complete collection..."
         compile_collection(collection_config, output_directory)
-        Utils.log "Compiled complete collection in #{Time.now - before}"
       end
       # rubocop:enable Metrics/MethodLength
 

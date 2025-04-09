@@ -5,7 +5,6 @@ require_relative "schema_attachment"
 require_relative "schema_document"
 require_relative "schema_config"
 require_relative "utils"
-require_relative "worker_pool"
 
 module Suma
   class SchemaCollection
@@ -29,10 +28,9 @@ module Suma
     end
 
     def process_schemas(schemas, klass)
-      tasks = schemas.map do |s|
-        -> { process_schema(s, klass) }
+      schemas.each do |config_schema|
+        process_schema(config_schema, klass)
       end
-      run_tasks(tasks, "process_schemas")
     end
 
     def process_schema(config_schema, klass)
@@ -66,17 +64,13 @@ module Suma
 
     def compile
       finalize
-
-      tasks = schemas.map do |_schema_id, entry|
-        -> { entry.save_exp }
+      schemas.each_pair do |_schema_id, entry|
+        entry.save_exp
       end
-      run_tasks(tasks, "compile_schema")
 
-      tasks = docs.map do |_schema_id, entry|
-        -> { entry.compile }
+      docs.each_pair do |_schema_id, entry|
+        entry.compile
       end
-      run_tasks(tasks, "compile_docs")
-
 
       # TODO: make this parallel
       # Utils.log"Starting Ractor processing"
@@ -103,23 +97,6 @@ module Suma
       #   results << Ractor.select(*workers)
       # end
       # pp results
-    end
-
-    private
-
-    def run_tasks(tasks, name)
-      workers = ENV["METANORMA_PARALLEL"]&.to_i || 0
-      if workers > 0
-        # TODO: handle errors
-        puts "Starting #{tasks.length} #{name} tasks with #{workers} workers..."
-        before = Time.now
-        pool = ::Metanorma::Util::WorkersPool.new(workers)
-        tasks.each { |task| pool.schedule(&task) }
-        pool.shutdown
-        puts "Completed #{tasks.length} #{name} tasks in #{Time.now - before} seconds"
-      else
-        tasks.each(&:call)
-      end
     end
   end
 end
