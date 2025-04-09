@@ -113,7 +113,7 @@ module Suma
         # TODO: handle errors
         puts "Starting #{tasks.length} #{name} tasks with #{workers} workers..."
         before = Time.now
-        pool = ::Metanorma::Util::WorkersPool.new(workers)
+        pool = Suma::Util::WorkersPool.new(workers)
         tasks.each { |task| pool.schedule(&task) }
         pool.shutdown
         puts "Completed #{tasks.length} #{name} tasks in #{Time.now - before} seconds"
