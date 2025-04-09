@@ -100,9 +100,10 @@ module Suma
 
       relative_path = Pathname.new(filename_adoc).relative_path_from(Dir.pwd)
       Utils.log "Compiling schema (id: #{id}, type: #{self.class}) => #{relative_path}"
+      before = Time.new
       Metanorma::Compile.new.compile(filename_adoc, agree_to_terms: true,
                                                     install_fonts: false)
-      Utils.log "Compiling schema (id: #{id}, type: #{self.class}) => #{relative_path}... done!"
+      Utils.log "Compiling schema (id: #{id}, type: #{self.class}) => #{relative_path}... done in #{(Time.now - before).round(2)}!"
 
       # clean_artifacts
 
