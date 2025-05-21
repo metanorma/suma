@@ -14,8 +14,8 @@ module Suma
     def self.preprocess_yaml(file)
         yaml = YAML.safe_load(file)
         flavor = yaml["directives"]&.detect { |x| x.is_a?(Hash) && x.has_key?("flavor") }
-          &.dig("flavor")&.upcase or return
-        yaml["bibdata"] or return 
+          &.dig("flavor")&.upcase or return file
+        yaml["bibdata"] or return file
         yaml["bibdata"]["ext"] ||= {}
         yaml["bibdata"]["ext"]["flavor"] ||= flavor
         yaml.to_yaml
