@@ -89,7 +89,7 @@ output_directory: "_site")
         collection_opts = {
           output_folder: output_directory,
           compile: { install_fonts: false },
-          coverpage: "cover.html",
+          coverpage: collection_config.coverpage || "cover.html",
         }
         [collection, collection_opts]
       end
