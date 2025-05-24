@@ -19,7 +19,7 @@ module Suma
         #yaml["bibdata"]["ext"] ||= {}
         #yaml["bibdata"]["ext"]["flavor"] ||= flavor
         #yaml.to_yaml
-      yaml
+      file
       end
 
     def self.from_file(path)
