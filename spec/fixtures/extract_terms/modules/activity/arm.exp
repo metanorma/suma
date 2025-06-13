@@ -1,0 +1,186 @@
+(*
+ISO TC184/SC4/WG12 N2941 - ISO/TS 10303-1047 Activity - EXPRESS ARM
+*)
+
+
+SCHEMA Activity_arm '{ iso standard 10303 part(1047) version(3) schema(1) activity-arm(1) }';
+
+USE FROM Activity_method_arm;    -- ISO/TS 10303-1049
+
+
+TYPE activity_item = EXTENSIBLE GENERIC_ENTITY SELECT;
+END_TYPE;
+
+ENTITY Activity;
+  id : STRING;
+  name : STRING;
+  description : OPTIONAL STRING;
+  chosen_method : Activity_method;
+END_ENTITY;
+
+ENTITY Activity_relationship;
+  name : STRING;
+  description : OPTIONAL STRING;
+  relating_activity : Activity;
+  related_activity : Activity;
+END_ENTITY;
+
+ENTITY Activity_status;
+  assigned_activity : Activity;
+  status : STRING;
+END_ENTITY;
+
+ENTITY Applied_activity_assignment;
+  assigned_activity : Activity;
+  items : SET[1:?] OF activity_item;
+  role : STRING;
+END_ENTITY;
+
+END_SCHEMA;  -- Activity_arm
+
+
+(*"Activity_arm.__published_in"
+ISO 10303-1047:2014 ED3
+*)
+
+(*"Activity_arm.__identifier"
+ISO/TC 184/SC 4/WG 12 N2941
+*)
+
+(*"Activity_arm.__status"
+TS
+*)
+
+(*"Activity_arm.__title"
+activity
+*)
+
+
+(*"Activity_arm.Activity"
+An **Activity** is the identification of the occurrence of an action that has taken place, is taking place, or is expected to take place in the future. The procedure executed during that **Activity** is identified with the <<express:Activity_method_arm.Activity_method,Activity_method>> that is referred to by the **chosen_method** attribute.
+*)
+
+(*"Activity_arm.Activity.__example"
+Change, distilling, design, a process to drill a hole, and a task such as training someone, are examples of activities.
+*)
+
+(*"Activity_arm.Activity.__note"
+Status information identifying the level of completion of each activity may be provided within an instance of <<express:Activity_arm.Activity_status,Activity_status>>.
+*)
+
+(*"Activity_arm.Activity.__note"
+The items that are affected by an *Activity*, for example as input or output, may be identified within an instance of <<express:Activity_arm.Applied_activity_assignment,Applied_activity_assignment>>.
+*)
+
+(*"Activity_arm.Activity.id"
+the identifier that distinguishes the **Activity**.
+*)
+
+
+(*"Activity_arm.Activity.name"
+the words by which the **Activity** is known.
+*)
+
+
+(*"Activity_arm.Activity.description"
+the text that provides further information about the **Activity**. The value of the attribute need not be specified.
+*)
+
+
+(*"Activity_arm.Activity.chosen_method"
+the <<express:Activity_method_arm.Activity_method,Activity_method>> that specifies the approach selected to carry out the **Activity**.
+*)
+
+
+(*"Activity_arm.Activity_relationship"
+An **Activity_relationship** is a relationship between two instances of <<express:Activity_arm.Activity,Activity>>.
+*)
+
+(*"Activity_arm.Activity_relationship.__example"
+The activity required to complete a work order, may be decomposed into a series of activities. Their corresponding instances would be related using instances of the *Activity_relationship* entity.
+*)
+
+(*"Activity_arm.Activity_relationship.description"
+the text that provides further information about the **Activity_relationship**. The value of the attribute need not be specified.
+*)
+
+
+(*"Activity_arm.Activity_relationship.name"
+the words by which the **Activity_relationship** is known.
+*)
+
+
+(*"Activity_arm.Activity_relationship.related_activity"
+the second instance of <<express:Activity_arm.Activity,Activity>> that is part of the relationship.
+*)
+
+
+(*"Activity_arm.Activity_relationship.related_activity.__note"
+The *related_activity* usually identifies the <<express:Activity_arm.Activity,Activity>>, which is based on the definition of the *relating_activity*.
+*)
+
+(*"Activity_arm.Activity_relationship.related_activity.__note"
+The meaning of this attribute is defined by the *name* attribute.
+*)
+
+(*"Activity_arm.Activity_relationship.relating_activity"
+the first of the instances of <<express:Activity_arm.Activity,Activity>> that is part of the relationship.
+*)
+
+
+(*"Activity_arm.Activity_relationship.relating_activity.__note"
+The *relating_activity* usually identifies the activity the definition of the *related_activity* is based on, for example, derived from or dependent on.
+*)
+
+(*"Activity_arm.Activity_relationship.relating_activity.__note"
+The meaning of this attribute is defined by the *name* attribute.
+*)
+
+(*"Activity_arm.Activity_status"
+An **Activity_status** is the assignment of a status to an <<express:Activity_arm.Activity,Activity>> .
+*)
+
+
+(*"Activity_arm.Activity_status.assigned_activity"
+the <<express:Activity_arm.Activity,Activity>> to which the **Activity_status** applies.
+*)
+
+
+(*"Activity_arm.Activity_status.status"
+the label that provides a user interpretable designation for the level of completion of the <<express:Activity_arm.Activity,Activity>>.
+*)
+
+
+(*"Activity_arm.Applied_activity_assignment"
+An **Applied_activity_assignment** is an association of an <<express:Activity_arm.Activity,Activity>> with product or activity data. It characterizes the role of the concepts represented with these data with respect to the activity.
+*)
+
+
+(*"Activity_arm.Applied_activity_assignment.__note"
+This entity should not be used to represent the association of an activity with the organizations that are responsible for its execution or its management. That kind of information can be represented with instances of <<express:Person_organization_assignment_arm.Organization_or_person_in_organization_assignment,Organization_or_person_in_organization_assignment>> .
+*)
+
+(*"Activity_arm.Applied_activity_assignment.assigned_activity"
+the <<express:Activity_arm.Activity,Activity>> that is considered.
+*)
+
+
+(*"Activity_arm.Applied_activity_assignment.items"
+the set of <<express:Activity_arm.activity_item,activity_item>> that are associated with the **assigned_activity**.
+*)
+
+
+(*"Activity_arm.Applied_activity_assignment.role"
+the text that specifies the purpose of the association of the **Applied_activity_assignment** with product or activity data.
+
+Where applicable, the following values shall be used for role:
+
+* 'input': the concepts represented by the items are inputs of the Activity;
+* 'output': the concepts represented by the items result from the Activity;
+* 'constraint': the concepts represented by the items influence the execution of the Activity.
+*)
+
+
+(*"Activity_arm.__schema_file"
+data/modules/activity/module.xml
+*)
