@@ -157,9 +157,9 @@ RSpec.describe Suma::Cli::GenerateSchemas do
       expect(result).to eq(result_without_options)
     end
 
-    it "generate_schemas METANORMA_YAML_FILE with options `exclude_lf: true`" do
+    it "generate_schemas METANORMA_YAML_FILE with options `exclude_paths: *_lf.exp`" do
       result = test_subject.invoke(
-        :generate_schemas, [metanorma_file_path], { exclude_lf: true }
+        :generate_schemas, [metanorma_file_path], { exclude_paths: "*_lf.exp" }
       )
       expect(result).to eq(result_with_options)
     end

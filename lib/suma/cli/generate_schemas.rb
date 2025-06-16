@@ -13,8 +13,9 @@ module Suma
                       desc: "Write SCHEMAS YAML file (schemas-smrl-all.yml) " \
                             "in working directory or " \
                             "run in dry-run mode if not specified"
-      option :exclude_lf, type: :boolean, default: false, aliases: "-e",
-                          desc: "Exclude schemas with names like `*_lf.exp`"
+      option :exclude_paths, type: :string, default: nil, aliases: "-e",
+                             desc: "Exclude schemas paths by pattern " \
+                                   "(e.g. `*_lf.exp`)"
 
       def generate_schemas(metanorma_file_path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
         metanorma_file_path = File.expand_path(metanorma_file_path)
@@ -42,17 +43,17 @@ module Suma
 
         run(
           metanorma_file_path,
-          exclude_lf: options[:exclude_lf], output: options[:output],
+          exclude_paths: options[:exclude_paths], output: options[:output],
         )
       end
 
       private
 
-      def run(metanorma_file_path, exclude_lf: false, output: nil)
+      def run(metanorma_file_path, exclude_paths: nil, output: nil)
         metanorma_data = load_yaml(metanorma_file_path)
         collection_files = metanorma_data["metanorma"]["source"]["files"]
         manifest_files = load_manifest_files(collection_files)
-        all_schemas = load_project_schemas(manifest_files, exclude_lf)
+        all_schemas = load_project_schemas(manifest_files, exclude_paths)
         all_schemas["schemas"] = all_schemas["schemas"].sort.to_h
         output_data(all_schemas, output)
       end
@@ -88,7 +89,7 @@ module Suma
         manifest_files.flatten
       end
 
-      def load_project_schemas(manifest_files, exclude_lf) # rubocop:disable Metrics/AbcSize
+      def load_project_schemas(manifest_files, exclude_paths) # rubocop:disable Metrics/AbcSize
         all_schemas = { "schemas" => {} }
 
         manifest_files.each do |file|
@@ -108,9 +109,11 @@ module Suma
             all_schemas["schemas"].merge!(schemas_data["schemas"])
           end
 
-          if exclude_lf
+          if exclude_paths
             all_schemas["schemas"].delete_if do |_key, value|
-              value["path"].end_with?("_lf.exp")
+              value["path"].match?(
+                Regexp.new(exclude_paths.gsub("*", "(.*){1,999}")),
+              )
             end
           end
         end
