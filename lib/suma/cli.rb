@@ -24,7 +24,7 @@ module Suma
       end
 
       desc "generate_schemas METANORMA_YAML_FILE",
-           "Generate Schemas YAML file from Metanorma YAML file"
+           "Generate EXPRESS schema manifest file from Metanorma site manifest"
       option :output, type: :string, required: false, aliases: "-o",
                       desc: "Write SCHEMAS YAML file (schemas-smrl-all.yml) " \
                             "in working directory or " \
