@@ -37,10 +37,11 @@ $ gem install suma
 # Defaults to `suma help`
 $ suma
 Commands:
-  suma build METANORMA_SITE_MANIFEST      # Build collection specified in site manifest (`metanorma*.yml`)
-  suma reformat EXPRESS_FILE_PATH         # Reformat EXPRESS files
-  suma validate SUBCOMMAND ...ARGS        # Validate express documents
-  suma help [COMMAND]                     # Describe available commands or one specific command
+  suma build METANORMA_SITE_MANIFEST        # Build collection specified in site manifest (`metanorma*.yml`)
+  suma reformat EXPRESS_FILE_PATH           # Reformat EXPRESS files
+  suma validate SUBCOMMAND ...ARGS          # Validate express documents
+  suma generate_schemas METANORMA_YAML_FILE # Generate Schemas YAML file from Metanorma YAML file
+  suma help [COMMAND]                       # Describe available commands or one specific command
 ----
 
 === Build command
@@ -285,6 +286,66 @@ For mathematical symbols, the command will provide equivalent AsciiMath notation
 "×" - Hex: 0xd7, UTF-8 bytes: 0xc3 0x97
 Replacement: AsciiMath: xx
 ----
+
+
+=== Generate schemas command
+
+The `suma generate_schemas` command generates a YAML file containing all schemas
+defined in the Metanorma YAML file.
+
+[source,sh]
+----
+$ suma generate_schemas METANORMA_YAML_FILE [options]
+----
+
+Parameters:
+`METANORMA_YAML_FILE`:: Path to the Metanorma YAML file
+(e.g.: "metanorma-smrl-all.yml")
+
+Options:
+
+`--output=OUTPUT_FILE`, `-o OUTPUT_FILE`:: Path to write the generated
+Schemas YAML file
+If this option is specified but the OUTPUT_FILE is not, it will use the default
+name (`schemas-smrl-all.yml`).
+If this option is not specified, it will run in dry-run mode and print the
+output to STDOUT.
+
+`--exclude_lf`, `-e`:: Exclude schemas with names like `*_lf.exp`
+
+
+[example]
+====
+.To generate schemas YAML file from Metanorma YAML file
+[source,sh]
+----
+$ bundle exec suma generate_schemas metanorma-smrl-all.yml -o
+# => generates schemas-smrl-all.yml
+----
+
+.To inspect the generated schemas YAML file
+[source,sh]
+----
+$ bundle exec suma generate_schemas metanorma-smrl-all.yml
+# => prints the output to STDOUT
+----
+
+.To generate schemas YAML file from Metanorma YAML file and exclude schemas with names like `*_lf.exp`
+[source,sh]
+----
+$ bundle exec suma generate_schemas metanorma-smrl-all.yml -o -e
+# => generates schemas-smrl-all.yml without schemas with names like *_lf.exp
+----
+
+.To inspect the generated schemas YAML file with excluded schemas
+[source,sh]
+----
+$ bundle exec suma generate_schemas metanorma-smrl-all.yml -e
+# => prints the output to STDOUT
+----
+
+All documents need to have a `schemas.yaml` in their document root that lists
+out which schemas the document includes.
 
 
 == Usage: Ruby
