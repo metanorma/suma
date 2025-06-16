@@ -23,6 +23,18 @@ module Suma
         Cli::Build.start
       end
 
+      desc "generate_schemas METANORMA_YAML_FILE",
+           "Generate Schemas YAML file from Metanorma YAML file"
+      option :output, type: :string, required: false, aliases: "-o",
+                      desc: "Write SCHEMAS YAML file in working directory or " \
+                            "run in dry-run mode if not specified"
+      option :exclude_lf, type: :boolean, default: false, aliases: "-e",
+                          desc: "Exclude schemas with names like `*_lf.exp`"
+      def generate_schemas(_metanorma_file_path)
+        require_relative "cli/generate_schemas"
+        Cli::GenerateSchemas.start
+      end
+
       desc "reformat EXPRESS_FILE_PATH",
            "Reformat EXPRESS files"
       option :recursive, type: :boolean, default: false, aliases: "-r",
