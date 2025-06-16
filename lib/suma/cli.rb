@@ -23,16 +23,12 @@ module Suma
         Cli::Build.start
       end
 
-      desc "generate_schemas METANORMA_YAML_FILE",
+      desc "generate_schemas METANORMA_MANIFEST_FILE SCHEMA_MANIFEST_FILE",
            "Generate EXPRESS schema manifest file from Metanorma site manifest"
-      option :output, type: :string, required: false, aliases: "-o",
-                      desc: "Write SCHEMAS YAML file (schemas-smrl-all.yml) " \
-                            "in working directory or " \
-                            "run in dry-run mode if not specified"
       option :exclude_paths, type: :string, default: nil, aliases: "-e",
                              desc: "Exclude schemas paths by pattern " \
                                    "(e.g. `*_lf.exp`)"
-      def generate_schemas(_metanorma_file_path)
+      def generate_schemas(_metanorma_manifest_file, _schema_manifest_file)
         require_relative "cli/generate_schemas"
         Cli::GenerateSchemas.start
       end

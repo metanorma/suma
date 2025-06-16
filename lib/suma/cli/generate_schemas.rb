@@ -7,69 +7,56 @@ module Suma
   module Cli
     # GenerateSchemas command to generate Schemas YAML by Metanorma YAML
     class GenerateSchemas < Thor
-      desc "generate_schemas METANORMA_YAML_FILE",
+      desc "generate_schemas METANORMA_MANIFEST_FILE SCHEMA_MANIFEST_FILE",
            "Generate EXPRESS schema manifest file from Metanorma site manifest"
-      option :output, type: :string, required: false, aliases: "-o",
-                      desc: "Write SCHEMAS YAML file (schemas-smrl-all.yml) " \
-                            "in working directory or " \
-                            "run in dry-run mode if not specified"
       option :exclude_paths, type: :string, default: nil, aliases: "-e",
                              desc: "Exclude schemas paths by pattern " \
                                    "(e.g. `*_lf.exp`)"
 
-      def generate_schemas(metanorma_file_path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
-        metanorma_file_path = File.expand_path(metanorma_file_path)
+      YAML_FILE_EXTENSIONS = [".yaml", ".yml"].freeze
 
-        unless File.exist?(metanorma_file_path)
-          raise Errno::ENOENT, "Specified file `#{metanorma_file_path}` " \
+      def generate_schemas(metanorma_manifest_file, schema_manifest_file) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+        metanorma_manifest_file = File.expand_path(metanorma_manifest_file)
+
+        unless File.exist?(metanorma_manifest_file)
+          raise Errno::ENOENT, "Specified file `#{metanorma_manifest_file}` " \
                                "not found."
         end
 
-        unless File.file?(metanorma_file_path)
-          raise ArgumentError, "Specified path `#{metanorma_file_path}` " \
+        unless File.file?(metanorma_manifest_file)
+          raise ArgumentError, "Specified path `#{metanorma_manifest_file}` " \
                                "is not a file."
         end
 
-        if ![".yaml", ".yml"].include?(File.extname(metanorma_file_path))
-          raise ArgumentError, "Specified file `#{metanorma_file_path}` is " \
-                               "not a YAML file."
-        end
-
-        if options[:output].nil?
-          puts "Run in dry-run mode.\n" \
-               "Please specify the option `output` " \
-               "if you want to generate the output file."
+        [metanorma_manifest_file, schema_manifest_file].each do |file|
+          if !YAML_FILE_EXTENSIONS.include?(File.extname(file))
+            raise ArgumentError, "Specified file `#{file}` is not a YAML file."
+          end
         end
 
         run(
-          metanorma_file_path,
-          exclude_paths: options[:exclude_paths], output: options[:output],
+          metanorma_manifest_file, schema_manifest_file,
+          exclude_paths: options[:exclude_paths]
         )
       end
 
       private
 
-      def run(metanorma_file_path, exclude_paths: nil, output: nil)
-        metanorma_data = load_yaml(metanorma_file_path)
+      def run(metanorma_manifest_file, schema_manifest_file, exclude_paths: nil)
+        metanorma_data = load_yaml(metanorma_manifest_file)
         collection_files = metanorma_data["metanorma"]["source"]["files"]
         manifest_files = load_manifest_files(collection_files)
         all_schemas = load_project_schemas(manifest_files, exclude_paths)
         all_schemas["schemas"] = all_schemas["schemas"].sort.to_h
-        output_data(all_schemas, output)
+        output_data(all_schemas, schema_manifest_file)
       end
 
-      def output_data(all_schemas, output)
-        if output
-          path = output == "output" ? "schemas-smrl-all.yml" : output
-
-          puts "Writing the Schemas YAML file to #{File.expand_path(path)}..."
-          File.write(File.expand_path(path), all_schemas.to_yaml)
-          puts "Writing the Schemas YAML file to #{File.expand_path(path)}..." \
-               "Done"
-        else
-          puts all_schemas.to_yaml
-          all_schemas.to_yaml
-        end
+      def output_data(all_schemas, path)
+        puts "Writing the Schemas YAML file to #{File.expand_path(path)}..."
+        # debug use only
+        # puts all_schemas.to_yaml
+        File.write(File.expand_path(path), all_schemas.to_yaml)
+        puts "Writing the Schemas YAML file to #{File.expand_path(path)}...Done"
       end
 
       def load_yaml(file_path)
