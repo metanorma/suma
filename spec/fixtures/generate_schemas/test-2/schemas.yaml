@@ -1,0 +1,10 @@
+---
+schemas:
+  Ap210_electronic_assembly_interconnect_and_packaging_design_arm:
+    path: ../../schemas/modules/ap210_electronic_assembly_interconnect_and_packaging_design/arm.exp
+  Ap210_electronic_assembly_interconnect_and_packaging_design_mim:
+    path: ../../schemas/modules/ap210_electronic_assembly_interconnect_and_packaging_design/mim.exp
+  Ap210_electronic_assembly_interconnect_and_packaging_design_arm_lf:
+    path: ../../schemas/modules/ap210_electronic_assembly_interconnect_and_packaging_design/arm_lf.exp
+  Ap210_electronic_assembly_interconnect_and_packaging_design_mim_lf:
+    path: ../../schemas/modules/ap210_electronic_assembly_interconnect_and_packaging_design/mim_lf.exp

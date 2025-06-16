@@ -1,0 +1,9 @@
+---
+metanorma:
+  source:
+    files:
+      - spec/fixtures/generate_schemas/collection-smrl-all.yml
+
+  collection:
+    organization: "ISO/TC 184/SC 4/WG 12"
+    name: "ISO 10303 STEP Modules and Resources Library"
