@@ -26,7 +26,8 @@ module Suma
       desc "generate_schemas METANORMA_YAML_FILE",
            "Generate Schemas YAML file from Metanorma YAML file"
       option :output, type: :string, required: false, aliases: "-o",
-                      desc: "Write SCHEMAS YAML file in working directory or " \
+                      desc: "Write SCHEMAS YAML file (schemas-smrl-all.yml) " \
+                            "in working directory or " \
                             "run in dry-run mode if not specified"
       option :exclude_lf, type: :boolean, default: false, aliases: "-e",
                           desc: "Exclude schemas with names like `*_lf.exp`"
