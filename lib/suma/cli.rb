@@ -29,8 +29,9 @@ module Suma
                       desc: "Write SCHEMAS YAML file (schemas-smrl-all.yml) " \
                             "in working directory or " \
                             "run in dry-run mode if not specified"
-      option :exclude_lf, type: :boolean, default: false, aliases: "-e",
-                          desc: "Exclude schemas with names like `*_lf.exp`"
+      option :exclude_paths, type: :string, default: nil, aliases: "-e",
+                             desc: "Exclude schemas paths by pattern " \
+                                   "(e.g. `*_lf.exp`)"
       def generate_schemas(_metanorma_file_path)
         require_relative "cli/generate_schemas"
         Cli::GenerateSchemas.start

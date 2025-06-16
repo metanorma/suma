@@ -311,7 +311,7 @@ name (`schemas-smrl-all.yml`).
 If this option is not specified, it will run in dry-run mode and print the
 output to STDOUT.
 
-`--exclude_lf`, `-e`:: Exclude schemas with names like `*_lf.exp`
+`--exclude_path`, `-e`:: Exclude schemas by pattern (e.g. `*_lf.exp`)
 
 
 [example]
@@ -333,14 +333,14 @@ $ bundle exec suma generate_schemas metanorma-smrl-all.yml
 .To generate schemas YAML file from Metanorma YAML file and exclude schemas with names like `*_lf.exp`
 [source,sh]
 ----
-$ bundle exec suma generate_schemas metanorma-smrl-all.yml -o -e
+$ bundle exec suma generate_schemas metanorma-smrl-all.yml -o -e *_lf.exp
 # => generates schemas-smrl-all.yml without schemas with names like *_lf.exp
 ----
 
 .To inspect the generated schemas YAML file with excluded schemas
 [source,sh]
 ----
-$ bundle exec suma generate_schemas metanorma-smrl-all.yml -e
+$ bundle exec suma generate_schemas metanorma-smrl-all.yml -e *_lf.exp
 # => prints the output to STDOUT
 ----
 
