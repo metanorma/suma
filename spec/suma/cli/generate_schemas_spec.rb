@@ -7,28 +7,57 @@ require "suma/cli/generate_schemas"
 RSpec.describe Suma::Cli::GenerateSchemas do
   subject(:test_subject) { described_class.new }
 
-  let(:metanorma_file_path) do
+  let(:metanorma_manifest_file) do
     "spec/fixtures/generate_schemas/metanorma-smrl-all.yml"
   end
 
+  let(:schema_manifest_file) do
+    "test-schemas-smrl-all.yml"
+  end
+
+  before do
+    test_output = File.expand_path(schema_manifest_file)
+    FileUtils.rm_f(test_output)
+  end
+
+  after do
+    test_output = File.expand_path(schema_manifest_file)
+    FileUtils.rm_f(test_output)
+  end
+
   context "when input is invalid" do
-    it "raises ENOENT error when file not found" do
+    it "raises ENOENT error when METANORMA_MANIFEST_FILE not found" do
       expect do
-        test_subject.generate_schemas("not-found.yaml")
+        test_subject.generate_schemas("not-found.yaml", schema_manifest_file)
       end.to raise_error(Errno::ENOENT)
     end
 
-    it "raises ArgumentError error when file is not a file" do
+    it "raises ArgumentError error when METANORMA_MANIFEST_FILE " \
+       "is not a file" do
       expect do
         test_subject.generate_schemas(
           File.expand_path(".", __dir__),
+          schema_manifest_file,
         )
       end.to raise_error(ArgumentError)
     end
 
-    it "raises ArgumentError error when the file is not a YAML file" do
+    it "raises ArgumentError error when SCHEMA_MANIFEST_FILE " \
+       "is not specified" do
       expect do
-        test_subject.generate_schemas("README.adoc")
+        test_subject.generate_schemas(metanorma_manifest_file)
+      end.to raise_error(ArgumentError)
+    end
+
+    it "raises ArgumentError error when METANORMA_MANIFEST_FILE is not YAML" do
+      expect do
+        test_subject.generate_schemas("README.adoc", schema_manifest_file)
+      end.to raise_error(ArgumentError)
+    end
+
+    it "raises ArgumentError error when SCHEMA_MANIFEST_FILE is not YAML" do
+      expect do
+        test_subject.generate_schemas(metanorma_manifest_file, "README.adoc")
       end.to raise_error(ArgumentError)
     end
   end
@@ -152,15 +181,23 @@ RSpec.describe Suma::Cli::GenerateSchemas do
           path: uuid_attribute_schema/uuid_attribute_schema.exp
     RESULT
 
-    it "generate_schemas METANORMA_YAML_FILE without options" do
-      result = test_subject.invoke(:generate_schemas, [metanorma_file_path])
+    it "generates SCHEMA_MANIFEST_FILE without options" do
+      test_subject.invoke(
+        :generate_schemas,
+        [metanorma_manifest_file, schema_manifest_file],
+      )
+
+      result = File.read(File.expand_path(schema_manifest_file))
       expect(result).to eq(result_without_options)
     end
 
-    it "generate_schemas METANORMA_YAML_FILE with options `exclude_paths: *_lf.exp`" do
-      result = test_subject.invoke(
-        :generate_schemas, [metanorma_file_path], { exclude_paths: "*_lf.exp" }
+    it "generates SCHEMA_MANIFEST_FILE with `exclude_paths: *_lf.exp`" do
+      test_subject.invoke(
+        :generate_schemas,
+        [metanorma_manifest_file, schema_manifest_file],
+        { exclude_paths: "*_lf.exp" },
       )
+      result = File.read(File.expand_path(schema_manifest_file))
       expect(result).to eq(result_with_options)
     end
   end
