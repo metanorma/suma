@@ -2,6 +2,7 @@ require "thor"
 require_relative "../thor_ext"
 require "fileutils"
 require "yaml"
+require "pathname"
 
 module Suma
   module Cli
@@ -46,7 +47,8 @@ module Suma
         metanorma_data = load_yaml(metanorma_manifest_file)
         collection_files = metanorma_data["metanorma"]["source"]["files"]
         manifest_files = load_manifest_files(collection_files)
-        all_schemas = load_project_schemas(manifest_files, exclude_paths)
+        all_schemas = load_project_schemas(manifest_files, exclude_paths,
+                                           schema_manifest_file)
         all_schemas["schemas"] = all_schemas["schemas"].sort.to_h
         output_data(all_schemas, schema_manifest_file)
       end
@@ -76,7 +78,9 @@ module Suma
         manifest_files.flatten
       end
 
-      def load_project_schemas(manifest_files, exclude_paths) # rubocop:disable Metrics/AbcSize
+      def load_project_schemas( # rubocop:disable Metrics/AbcSize
+        manifest_files, exclude_paths, schema_manifest_file
+      )
         all_schemas = { "schemas" => {} }
 
         manifest_files.each do |file|
@@ -92,7 +96,11 @@ module Suma
           schemas_data = load_yaml(schemas_file_path)
 
           if schemas_data["schemas"]
-            schemas_data["schemas"] = fix_path(schemas_data, schemas_file_path)
+            schemas_data["schemas"] = fix_path(
+              schemas_data,
+              schemas_file_path,
+              schema_manifest_file,
+            )
             all_schemas["schemas"].merge!(schemas_data["schemas"])
           end
 
@@ -108,28 +116,25 @@ module Suma
         all_schemas
       end
 
-      def fix_path(schemas_data, schemas_file_path) # rubocop:disable Metrics/AbcSize
-        depth = relative_depth(
-          schemas_file_path, schemas_data["schemas"].values.first["path"]
-        )
+      def fix_path(schemas_data, schemas_file_path, schema_manifest_file) # rubocop:disable Metrics/AbcSize
+        schema_manifest_path = File.expand_path(schema_manifest_file, Dir.pwd)
 
-        if depth.negative?
-          schemas_data["schemas"].each do |key, value|
-            fixed_path = value["path"]
-              .split(File::SEPARATOR)[(0 - depth)..]
-              .join(File::SEPARATOR)
+        schemas_data["schemas"].each do |key, value|
+          # resolve the path in the schema file by the path in the schemas.yaml
+          path_in_schema = File.expand_path(
+            value["path"],
+            File.dirname(schemas_file_path),
+          )
 
-            { key => value.merge!("path" => fixed_path) }
-          end
+          # calculate the relative path from the schema manifest file
+          fixed_path = Pathname.new(path_in_schema).relative_path_from(
+            Pathname.new(File.dirname(schema_manifest_path)),
+          )
+
+          { key => value.merge!("path" => fixed_path.to_s) }
         end
 
         schemas_data["schemas"]
-      end
-
-      def relative_depth(parent_path, child_path)
-        parent_chunks = parent_path.split(File::SEPARATOR).reject(&:empty?)
-        child_chunks = child_path.split(File::SEPARATOR).reject(&:empty?)
-        (child_chunks.length - parent_chunks.length)
       end
     end
   end
