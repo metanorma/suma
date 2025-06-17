@@ -12,11 +12,13 @@ RSpec.describe Suma::Cli::ExtractTerms do
       "../../fixtures/extract_terms/modules/activity/arm.exp", __dir__
     )
   end
+
   let(:mim_exp) do
     File.expand_path(
       "../../fixtures/extract_terms/modules/activity/mim.exp", __dir__
     )
   end
+
   let(:action_schema_exp) do
     File.expand_path(
       "../../fixtures/extract_terms/resources/action_schema/action_schema.exp",
@@ -24,107 +26,77 @@ RSpec.describe Suma::Cli::ExtractTerms do
     )
   end
 
+  let(:test_output_path) do
+    File.expand_path("test-glossarist-v2-dataset", __dir__)
+  end
+
+  before do
+    FileUtils.rm_rf(test_output_path)
+  end
+
+  after do
+    FileUtils.rm_rf(test_output_path)
+  end
+
   context "when input is invalid" do
     it "raises ENOENT error when file not found" do
       expect do
-        test_subject.extract_terms("not-found.exp")
+        test_subject.invoke(:extract_terms, ["not-found.exp", test_output_path])
       end.to raise_error(Errno::ENOENT)
     end
 
     it "raises ArgumentError error when file is not an EXPRESS file" do
       expect do
-        test_subject.extract_terms(
-          File.expand_path("extract_terms_spec.rb", __dir__),
+        test_subject.invoke(
+          :extract_terms,
+          [
+            File.expand_path("extract_terms_spec.rb", __dir__),
+            test_output_path,
+          ],
         )
       end.to raise_error(ArgumentError)
     end
 
     it "raises ENOENT error when no files found" do
       expect do
-        test_subject.extract_terms(File.expand_path(".", __dir__))
-      end.to raise_error(Errno::ENOENT)
-    end
-
-    it "raises ENOTDIR error when option `output` is not a directory" do
-      options = {
-        output: File.expand_path("extract_terms_spec.rb", __dir__),
-      }
-
-      expect do
         test_subject.invoke(
           :extract_terms,
-          [arm_exp],
-          options,
+          [File.expand_path(".", __dir__), test_output_path],
         )
-      end.to raise_error(Errno::ENOTDIR)
-    end
-  end
-
-  context "when input is valid" do
-    it "extract_terms EXPRESS files without options" do
-      express_files_path = File.expand_path(
-        "../../fixtures/extract_terms/modules/activity",
-        __dir__,
-      )
-
-      result = test_subject.invoke(:extract_terms, [express_files_path])
-
-      expect(result.map { |r| r["source_file"] }).to eq(
-        [
-          File.join(express_files_path, "arm.exp"),
-          File.join(express_files_path, "mim.exp"),
-        ],
-      )
-    end
-
-    it "extract_terms EXPRESS files with option `recursive: true`" do # rubocop:disable RSpec/ExampleLength
-      express_files_path = File.expand_path(
-        "../../fixtures/extract_terms",
-        __dir__,
-      )
-
-      result = test_subject.invoke(:extract_terms, [express_files_path],
-                                   { recursive: true })
-
-      expect(result.map { |r| r["source_file"] }).to eq(
-        [
-          File.join(express_files_path, "modules/activity/arm.exp"),
-          File.join(express_files_path, "modules/activity/mim.exp"),
-          File.join(express_files_path,
-                    "resources/action_schema/action_schema.exp"),
-        ],
-      )
+      end.to raise_error(Errno::ENOENT)
     end
   end
 
   context "when input is module exp file" do
     arm_concept_yaml = <<~CONCEPT
       ---
-      id: redacted_uuid
       data:
         identifier: ISO/TC 184/SC 4/WG 12 N2941
         localized_concepts:
           eng: redacted_uuid
+      id: redacted_uuid
     CONCEPT
 
     mim_concept_yaml = <<~CONCEPT
       ---
-      id: redacted_uuid
       data:
         identifier: ISO/TC 184/SC 4/WG 12 N1157
         localized_concepts:
           eng: redacted_uuid
+      id: redacted_uuid
     CONCEPT
 
     arm_localized_concept_yaml = <<~LOCALIZED_CONCEPT
       ---
       data:
-        terms:
-        - type: expression
-          normative_status: preferred
-          designation: activity
         definition:
         - content: "{{application object}} that represents the activity {{entity}}"
+        examples:
+        - content: Change, distilling, design, a process to drill a hole, and a task such
+            as training someone, are examples of activities.
+        - content: The activity required to complete a work order, may be decomposed into
+            a series of activities. Their corresponding instances would be related using
+            instances of the *Activity_relationship* entity.
         notes:
         - content: An **Activity** is the identification of the occurrence of an action
             that has taken place, is taking place, or is expected to take place in the future.
@@ -145,62 +117,84 @@ RSpec.describe Suma::Cli::ExtractTerms do
             with the organizations that are responsible for its execution or its management.
             That kind of information can be represented with instances of <<express:Person_organization_assignment_arm.Organization_or_person_in_organization_assignment,Organization_or_person_in_organization_assignment>>
             .
-        examples:
-        - content: Change, distilling, design, a process to drill a hole, and a task such
-            as training someone, are examples of activities.
-        - content: The activity required to complete a work order, may be decomposed into
-            a series of activities. Their corresponding instances would be related using
-            instances of the *Activity_relationship* entity.
-        language_code: eng
-        domain: 'application module: Activity_arm'
-        source:
-        - type: authoritative
+        sources:
           origin:
             ref: ISO 10303-1047:2014 ED3
+          type: authoritative
+        terms:
+        - type: expression
+          normative_status: preferred
+          designation: activity
+        domain: 'application module: Activity_arm'
+        language_code: eng
+      id: redacted_uuid
     LOCALIZED_CONCEPT
 
     mim_localized_concept_yaml = <<~LOCALIZED_CONCEPT
       ---
       data:
-        terms:
-        - type: expression
-          normative_status: preferred
-          designation: activity
         definition:
         - content: "{{entity data type}} that is a type of action_assignment that represents
             the activity {{entity}}"
+        examples: []
         notes:
         - content: An **applied_action_assignment** is an <<express:action_schema.action,action>>
             related to the data that are affected by the <<express:action_schema.action,action>>.
             An **applied_action_assignment** is a type of <<express:management_resources_schema.action_assignment,action_assignment>>.
-        examples: []
-        language_code: eng
-        domain: 'application module: Activity_mim'
-        source:
-        - type: authoritative
+        sources:
           origin:
             ref: ISO 10303-1047:2014 ED3
+          type: authoritative
+        terms:
+        - type: expression
+          normative_status: preferred
+          designation: activity
+        domain: 'application module: Activity_mim'
+        language_code: eng
+      id: redacted_uuid
     LOCALIZED_CONCEPT
 
-    it "extract_terms from `arm.exp`" do
-      result = test_subject.invoke(:extract_terms, [arm_exp])
+    it "extract_terms from `arm.exp`" do # rubocop:disable RSpec/ExampleLength
+      result = test_subject.invoke(:extract_terms, [arm_exp, test_output_path])
+      concept_id = result.first.managed_concepts.first.uuid
+      localized_concept_id = result.first.managed_concepts.first
+        .data.localizations["eng"].uuid
+      concept_data = File.read(
+        File.join(test_output_path, "concept", "#{concept_id}.yaml"),
+      )
+      localized_concept_data = File.read(
+        File.join(
+          test_output_path, "localized_concept",
+          "#{localized_concept_id}.yaml"
+        ),
+      )
 
-      expect(result.map { |r| r["source_file"] }).to eq([arm_exp])
-      expect(strip_uuid(result.first["concept"].to_yaml))
+      expect(strip_uuid(concept_data))
         .to eq(arm_concept_yaml)
 
-      expect(strip_uuid(result.first["localized_concept"].to_yaml))
+      expect(strip_uuid(localized_concept_data))
         .to eq(arm_localized_concept_yaml)
     end
 
-    it "extract_terms from `mim.exp`" do
-      result = test_subject.invoke(:extract_terms, [mim_exp])
+    it "extract_terms from `mim.exp`" do # rubocop:disable RSpec/ExampleLength
+      result = test_subject.invoke(:extract_terms, [mim_exp, test_output_path])
+      concept_id = result.first.managed_concepts.first.uuid
+      localized_concept_id = result.first.managed_concepts.first
+        .data.localizations["eng"].uuid
+      concept_data = File.read(
+        File.join(test_output_path, "concept", "#{concept_id}.yaml"),
+      )
+      localized_concept_data = File.read(
+        File.join(
+          test_output_path, "localized_concept",
+          "#{localized_concept_id}.yaml"
+        ),
+      )
 
-      expect(result.map { |r| r["source_file"] }).to eq([mim_exp])
-      expect(strip_uuid(result.first["concept"].to_yaml))
+      expect(strip_uuid(concept_data))
         .to eq(mim_concept_yaml)
 
-      expect(strip_uuid(result.first["localized_concept"].to_yaml))
+      expect(strip_uuid(localized_concept_data))
         .to eq(mim_localized_concept_yaml)
     end
   end
@@ -208,23 +202,43 @@ RSpec.describe Suma::Cli::ExtractTerms do
   context "when input is resource exp file" do
     concept_yaml = <<~CONCEPT
       ---
-      id: redacted_uuid
       data:
         identifier: ISO/TC 184/SC 4/WG 12 N10693
         localized_concepts:
           eng: redacted_uuid
+      id: redacted_uuid
     CONCEPT
 
     localized_concept_yaml = <<~LOCALIZED_CONCEPT
       ---
       data:
-        terms:
-        - type: expression
-          normative_status: preferred
-          designation: fundamentals_of_product_description_and_support
         definition:
         - content: "{{entity data type}} that represents the fundamentals_of_product_description_and_support
             {{entity}}"
+        examples:
+        - content: Change, distilling, design, a process to drill a hole, and a task such
+            as training someone are examples of actions.
+        - content: ISO Directives Part 3 provides guidance for the development of standards
+            documents within ISO.
+        - content: For the <<express:action_schema.action,action>> whose name attribute
+            is 'serve dinner', the name attribute of related instance of *action_method*
+            could be 'cook by recipe' or 'purchase takeout food'.
+        - content: This entity may be used to specify the kind of tool needed to perform
+            a process operation.
+        - content: A *directed_action* could be the inspection of a building as directed
+            by city officials according to the city building codes for earthquake safety.
+            The action is the inspection of the building. The directive is issued by city
+            officials guided by the city building codes. In an application protocol, the
+            building authority may be associated with an <<express:management_resources_schema.organization_assignment,organization_assignment>>.
+            The building codes may be associated with a <<express:management_resources_schema.document_reference,document_reference>>.
+        - content: An *executed_action* could be to 'paint the office' with a status of
+            'scheduled'. The action is 'paint the office'. The status further qualifies
+            the action as 'planned', 'scheduled', or 'completed'.
+        - content: Two <<express:action_schema.versioned_action_request,versioned_action_request>>
+            objects may be related if they address similar problems.
+        - content: A <<express:action_schema.versioned_action_request,versioned_action_request>>
+            may be a version of a work request. It might be related to a different version
+            of the work request using a *versioned_action_request_relationship*.
         notes:
         - content: |-
             An **action** is the identification of the occurrence of an activity and a description of its result.
@@ -296,46 +310,41 @@ RSpec.describe Suma::Cli::ExtractTerms do
             objects.
         - content: An **action_directive_relationship** is a relationship between two <<express:action_schema.action_directive,action_directive>>
             objects.
-        examples:
-        - content: Change, distilling, design, a process to drill a hole, and a task such
-            as training someone are examples of actions.
-        - content: ISO Directives Part 3 provides guidance for the development of standards
-            documents within ISO.
-        - content: For the <<express:action_schema.action,action>> whose name attribute
-            is 'serve dinner', the name attribute of related instance of *action_method*
-            could be 'cook by recipe' or 'purchase takeout food'.
-        - content: This entity may be used to specify the kind of tool needed to perform
-            a process operation.
-        - content: A *directed_action* could be the inspection of a building as directed
-            by city officials according to the city building codes for earthquake safety.
-            The action is the inspection of the building. The directive is issued by city
-            officials guided by the city building codes. In an application protocol, the
-            building authority may be associated with an <<express:management_resources_schema.organization_assignment,organization_assignment>>.
-            The building codes may be associated with a <<express:management_resources_schema.document_reference,document_reference>>.
-        - content: An *executed_action* could be to 'paint the office' with a status of
-            'scheduled'. The action is 'paint the office'. The status further qualifies
-            the action as 'planned', 'scheduled', or 'completed'.
-        - content: Two <<express:action_schema.versioned_action_request,versioned_action_request>>
-            objects may be related if they address similar problems.
-        - content: A <<express:action_schema.versioned_action_request,versioned_action_request>>
-            may be a version of a work request. It might be related to a different version
-            of the work request using a *versioned_action_request_relationship*.
-        language_code: eng
-        domain: 'resource: action_schema'
-        source:
-        - type: authoritative
+        sources:
           origin:
             ref: ISO 10303-41:2025 ED8
+          type: authoritative
+        terms:
+        - type: expression
+          normative_status: preferred
+          designation: fundamentals_of_product_description_and_support
+        domain: 'resource: action_schema'
+        language_code: eng
+      id: redacted_uuid
     LOCALIZED_CONCEPT
 
-    it "extract_terms from `action_schema.exp`" do
-      result = test_subject.invoke(:extract_terms, [action_schema_exp])
+    it "extract_terms from `action_schema.exp`" do # rubocop:disable RSpec/ExampleLength
+      result = test_subject.invoke(
+        :extract_terms, [action_schema_exp, test_output_path]
+      )
+      concept_id = result.first.managed_concepts.first.uuid
+      localized_concept_id = result.first.managed_concepts
+        .first.data.localizations["eng"].uuid
 
-      expect(result.map { |r| r["source_file"] }).to eq([action_schema_exp])
-      expect(strip_uuid(result.first["concept"].to_yaml))
+      concept_data = File.read(
+        File.join(test_output_path, "concept", "#{concept_id}.yaml"),
+      )
+      localized_concept_data = File.read(
+        File.join(
+          test_output_path, "localized_concept",
+          "#{localized_concept_id}.yaml"
+        ),
+      )
+
+      expect(strip_uuid(concept_data))
         .to eq(concept_yaml)
 
-      expect(strip_uuid(result.first["localized_concept"].to_yaml))
+      expect(strip_uuid(localized_concept_data))
         .to eq(localized_concept_yaml)
     end
   end
