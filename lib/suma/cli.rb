@@ -43,14 +43,12 @@ module Suma
         Cli::Reformat.start
       end
 
-      desc "extract_terms EXPRESS_FILE_PATH GLOSSARIST_OUTPUT_PATH",
-           "Extract terms from EXPRESS files into the Glossarist v2 format"
-      option :recursive, type: :boolean, default: false, aliases: "-r",
-                         desc: "Extract terms from EXPRESS files under the " \
-                               "specified path recursively"
+      desc "extract_terms SCHEMA_MANIFEST_FILE GLOSSARIST_OUTPUT_PATH",
+           "Extract terms from SCHEMA_MANIFEST_FILE into " \
+           "Glossarist v2 format"
       option :language_code, type: :string, default: "eng", aliases: "-l",
                              desc: "Language code for the Glossarist"
-      def extract_terms(_express_file_path, _output_file)
+      def extract_terms(_schema_manifest_file, _glossarist_output_path)
         require_relative "cli/extract_terms"
         Cli::ExtractTerms.start
       end

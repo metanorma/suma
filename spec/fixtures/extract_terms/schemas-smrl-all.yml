@@ -1,0 +1,8 @@
+---
+schemas:
+  Activity_arm:
+    path: modules/activity/arm.exp
+  Activity_mim:
+    path: modules/activity/mim.exp
+  action_schema:
+    path: resources/action_schema/action_schema.exp
