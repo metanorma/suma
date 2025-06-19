@@ -122,13 +122,16 @@ module Suma
       end
 
       def build_localized_concept(schema, language_code, localized_concept_id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
+        schema_domain = get_domain(schema)
+
         localized_concept_data = Glossarist::ConceptData.new
         localized_concept_data.terms = get_terms(schema) || []
         localized_concept_data.definition = get_definitions(schema) || []
-        localized_concept_data.notes = get_notes(schema) || []
-        localized_concept_data.examples = get_examples(schema) || []
+        localized_concept_data.notes = get_notes(schema, schema_domain) || []
+        localized_concept_data.examples = get_examples(schema,
+                                                       schema_domain) || []
         localized_concept_data.language_code = language_code
-        localized_concept_data.domain = get_domain(schema)
+        localized_concept_data.domain = schema_domain
         localized_concept_data.sources = get_source_ref(schema) || []
 
         localized_concept = Glossarist::LocalizedConcept.new
@@ -231,7 +234,7 @@ module Suma
       end
 
       # get entities remarks and remark items with id `__note` as notes
-      def get_notes(schema) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity,Metrics/AbcSize
+      def get_notes(schema, schema_domain) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity,Metrics/AbcSize
         notes = schema.entities&.map do |entity|
           [
             entity.remarks,
@@ -242,12 +245,14 @@ module Suma
         end&.flatten&.compact
 
         notes&.map do |note|
-          Glossarist::DetailedDefinition.new(content: note)
+          Glossarist::DetailedDefinition.new(
+            content: convert_express_xref(note, schema_domain),
+          )
         end
       end
 
       # get entities remark items with id `__example` as examples
-      def get_examples(schema) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity,Metrics/AbcSize
+      def get_examples(schema, schema_domain) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity,Metrics/AbcSize
         examples = schema.entities&.map do |entity|
           entity.remark_items&.select do |ri|
             ri.id == "__example"
@@ -255,7 +260,16 @@ module Suma
         end&.flatten&.compact
 
         examples&.map do |example|
-          Glossarist::DetailedDefinition.new(content: example)
+          Glossarist::DetailedDefinition.new(
+            content: convert_express_xref(example, schema_domain),
+          )
+        end
+      end
+
+      def convert_express_xref(content, schema_domain)
+        content.gsub(/<<express:(.*),(.*)>>/) do |match|
+          "{{<#{schema_domain}>," \
+            "#{Regexp.last_match(1).split('.').last},#{Regexp.last_match(2)}}}"
         end
       end
 
