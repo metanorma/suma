@@ -13,52 +13,62 @@ module Suma
     # ExtractTerms command using Expressir to extract terms into the
     # Glossarist v2 format
     class ExtractTerms < Thor
-      desc "extract_terms EXPRESS_FILE_PATH GLOSSARIST_OUTPUT_PATH",
-           "Extract terms from EXPRESS files into the Glossarist v2 format"
-      option :recursive, type: :boolean, default: false, aliases: "-r",
-                         desc: "Extract terms from EXPRESS files under the " \
-                               "specified path recursively"
+      desc "extract_terms SCHEMA_MANIFEST_FILE GLOSSARIST_OUTPUT_PATH",
+           "Extract terms from SCHEMA_MANIFEST_FILE into " \
+           "Glossarist v2 format"
       option :language_code, type: :string, default: "eng", aliases: "-l",
                              desc: "Language code for the Glossarist"
 
-      def extract_terms(express_file_path, output_path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+      YAML_FILE_EXTENSIONS = [".yaml", ".yml"].freeze
+
+      def extract_terms(schema_manifest_file, output_path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
         language_code = options[:language_code]
+        schema_manifest_file = File.expand_path(schema_manifest_file)
 
-        if File.file?(express_file_path)
-          unless File.exist?(express_file_path)
-            raise Errno::ENOENT, "Specified EXPRESS file " \
-                                 "`#{express_file_path}` not found."
+        if File.file?(schema_manifest_file)
+          unless File.exist?(schema_manifest_file)
+            raise Errno::ENOENT, "Specified SCHEMA_MANIFEST_FILE " \
+                                 "`#{schema_manifest_file}` not found."
           end
 
-          if File.extname(express_file_path) != ".exp"
-            raise ArgumentError, "Specified file `#{express_file_path}` is " \
-                                 "not an EXPRESS file."
+          if !YAML_FILE_EXTENSIONS.include?(File.extname(schema_manifest_file))
+            raise ArgumentError, "Specified SCHEMA_MANIFEST_FILE " \
+                                 "`#{schema_manifest_file}` " \
+                                 "is not a YAML file."
           end
-
-          exp_files = [express_file_path]
-        elsif options[:recursive]
-          exp_files = Dir.glob("#{express_file_path}/**/*.exp")
-        else
-          exp_files = Dir.glob("#{express_file_path}/*.exp")
         end
 
-        if exp_files.empty?
-          raise Errno::ENOENT, "No EXPRESS files found in " \
-                               "`#{express_file_path}`."
-        end
-
-        unless File.exist?(output_path)
-          FileUtils.mkdir_p(File.expand_path(output_path))
-        end
-
-        run(exp_files, output_path, language_code)
+        run(schema_manifest_file, output_path, language_code)
       end
 
       private
 
-      def run(exp_files, output_path, language_code = "eng")
+      def run(schema_manifest_file, output_path, language_code = "eng")
+        exp_files = get_exp_files(schema_manifest_file)
+
         exp_files.map do |exp_file|
           extract(exp_file, output_path, language_code)
+        end
+      end
+
+      def get_exp_files(schema_manifest_file)
+        data = YAML.safe_load(
+          File.read(schema_manifest_file, encoding: "UTF-8"),
+          permitted_classes: [Date, Time, Symbol],
+          permitted_symbols: [],
+          aliases: true,
+        )
+
+        paths = data["schemas"].values.filter_map { |v| v["path"] }
+
+        if paths.empty?
+          raise Errno::ENOENT, "No EXPRESS files found in " \
+                               "`#{schema_manifest_file}`."
+        end
+
+        # resolve paths relative to the directory of the schema manifest file
+        paths.map do |path|
+          File.expand_path(path, File.dirname(schema_manifest_file))
         end
       end
 
@@ -75,6 +85,10 @@ module Suma
       end
 
       def output_data(collection, output_path, exp_file)
+        unless File.exist?(output_path)
+          FileUtils.mkdir_p(File.expand_path(output_path))
+        end
+
         puts "Saving collection to files in: #{File.expand_path(output_path)}"
         collection.save_to_files(File.expand_path(output_path))
 

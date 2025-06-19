@@ -7,22 +7,15 @@ require "suma/cli/extract_terms"
 RSpec.describe Suma::Cli::ExtractTerms do
   subject(:test_subject) { described_class.new }
 
-  let(:arm_exp) do
+  let(:schema_manifest_file) do
     File.expand_path(
-      "../../fixtures/extract_terms/modules/activity/arm.exp", __dir__
+      "../../fixtures/extract_terms/schemas-smrl-all.yml", __dir__
     )
   end
 
-  let(:mim_exp) do
+  let(:schema_manifest_file_no_files) do
     File.expand_path(
-      "../../fixtures/extract_terms/modules/activity/mim.exp", __dir__
-    )
-  end
-
-  let(:action_schema_exp) do
-    File.expand_path(
-      "../../fixtures/extract_terms/resources/action_schema/action_schema.exp",
-      __dir__,
+      "../../fixtures/extract_terms/schemas-smrl-no-files.yml", __dir__
     )
   end
 
@@ -41,11 +34,11 @@ RSpec.describe Suma::Cli::ExtractTerms do
   context "when input is invalid" do
     it "raises ENOENT error when file not found" do
       expect do
-        test_subject.invoke(:extract_terms, ["not-found.exp", test_output_path])
+        test_subject.invoke(:extract_terms, ["not-found.yml", test_output_path])
       end.to raise_error(Errno::ENOENT)
     end
 
-    it "raises ArgumentError error when file is not an EXPRESS file" do
+    it "raises ArgumentError error when file is not an YAML file" do
       expect do
         test_subject.invoke(
           :extract_terms,
@@ -61,13 +54,13 @@ RSpec.describe Suma::Cli::ExtractTerms do
       expect do
         test_subject.invoke(
           :extract_terms,
-          [File.expand_path(".", __dir__), test_output_path],
+          [schema_manifest_file_no_files, test_output_path],
         )
       end.to raise_error(Errno::ENOENT)
     end
   end
 
-  context "when input is module exp file" do
+  context "when input is valid `schema_manifest_file`" do
     arm_concept_yaml = <<~CONCEPT
       ---
       data:
@@ -154,53 +147,7 @@ RSpec.describe Suma::Cli::ExtractTerms do
       id: redacted_uuid
     LOCALIZED_CONCEPT
 
-    it "extract_terms from `arm.exp`" do # rubocop:disable RSpec/ExampleLength
-      result = test_subject.invoke(:extract_terms, [arm_exp, test_output_path])
-      concept_id = result.first.managed_concepts.first.uuid
-      localized_concept_id = result.first.managed_concepts.first
-        .data.localizations["eng"].uuid
-      concept_data = File.read(
-        File.join(test_output_path, "concept", "#{concept_id}.yaml"),
-      )
-      localized_concept_data = File.read(
-        File.join(
-          test_output_path, "localized_concept",
-          "#{localized_concept_id}.yaml"
-        ),
-      )
-
-      expect(strip_uuid(concept_data))
-        .to eq(arm_concept_yaml)
-
-      expect(strip_uuid(localized_concept_data))
-        .to eq(arm_localized_concept_yaml)
-    end
-
-    it "extract_terms from `mim.exp`" do # rubocop:disable RSpec/ExampleLength
-      result = test_subject.invoke(:extract_terms, [mim_exp, test_output_path])
-      concept_id = result.first.managed_concepts.first.uuid
-      localized_concept_id = result.first.managed_concepts.first
-        .data.localizations["eng"].uuid
-      concept_data = File.read(
-        File.join(test_output_path, "concept", "#{concept_id}.yaml"),
-      )
-      localized_concept_data = File.read(
-        File.join(
-          test_output_path, "localized_concept",
-          "#{localized_concept_id}.yaml"
-        ),
-      )
-
-      expect(strip_uuid(concept_data))
-        .to eq(mim_concept_yaml)
-
-      expect(strip_uuid(localized_concept_data))
-        .to eq(mim_localized_concept_yaml)
-    end
-  end
-
-  context "when input is resource exp file" do
-    concept_yaml = <<~CONCEPT
+    resource_concept_yaml = <<~CONCEPT
       ---
       data:
         identifier: ISO/TC 184/SC 4/WG 12 N10693
@@ -209,7 +156,7 @@ RSpec.describe Suma::Cli::ExtractTerms do
       id: redacted_uuid
     CONCEPT
 
-    localized_concept_yaml = <<~LOCALIZED_CONCEPT
+    resource_localized_concept_yaml = <<~LOCALIZED_CONCEPT
       ---
       data:
         definition:
@@ -323,29 +270,43 @@ RSpec.describe Suma::Cli::ExtractTerms do
       id: redacted_uuid
     LOCALIZED_CONCEPT
 
-    it "extract_terms from `action_schema.exp`" do # rubocop:disable RSpec/ExampleLength
-      result = test_subject.invoke(
-        :extract_terms, [action_schema_exp, test_output_path]
-      )
-      concept_id = result.first.managed_concepts.first.uuid
-      localized_concept_id = result.first.managed_concepts
-        .first.data.localizations["eng"].uuid
-
-      concept_data = File.read(
-        File.join(test_output_path, "concept", "#{concept_id}.yaml"),
-      )
-      localized_concept_data = File.read(
-        File.join(
-          test_output_path, "localized_concept",
-          "#{localized_concept_id}.yaml"
-        ),
+    it "outputs glossarist yaml files" do # rubocop:disable RSpec/ExampleLength
+      result_collections = test_subject.invoke(
+        :extract_terms, [schema_manifest_file, test_output_path]
       )
 
-      expect(strip_uuid(concept_data))
-        .to eq(concept_yaml)
+      result_collections.each do |result_collection|
+        managed_concept = result_collection.managed_concepts.first
 
-      expect(strip_uuid(localized_concept_data))
-        .to eq(localized_concept_yaml)
+        concept_id = managed_concept.uuid
+        localized_concept_id = managed_concept.data.localizations["eng"].uuid
+
+        concept_data = File.read(
+          File.join(test_output_path, "concept", "#{concept_id}.yaml"),
+        )
+        localized_concept_data = File.read(
+          File.join(
+            test_output_path, "localized_concept",
+            "#{localized_concept_id}.yaml"
+          ),
+        )
+
+        case managed_concept.data.id
+        when "ISO/TC 184/SC 4/WG 12 N2941"
+          expected_concept_yaml = arm_concept_yaml
+          expected_localized_concept_yaml = arm_localized_concept_yaml
+        when "ISO/TC 184/SC 4/WG 12 N1157"
+          expected_concept_yaml = mim_concept_yaml
+          expected_localized_concept_yaml = mim_localized_concept_yaml
+        when "ISO/TC 184/SC 4/WG 12 N10693"
+          expected_concept_yaml = resource_concept_yaml
+          expected_localized_concept_yaml = resource_localized_concept_yaml
+        end
+
+        expect(strip_uuid(concept_data)).to eq(expected_concept_yaml)
+        expect(strip_uuid(localized_concept_data))
+          .to eq(expected_localized_concept_yaml)
+      end
     end
   end
 end

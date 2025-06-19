@@ -331,32 +331,38 @@ out which schemas the document includes.
 
 === Extract terms command
 
-The `suma extract_terms` command extracts terms from EXPRESS files and generates
-Glossarist v2 dataset in the output directory.
+The `suma extract_terms` command extracts terms from SCHEMA_MANIFEST_FILE and
+generates Glossarist v2 dataset in the output directory.
 
 [source,sh]
 ----
-$ suma extract_terms EXPRESS_FILE_PATH GLOSSARIST_OUTPUT_PATH [options]
+$ suma extract_terms SCHEMA_MANIFEST_FILE GLOSSARIST_OUTPUT_PATH [options]
 ----
 
 Parameters:
 
-`EXPRESS_FILE_PATH`:: Path to an EXPRESS file or a folder containing EXPRESS
-files
+`SCHEMA_MANIFEST_FILE`:: Path to SCHEMA_MANIFEST_FILE
 
-`GLOSSARIST_OUTPUT_PATH`:: Path to the output directory for the Glossarist v2 dataset
+`GLOSSARIST_OUTPUT_PATH`:: Path to the output directory for the Glossarist v2
+dataset
 
 Options:
 
-`--[no-]recursive`, `-r`:: Select EXPRESS files recursively based on the specified
-folder path (default: false)
+`language_code`:: Language code for the Glossarist (default: "eng")
 
 [example]
 ====
-.To extract terms from an EXPRESS file
+.To extract terms from SCHEMA_MANIFEST_FILE
 [source,sh]
 ----
-$ bundle exec suma extract_terms path/to/arm.exp glossarist_output
+$ bundle exec suma extract_terms path/to/schemas-smrl-all.yml glossarist_output
+# => generates glossarist_output/concept/foo.yaml and glossarist_output/localized_concept/bar.yaml
+----
+
+.To extract terms from SCHEMA_MANIFEST_FILE with language code "fra"
+[source,sh]
+----
+$ bundle exec suma extract_terms path/to/schemas-smrl-all.yml glossarist_output -l fra
 # => generates glossarist_output/concept/foo.yaml and glossarist_output/localized_concept/bar.yaml
 ----
 ====
