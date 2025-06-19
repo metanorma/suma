@@ -40,8 +40,8 @@ Commands:
   suma build METANORMA_SITE_MANIFEST        # Build collection specified in site manifest (`metanorma*.yml`)
   suma reformat EXPRESS_FILE_PATH           # Reformat EXPRESS files
   suma validate SUBCOMMAND ...ARGS          # Validate express documents
-  suma generate_schemas METANORMA_YAML_FILE SCHEMA_MANIFEST_FILE # Generate Schemas YAML file from Metanorma YAML file
-  suma extract_terms EXPRESS_FILE_PATH GLOSSARIST_OUTPUT_PATH   # Extract terms from EXPRESS files
+  suma generate_schemas METANORMA_MANIFEST_FILE SCHEMA_MANIFEST_FILE # Generate schemas manifest file from Metanorma manifest YAML file
+  suma extract_terms SCHEMA_MANIFEST_FILE GLOSSARIST_OUTPUT_PATH # Extract terms from schema manifest file
   suma help [COMMAND]                       # Describe available commands or one specific command
 ----
 
@@ -291,17 +291,17 @@ Replacement: AsciiMath: xx
 
 === Generate schemas command
 
-The `suma generate_schemas` command generates a YAML file containing all schemas
-defined in the Metanorma YAML file.
+The `suma generate_schemas` command generates a schema manifest file containing
+all schemas defined in the Metanorma manifest file.
 
 [source,sh]
 ----
-$ suma generate_schemas METANORMA_YAML_FILE SCHEMA_MANIFEST_FILE [options]
+$ suma generate_schemas METANORMA_MANIFEST_FILE SCHEMA_MANIFEST_FILE [options]
 ----
 
 Parameters:
 
-`METANORMA_YAML_FILE`:: Path to the Metanorma YAML file
+`METANORMA_MANIFEST_FILE`:: Path to the Metanorma manifest file
 (e.g.: "metanorma-smrl-all.yml")
 
 Options:
@@ -310,14 +310,14 @@ Options:
 
 [example]
 ====
-.To generate schemas YAML file from Metanorma YAML file
+.To generate schemas manifest file from Metanorma manifest file
 [source,sh]
 ----
 $ bundle exec suma generate_schemas metanorma-smrl-all.yml schemas-smrl-all.yml
 # => generates schemas-smrl-all.yml
 ----
 
-.To generate schemas YAML file from Metanorma YAML file and exclude schemas with names like `*_lf.exp`
+.To generate schemas manifest file from Metanorma manifest file and exclude schemas with names like `*_lf.exp`
 [source,sh]
 ----
 $ bundle exec suma generate_schemas metanorma-smrl-all.yml schemas-smrl-all.yml -e *_lf.exp
