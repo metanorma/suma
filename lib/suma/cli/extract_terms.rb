@@ -267,7 +267,7 @@ module Suma
       end
 
       def convert_express_xref(content, schema_domain)
-        content.gsub(/<<express:(.*),(.*)>>/) do |match|
+        content.gsub(/<<express:(.*),(.*)>>/) do
           "{{<#{schema_domain}>" \
             "#{Regexp.last_match(1).split('.').last},#{Regexp.last_match(2)}}}"
         end
