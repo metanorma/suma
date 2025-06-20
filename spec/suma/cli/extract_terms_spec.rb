@@ -94,24 +94,23 @@ RSpec.describe Suma::Cli::ExtractTerms do
         - content: 'An **Activity** is the identification of the occurrence of an action
             that has taken place, is taking place, or is expected to take place in the future.
             The procedure executed during that **Activity** is identified with the {{<application
-            module: Activity_arm>,Activity_method,Activity_method}} that is referred to
-            by the **chosen_method** attribute.'
+            module: Activity_arm>Activity_method,Activity_method}} that is referred to by
+            the **chosen_method** attribute.'
         - content: 'Status information identifying the level of completion of each activity
-            may be provided within an instance of {{<application module: Activity_arm>,Activity_status,Activity_status}}.'
+            may be provided within an instance of {{<application module: Activity_arm>Activity_status,Activity_status}}.'
         - content: 'The items that are affected by an *Activity*, for example as input or
-            output, may be identified within an instance of {{<application module: Activity_arm>,Applied_activity_assignment,Applied_activity_assignment}}.'
+            output, may be identified within an instance of {{<application module: Activity_arm>Applied_activity_assignment,Applied_activity_assignment}}.'
         - content: 'An **Activity_relationship** is a relationship between two instances
-            of {{<application module: Activity_arm>,Activity,Activity}}.'
+            of {{<application module: Activity_arm>Activity,Activity}}.'
         - content: 'An **Activity_status** is the assignment of a status to an {{<application
-            module: Activity_arm>,Activity,Activity}} .'
+            module: Activity_arm>Activity,Activity}} .'
         - content: 'An **Applied_activity_assignment** is an association of an {{<application
-            module: Activity_arm>,Activity,Activity}} with product or activity data. It
-            characterizes the role of the concepts represented with these data with respect
-            to the activity.'
+            module: Activity_arm>Activity,Activity}} with product or activity data. It characterizes
+            the role of the concepts represented with these data with respect to the activity.'
         - content: 'This entity should not be used to represent the association of an activity
             with the organizations that are responsible for its execution or its management.
             That kind of information can be represented with instances of {{<application
-            module: Activity_arm>,Organization_or_person_in_organization_assignment,Organization_or_person_in_organization_assignment}}
+            module: Activity_arm>Organization_or_person_in_organization_assignment,Organization_or_person_in_organization_assignment}}
             .'
         sources:
           origin:
@@ -134,7 +133,7 @@ RSpec.describe Suma::Cli::ExtractTerms do
             the activity {{entity}}"
         examples: []
         notes:
-        - content: 'An **applied_action_assignment** is an {{<application module: Activity_mim>,action_assignment,action_assignment}}.'
+        - content: 'An **applied_action_assignment** is an {{<application module: Activity_mim>action_assignment,action_assignment}}.'
         sources:
           origin:
             ref: ISO 10303-1047:2014 ED3
@@ -168,7 +167,7 @@ RSpec.describe Suma::Cli::ExtractTerms do
             as training someone are examples of actions.
         - content: ISO Directives Part 3 provides guidance for the development of standards
             documents within ISO.
-        - content: 'For the {{<resource: action_schema>,action,action}} whose name attribute
+        - content: 'For the {{<resource: action_schema>action,action}} whose name attribute
             is ''serve dinner'', the name attribute of related instance of *action_method*
             could be ''cook by recipe'' or ''purchase takeout food''.'
         - content: This entity may be used to specify the kind of tool needed to perform
@@ -177,13 +176,13 @@ RSpec.describe Suma::Cli::ExtractTerms do
             by city officials according to the city building codes for earthquake safety.
             The action is the inspection of the building. The directive is issued by city
             officials guided by the city building codes. In an application protocol, the
-            building authority may be associated with an {{<resource: action_schema>,document_reference,document_reference}}.'
+            building authority may be associated with an {{<resource: action_schema>document_reference,document_reference}}.'
         - content: An *executed_action* could be to 'paint the office' with a status of
             'scheduled'. The action is 'paint the office'. The status further qualifies
             the action as 'planned', 'scheduled', or 'completed'.
-        - content: 'Two {{<resource: action_schema>,versioned_action_request,versioned_action_request}}
+        - content: 'Two {{<resource: action_schema>versioned_action_request,versioned_action_request}}
             objects may be related if they address similar problems.'
-        - content: 'A {{<resource: action_schema>,versioned_action_request,versioned_action_request}}
+        - content: 'A {{<resource: action_schema>versioned_action_request,versioned_action_request}}
             may be a version of a work request. It might be related to a different version
             of the work request using a *versioned_action_request_relationship*.'
         notes:
@@ -192,7 +191,7 @@ RSpec.describe Suma::Cli::ExtractTerms do
 
             An **action** identifies an activity that has taken place, is taking place, or is expected to take place in the future.
 
-            An action has a definition that is specified by an {{<resource: action_schema>,action_method,action_method}}.
+            An action has a definition that is specified by an {{<resource: action_schema>action_method,action_method}}.
         - content: In particular application domains, terms such as task, process, activity,
             operation, and event may be synonyms for *action*.
         - content: An **action_directive** is an authoritative instrument that provides
@@ -202,61 +201,61 @@ RSpec.describe Suma::Cli::ExtractTerms do
         - content: This definition may be the basis for actions or the solution for action
             requests.
         - content: 'An **action_method_relationship** is a relationship between two instances
-            of the entity data type {{<resource: action_schema>,action_method,action_method}}
+            of the entity data type {{<resource: action_schema>action_method,action_method}}
             and provides an identification and description of this relationship.'
         - content: The role of *action_method_relationship* can be defined in the annotated
             EXPRESS schemas that use or specialize this entity, or by default, in an agreement
             of common understanding between the partners sharing this information.
-        - content: 'This entity, together with the {{<resource: action_schema>,action_method,action_method}}
+        - content: 'This entity, together with the {{<resource: action_schema>action_method,action_method}}
             entity, is based on the relationship template that is described in annex E.3.'
         - content: This entity may be used to define a procedural relationship among constituent
             activities.
         - content: 'An **action_relationship** is a relationship between two instances of
-            the entity data type {{<resource: action_schema>,action,action}} and provides
+            the entity data type {{<resource: action_schema>action,action}} and provides
             an identification and description of this relationship.'
         - content: The role of *action_relationship* can be defined in the annotated EXPRESS
             schemas that use or specialize this entity, or by default, in an agreement of
             common understanding between the partners sharing this information.
         - content: 'An **action_request_solution** is an association between a {{<resource:
-            action_schema>,action_method,action_method}} that is a potential solution for
+            action_schema>action_method,action_method}} that is a potential solution for
             the request.'
         - content: 'An **action_request_status** is the association of a status with a {{<resource:
-            action_schema>,versioned_action_request,versioned_action_request}}.'
+            action_schema>versioned_action_request,versioned_action_request}}.'
         - content: An **action_resource** is a thing that is identified as being needed
             to carry out an action.
         - content: 'An **action_resource_relationship** is a relationship between two instances
-            of the entity data type {{<resource: action_schema>,action_resource,action_resource}}
+            of the entity data type {{<resource: action_schema>action_resource,action_resource}}
             and provides an identification and description of this relationship.'
         - content: The role of *action_resource_relationship* can be defined in the annotated
             EXPRESS schemas that use or specialize this entity, or by default, in an agreement
             of common understanding between the partners sharing this information.
-        - content: 'This entity, together with the {{<resource: action_schema>,action_resource,action_resource}}
+        - content: 'This entity, together with the {{<resource: action_schema>action_resource,action_resource}}
             entity, is based on the relationship template that is described in annex E.3.'
         - content: 'An **action_resource_type** is the identification of the kind of {{<resource:
-            action_schema>,action_resource,action_resource}} needed to carry out an action.'
+            action_schema>action_resource,action_resource}} needed to carry out an action.'
         - content: 'An **action_status** is the association of a status with an {{<resource:
-            action_schema>,executed_action,executed_action}}.'
+            action_schema>executed_action,executed_action}}.'
         - content: 'Information about the date and time may be associated with the *action_status*
-            through the use of {{<resource: action_schema>,time_assignment,time_assignment}}.'
-        - content: 'A **directed_action** is a type of {{<resource: action_schema>,action_directive,action_directive}}.'
+            through the use of {{<resource: action_schema>time_assignment,time_assignment}}.'
+        - content: 'A **directed_action** is a type of {{<resource: action_schema>action_directive,action_directive}}.'
         - content: 'A **directed_action_assignment** is an association of a {{<resource:
-            action_schema>,directed_action,directed_action}} with product data.'
-        - content: 'An **executed_action** is a type of {{<resource: action_schema>,action,action}}
+            action_schema>directed_action,directed_action}} with product data.'
+        - content: 'An **executed_action** is a type of {{<resource: action_schema>action,action}}
             that is completed, partially completed, or just identified. It may but need
             not have status information associated with it.'
         - content: The role of *executed_action* can be defined in the annotated EXPRESS
             schemas that use or specialize this entity, or by default, in an agreement of
             common understanding between the partners sharing this information.
         - content: 'Status information is associated to *executed_action* through {{<resource:
-            action_schema>,action_status,action_status}}.'
+            action_schema>action_status,action_status}}.'
         - content: A **versioned_action_request** is a specification of a desired result.
         - content: 'The desired result being identified and described may be obtained through
-            one of more {{<resource: action_schema>,action_method,action_method}}s.'
+            one of more {{<resource: action_schema>action_method,action_method}}s.'
         - content: 'A **versioned_action_request_relationship** is a relationship between
-            two {{<resource: action_schema>,versioned_action_request,versioned_action_request}}
+            two {{<resource: action_schema>versioned_action_request,versioned_action_request}}
             objects.'
         - content: 'An **action_directive_relationship** is a relationship between two {{<resource:
-            action_schema>,action_directive,action_directive}} objects.'
+            action_schema>action_directive,action_directive}} objects.'
         sources:
           origin:
             ref: ISO 10303-41:2025 ED8
@@ -303,9 +302,10 @@ RSpec.describe Suma::Cli::ExtractTerms do
           expected_localized_concept_yaml = resource_localized_concept_yaml
         end
 
-        expect(strip_uuid(concept_data)).to eq(expected_concept_yaml)
+        expect(strip_uuid(concept_data))
+          .to eq(strip_uuid(expected_concept_yaml))
         expect(strip_uuid(localized_concept_data))
-          .to eq(expected_localized_concept_yaml)
+          .to eq(strip_uuid(expected_localized_concept_yaml))
       end
     end
   end

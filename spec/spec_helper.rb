@@ -15,6 +15,8 @@ RSpec.configure do |config|
 end
 
 def strip_uuid(str)
-  str.gsub(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/,
-           "redacted_uuid")
+  str.gsub(
+    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/,
+    "redacted_uuid",
+  ).gsub("'redacted_uuid'", "redacted_uuid")
 end
