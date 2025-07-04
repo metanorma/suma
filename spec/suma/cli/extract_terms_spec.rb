@@ -114,7 +114,12 @@ RSpec.describe Suma::Cli::ExtractTerms do
             .'
         sources:
           origin:
-            ref: ISO 10303-1047:2014 ED3
+            ref: ISO 10303
+            custom_locality:
+            - name: version
+              value: '3'
+            - name: schema
+              value: '1'
           type: authoritative
         terms:
         - type: expression
@@ -136,7 +141,12 @@ RSpec.describe Suma::Cli::ExtractTerms do
         - content: 'An **applied_action_assignment** is an {{<application module: Activity_mim>action_assignment,action_assignment}}.'
         sources:
           origin:
-            ref: ISO 10303-1047:2014 ED3
+            ref: ISO 10303
+            custom_locality:
+            - name: version
+              value: '3'
+            - name: schema
+              value: '1'
           type: authoritative
         terms:
         - type: expression
@@ -258,7 +268,10 @@ RSpec.describe Suma::Cli::ExtractTerms do
             action_schema>action_directive,action_directive}} objects.'
         sources:
           origin:
-            ref: ISO 10303-41:2025 ED8
+            ref: ISO 10303
+            custom_locality:
+            - name: version
+              value: '9'
           type: authoritative
         terms:
         - type: expression

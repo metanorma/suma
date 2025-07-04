@@ -20,6 +20,7 @@ module Suma
                              desc: "Language code for the Glossarist"
 
       YAML_FILE_EXTENSIONS = [".yaml", ".yml"].freeze
+      CUSTOM_LOCALITY_NAMES = %w(version schema).freeze
 
       def extract_terms(schema_manifest_file, output_path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
         language_code = options[:language_code]
@@ -159,17 +160,31 @@ module Suma
         remark_item.remarks.first
       end
 
-      def get_source_ref(schema)
+      def get_source_ref(schema) # rubocop:disable Metrics/AbcSize
         remark_item = schema.remark_items.find do |s|
           s.id == "__published_in"
         end
         ref = remark_item&.remarks&.first
 
         if ref
+          origin = Glossarist::Citation.new(ref: ref.split("-").first.strip)
+          custom_locality = get_custom_locality(schema)
+          unless custom_locality.empty?
+            origin.custom_locality = custom_locality
+          end
+
           Glossarist::ConceptSource.new(
             type: "authoritative",
-            origin: Glossarist::Citation.new(ref: ref),
+            origin: origin,
           )
+        end
+      end
+
+      def get_custom_locality(schema)
+        schema.version.items.filter_map do |i|
+          if CUSTOM_LOCALITY_NAMES.include?(i.name)
+            Glossarist::CustomLocality.new(name: i.name, value: i.value)
+          end
         end
       end
 
