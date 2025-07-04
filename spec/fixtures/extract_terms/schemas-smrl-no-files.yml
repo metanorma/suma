@@ -1,8 +1,8 @@
 ---
 schemas:
   Activity_arm:
-    name: arm.exp
+    path: modules/activity/nonexistent.exp
   Activity_mim:
-    name: mim.exp
+    path: modules/activity/nonexistent2.exp
   action_schema:
-    name: action_schema.exp
+    path: resources/action_schema/nonexistent3.exp

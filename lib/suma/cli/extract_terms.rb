@@ -4,9 +4,9 @@ require "thor"
 require_relative "../thor_ext"
 require "fileutils"
 require "expressir"
-require "yaml"
 require "securerandom"
 require "glossarist"
+require_relative "../schema_config/config"
 
 module Suma
   module Cli
@@ -19,24 +19,15 @@ module Suma
       option :language_code, type: :string, default: "eng", aliases: "-l",
                              desc: "Language code for the Glossarist"
 
-      YAML_FILE_EXTENSIONS = [".yaml", ".yml"].freeze
       CUSTOM_LOCALITY_NAMES = %w(version schema).freeze
 
       def extract_terms(schema_manifest_file, output_path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
         language_code = options[:language_code]
         schema_manifest_file = File.expand_path(schema_manifest_file)
 
-        if File.file?(schema_manifest_file)
-          unless File.exist?(schema_manifest_file)
-            raise Errno::ENOENT, "Specified SCHEMA_MANIFEST_FILE " \
-                                 "`#{schema_manifest_file}` not found."
-          end
-
-          if !YAML_FILE_EXTENSIONS.include?(File.extname(schema_manifest_file))
-            raise ArgumentError, "Specified SCHEMA_MANIFEST_FILE " \
-                                 "`#{schema_manifest_file}` " \
-                                 "is not a YAML file."
-          end
+        unless File.exist?(schema_manifest_file)
+          raise Errno::ENOENT, "Specified SCHEMA_MANIFEST_FILE " \
+                               "`#{schema_manifest_file}` not found."
         end
 
         run(schema_manifest_file, output_path, language_code)
@@ -53,24 +44,16 @@ module Suma
       end
 
       def get_exp_files(schema_manifest_file)
-        data = YAML.safe_load(
-          File.read(schema_manifest_file, encoding: "UTF-8"),
-          permitted_classes: [Date, Time, Symbol],
-          permitted_symbols: [],
-          aliases: true,
-        )
+        config = Suma::SchemaConfig::Config.from_file(schema_manifest_file)
 
-        paths = data["schemas"].values.filter_map { |v| v["path"] }
+        paths = config.schemas.map(&:path)
 
         if paths.empty?
           raise Errno::ENOENT, "No EXPRESS files found in " \
                                "`#{schema_manifest_file}`."
         end
 
-        # resolve paths relative to the directory of the schema manifest file
-        paths.map do |path|
-          File.expand_path(path, File.dirname(schema_manifest_file))
-        end
+        paths
       end
 
       def extract(exp_file, output_path, language_code) # rubocop:disable Metrics/AbcSize
