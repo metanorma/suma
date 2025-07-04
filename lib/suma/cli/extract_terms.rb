@@ -137,14 +137,14 @@ module Suma
         remark_item = schema.remark_items.find do |s|
           s.id == "__identifier"
         end
-        remark_item.remarks.first || SecureRandom.uuid
+        remark_item&.remarks&.first || SecureRandom.uuid
       end
 
       def get_title(schema)
         remark_item = schema.remark_items.find do |s|
           s.id == "__title"
         end
-        remark_item.remarks.first
+        remark_item&.remarks&.first
       end
 
       def get_source_ref(schema) # rubocop:disable Metrics/AbcSize
@@ -185,7 +185,13 @@ module Suma
           s.id == "__schema_file"
         end
 
-        File.basename(remark_item.remarks.first, ".*") == "module"
+        remark = remark_item&.remarks&.first
+
+        return File.basename(remark, ".*") == "module" if remark
+
+        # if remark is not defined then we check the file whether it is in
+        # resources folder
+        !schema.file.match?("/resources/")
       end
 
       def arm?(schema_id)
