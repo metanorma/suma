@@ -74,7 +74,8 @@ module Suma
       end
 
       def extract(exp_file, output_path, language_code) # rubocop:disable Metrics/AbcSize
-        exp_file_path_rel = Pathname.new(exp_file).relative_path_from(Pathname.getwd)
+        exp_file_path_rel = Pathname.new(exp_file)
+          .relative_path_from(Pathname.getwd)
         puts "Processing EXPRESS file: #{exp_file_path_rel}"
         repo = Expressir::Express::Parser.from_file(exp_file)
         schema = get_default_schema(repo)
@@ -87,7 +88,8 @@ module Suma
       end
 
       def output_data(collection, output_path, exp_file)
-        exp_file_path_rel = Pathname.new(exp_file).relative_path_from(Pathname.getwd)
+        exp_file_path_rel = Pathname.new(exp_file)
+          .relative_path_from(Pathname.getwd)
         unless File.exist?(output_path)
           FileUtils.mkdir_p(File.expand_path(output_path))
         end
