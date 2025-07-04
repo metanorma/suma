@@ -57,7 +57,7 @@ module Suma
         # containing '(*text*)' inside
         comments = file_content.scan(/\(\*"(.*?)\n\*\)/m).map(&:first)
 
-        if comments.count.positive?
+        if comments.any?
           content_without_comments = file_content.gsub(/\(\*".*?\n\*\)/m, "")
 
           # remove extra newlines
