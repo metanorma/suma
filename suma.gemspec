@@ -40,5 +40,6 @@ Gem::Specification.new do |spec| # rubocop:disable Metrics/BlockLength
   spec.add_dependency "ruby-progressbar"
   spec.add_dependency "terminal-table", "~> 3.0"
   spec.add_dependency "thor", ">= 0.20"
+  spec.add_dependency "glossarist", "~> 2.3.7"
   spec.metadata["rubygems_mfa_required"] = "true"
 end
