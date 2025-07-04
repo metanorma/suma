@@ -38,7 +38,7 @@ RSpec.describe Suma::Cli::ExtractTerms do
       end.to raise_error(Errno::ENOENT)
     end
 
-    it "raises Psych::SyntaxError when file is not valid YAML" do
+    it "raises InvalidSchemaManifestError when file is not valid YAML" do
       expect do
         test_subject.invoke(
           :extract_terms,
@@ -47,7 +47,7 @@ RSpec.describe Suma::Cli::ExtractTerms do
             test_output_path,
           ],
         )
-      end.to raise_error(Psych::SyntaxError)
+      end.to raise_error(Expressir::InvalidSchemaManifestError)
     end
 
     it "raises ENOENT error when no files found" do
