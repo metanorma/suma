@@ -3,6 +3,7 @@
 require "metanorma/cli"
 require "metanorma/cli/collection"
 require "metanorma/collection/collection"
+require "expressir"
 
 module Suma
   class CollectionManifest < Metanorma::Collection::Config::Manifest
@@ -36,7 +37,7 @@ module Suma
     end
 
     def export_schema_config(path)
-      export_config = @schema_config || Suma::SchemaConfig::Config.new
+      export_config = @schema_config || Expressir::SchemaManifest.new
       return export_config unless entry
 
       entry.each do |x|
@@ -127,7 +128,7 @@ module Suma
       if File.basename(file) == "collection.yml"
         schemas_yaml_path = File.join(File.dirname(file), "schemas.yaml")
         if schemas_yaml_path && File.exist?(schemas_yaml_path)
-          @schema_config = Suma::SchemaConfig::Config.from_file(schemas_yaml_path)
+          @schema_config = Expressir::SchemaManifest.from_file(schemas_yaml_path)
         end
       end
     end

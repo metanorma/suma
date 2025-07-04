@@ -3,7 +3,7 @@
 require_relative "express_schema"
 require_relative "schema_attachment"
 require_relative "schema_document"
-require_relative "schema_config"
+require "expressir"
 require_relative "utils"
 
 module Suma
@@ -19,7 +19,7 @@ module Suma
       @output_path_docs = Pathname.new(output_path_docs || Dir.pwd).expand_path
       @output_path_schemas = Pathname.new(output_path_schemas || Dir.pwd).expand_path
       @config = config
-      @config ||= config_yaml && SchemaConfig::Config.from_file(config_yaml)
+      @config ||= config_yaml && Expressir::SchemaManifest.from_file(config_yaml)
       @manifest = manifest
     end
 

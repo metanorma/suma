@@ -6,7 +6,6 @@ require "fileutils"
 require "expressir"
 require "securerandom"
 require "glossarist"
-require_relative "../schema_config/config"
 
 module Suma
   module Cli
@@ -44,8 +43,7 @@ module Suma
       end
 
       def get_exp_files(schema_manifest_file)
-        config = Suma::SchemaConfig::Config.from_file(schema_manifest_file)
-
+        config = Expressir::SchemaManifest.from_file(schema_manifest_file)
         paths = config.schemas.map(&:path)
 
         if paths.empty?
