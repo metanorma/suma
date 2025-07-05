@@ -351,7 +351,7 @@ module Suma
         first_paragraph = paragraphs.first
 
         combined = if paragraphs.length > 1
-                     paragraphs[1..-1].inject(first_paragraph) do |acc, p|
+                     paragraphs[1..].inject(first_paragraph) do |acc, p|
                        combine_paragraphs(acc, p)
                      end
                    else
