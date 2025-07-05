@@ -70,41 +70,48 @@ RSpec.describe Suma::Cli::ExtractTerms do
       expect(result_collections.length).to eq(3)
 
       # Check Activity_arm schema - should have 4 entities
-      activity_arm_collection = result_collections.find { |c|
+      activity_arm_collection = result_collections.find do |c|
         c.managed_concepts.any? { |mc| mc.data.id.start_with?("Activity_arm.") }
-      }
+      end
       expect(activity_arm_collection.managed_concepts.length).to eq(4)
 
       expected_arm_ids = [
         "Activity_arm.Activity",
         "Activity_arm.Activity_relationship",
         "Activity_arm.Activity_status",
-        "Activity_arm.Applied_activity_assignment"
+        "Activity_arm.Applied_activity_assignment",
       ]
-      actual_arm_ids = activity_arm_collection.managed_concepts.map { |mc| mc.data.id }.sort
+      actual_arm_ids = activity_arm_collection.managed_concepts.map do |mc|
+        mc.data.id
+      end.sort
       expect(actual_arm_ids).to eq(expected_arm_ids.sort)
 
       # Check Activity_mim schema - should have 1 entity
-      activity_mim_collection = result_collections.find { |c|
+      activity_mim_collection = result_collections.find do |c|
         c.managed_concepts.any? { |mc| mc.data.id.start_with?("Activity_mim.") }
-      }
+      end
       expect(activity_mim_collection.managed_concepts.length).to eq(1)
       expect(activity_mim_collection.managed_concepts.first.data.id).to eq("Activity_mim.applied_action_assignment")
 
       # Check action_schema - should have 17 entities
-      action_schema_collection = result_collections.find { |c|
-        c.managed_concepts.any? { |mc| mc.data.id.start_with?("action_schema.") }
-      }
+      action_schema_collection = result_collections.find do |c|
+        c.managed_concepts.any? do |mc|
+          mc.data.id.start_with?("action_schema.")
+        end
+      end
       expect(action_schema_collection.managed_concepts.length).to eq(17)
 
       # Verify that all concepts have the correct identifier format
       all_concepts = result_collections.flat_map(&:managed_concepts)
       all_concepts.each do |concept|
-        expect(concept.data.id).to match(/\A\w+\.\w+\z/), "Expected format 'schema.entity' but got '#{concept.data.id}'"
+        expect(concept.data.id).to match(/\A\w+\.\w+\z/),
+                                   "Expected format 'schema.entity' but got '#{concept.data.id}'"
       end
 
       # Verify that concepts have proper terms (entity names)
-      activity_concept = activity_arm_collection.managed_concepts.find { |mc| mc.data.id == "Activity_arm.Activity" }
+      activity_concept = activity_arm_collection.managed_concepts.find do |mc|
+        mc.data.id == "Activity_arm.Activity"
+      end
       localized_concept = activity_concept.data.localizations["eng"]
       expect(localized_concept.data.terms.first.designation).to eq("Activity")
 
