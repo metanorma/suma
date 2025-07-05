@@ -331,8 +331,10 @@ out which schemas the document includes.
 
 === Extract terms command
 
-The `suma extract_terms` command extracts terms from SCHEMA_MANIFEST_FILE and
-generates Glossarist v2 dataset in the output directory.
+The `suma extract_terms` command extracts terms from EXPRESS schemas and
+generates a Glossarist v2 dataset in the output directory. This command processes
+various types of STEP schemas and creates standardized terminology datasets
+suitable for glossary and dictionary applications.
 
 [source,sh]
 ----
@@ -341,38 +343,80 @@ $ suma extract_terms SCHEMA_MANIFEST_FILE GLOSSARIST_OUTPUT_PATH [options]
 
 Parameters:
 
-`SCHEMA_MANIFEST_FILE`:: Path to SCHEMA_MANIFEST_FILE
+`SCHEMA_MANIFEST_FILE`:: Path to the schema manifest file that lists all schemas
+to process (e.g., "schemas-smrl-all.yml")
 
-`GLOSSARIST_OUTPUT_PATH`:: Path to the output directory for the Glossarist v2
-dataset
+`GLOSSARIST_OUTPUT_PATH`:: Path to the output directory where the Glossarist v2
+dataset will be generated
 
 Options:
 
-`language_code`:: Language code for the Glossarist (default: "eng")
+`--language_code`, `-l`:: Language code for the Glossarist dataset (default: "eng")
 
+==== Supported schema types
+
+The command supports extraction from the following EXPRESS schema types:
+
+* **ARM (Application Reference Model)** - Application module schemas ending with `_arm`
+* **MIM (Module Implementation Model)** - Application module schemas ending with `_mim`
+* **Resource schemas** - General resource schemas
+* **BOM (Business Object Model)** - Business object model schemas ending with `_bom`
+
+==== Extracted terms
+
+The command extracts the following types of terms from EXPRESS schemas:
+
+* **Entities** - EXPRESS entity definitions with their attributes and relationships
+* **Types** - EXPRESS type definitions including enumerations and select types
+* **Functions** - EXPRESS function definitions
+* **Procedures** - EXPRESS procedure definitions
+* **Constants** - EXPRESS constant definitions
+
+Each extracted term includes:
+
+* Unique identifier based on schema and term name
+* Term definition and description
+* Source schema information
+* Appropriate domain classification (application module, resource, or business object model)
+
+==== Output format
+
+The command generates a Glossarist v2 compliant dataset with:
+
+* `concept/` directory containing concept definition files
+* `localized_concept/` directory containing localized concept files
+* YAML format following Glossarist v2 schema specifications
+* Proper cross-references and citations to source schemas
+
+.To extract terms from a schema manifest file
 [example]
 ====
-.To extract terms from SCHEMA_MANIFEST_FILE
 [source,sh]
 ----
-$ bundle exec suma extract_terms path/to/schemas-smrl-all.yml glossarist_output
-# => generates glossarist_output/concept/foo.yaml and glossarist_output/localized_concept/bar.yaml
-----
-
-.To extract terms from SCHEMA_MANIFEST_FILE with language code "fra"
-[source,sh]
-----
-$ bundle exec suma extract_terms path/to/schemas-smrl-all.yml glossarist_output -l fra
-# => generates glossarist_output/concept/foo.yaml and glossarist_output/localized_concept/bar.yaml
+$ bundle exec suma extract_terms schemas-smrl-all.yml glossarist_output
+# => generates glossarist_output/concept/*.yaml and glossarist_output/localized_concept/*.yaml
 ----
 ====
+
+.To extract terms from a specific schema subset
+[example]
+====
+[source,sh]
+----
+$ bundle exec suma extract_terms schemas-activity-modules.yml terms_output
+# => processes only schemas listed in the manifest file
+----
+====
+
+The generated dataset is meant to be used for ISO 10303-2.
 
 
 == Usage: Ruby
 
 === General
 
-Suma can be used programmatically in your Ruby applications. The following examples demonstrate common usage patterns.
+Suma can be used programmatically in your Ruby applications. The following
+examples demonstrate common usage patterns.
 
 === Building collections
 
