@@ -18,9 +18,7 @@ module Suma
       option :language_code, type: :string, default: "eng", aliases: "-l",
                              desc: "Language code for the Glossarist"
 
-      CUSTOM_LOCALITY_NAMES = %w(version schema).freeze
-
-      def extract_terms(schema_manifest_file, output_path) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+      def extract_terms(schema_manifest_file, output_path)
         language_code = options[:language_code]
         schema_manifest_file = File.expand_path(schema_manifest_file)
 
@@ -35,9 +33,7 @@ module Suma
       private
 
       def run(schema_manifest_file, output_path, language_code = "eng")
-        exp_files = get_exp_files(schema_manifest_file)
-
-        exp_files.map do |exp_file|
+        get_exp_files(schema_manifest_file).map do |exp_file|
           extract(exp_file, output_path, language_code)
         end
       end
@@ -54,23 +50,25 @@ module Suma
         paths
       end
 
-      def extract(exp_file, output_path, language_code) # rubocop:disable Metrics/AbcSize
-        exp_file_path_rel = Pathname.new(exp_file)
-          .relative_path_from(Pathname.getwd)
-        puts "Processing EXPRESS file: #{exp_file_path_rel}"
+      def extract(exp_file, output_path, language_code)
+        exp_path_rel = Pathname.new(exp_file).relative_path_from(Pathname.getwd)
+        puts "Building terms: #{exp_path_rel}"
+
         repo = Expressir::Express::Parser.from_file(exp_file)
         schema = get_default_schema(repo)
+
+        unless schema.file
+          raise Error.new("Schema must have an associated file")
+        end
 
         collection = build_managed_concept_collection(
           schema, language_code
         )
 
-        output_data(collection, output_path, exp_file)
+        output_data(collection, output_path)
       end
 
-      def output_data(collection, output_path, exp_file)
-        exp_file_path_rel = Pathname.new(exp_file)
-          .relative_path_from(Pathname.getwd)
+      def output_data(collection, output_path)
         unless File.exist?(output_path)
           FileUtils.mkdir_p(File.expand_path(output_path))
         end
@@ -78,122 +76,126 @@ module Suma
         puts "Saving collection to files in: #{output_path}"
         collection.save_to_files(File.expand_path(output_path))
 
-        puts "Processing EXPRESS file: #{exp_file_path_rel}...Done."
         collection
       end
 
-      def build_managed_concept_collection(schema, language_code) # rubocop:disable Metrics/AbcSize
-        managed_concept_data = Glossarist::ManagedConceptData.new
-        managed_concept_data.id = get_identifier(schema)
+      def build_managed_concept_collection(schema, language_code)
+        Glossarist::ManagedConceptCollection.new.tap do |collection|
+          # Extract schema-level citation data once to reuse across all entities
+          source_ref = get_source_ref(schema)
 
-        localized_concept_id = SecureRandom.uuid
-        localized_concept = build_localized_concept(
-          schema, language_code, localized_concept_id
-        )
+          # Create one concept per entity
+          schema.entities.each do |entity|
+            localized_concept = build_localized_concept(
+              schema: schema,
+              entity: entity,
+              language_code: language_code,
+              source_ref: source_ref,
+            )
 
-        managed_concept_data
-          .localizations[localized_concept.language_code] = localized_concept
+            managed_concept_data = Glossarist::ManagedConceptData.new.tap do |data|
+              data.id = get_entity_identifier(schema, entity)
 
-        managed_concept_data.localized_concepts = {
-          localized_concept.language_code => localized_concept_id,
-        }
+              # TODO: Why do we need both localizations and localized_concepts??
+              data.localizations[language_code] = localized_concept
+              # uuid is automatically set from the serialization of the object
+              data.localized_concepts = {
+                language_code => localized_concept.uuid,
+              }
+            end
 
-        managed_concept = Glossarist::ManagedConcept.new
-        managed_concept.uuid = SecureRandom.uuid
-        managed_concept.data = managed_concept_data
+            managed_concept = Glossarist::ManagedConcept.new.tap do |concept|
+              # uuid is automatically set from the serialization of the object
+              concept.id = get_entity_identifier(schema, entity)
+              concept.data = managed_concept_data
+            end
 
-        collection = Glossarist::ManagedConceptCollection.new
-        collection.store(managed_concept)
-        collection
+            collection.store(managed_concept)
+          end
+        end
       end
 
-      def build_localized_concept(schema, language_code, localized_concept_id) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
+      def build_localized_concept(schema:, entity:, language_code:, source_ref:)
         schema_domain = get_domain(schema)
 
-        localized_concept_data = Glossarist::ConceptData.new
-        localized_concept_data.terms = get_terms(schema) || []
-        localized_concept_data.definition = get_definitions(schema) || []
-        localized_concept_data.notes = get_notes(schema, schema_domain) || []
-        localized_concept_data.examples = get_examples(schema,
-                                                       schema_domain) || []
-        localized_concept_data.language_code = language_code
-        localized_concept_data.domain = schema_domain
-        localized_concept_data.sources = get_source_ref(schema) || []
+        localized_concept_data = Glossarist::ConceptData.new.tap do |data|
+          data.terms = get_entity_terms(entity)
+          data.definition = get_entity_definitions(entity, schema)
+          data.language_code = language_code
+          data.domain = schema_domain
+          data.sources = [source_ref] if source_ref
 
-        localized_concept = Glossarist::LocalizedConcept.new
-        localized_concept.data = localized_concept_data
+          # Only assign optional fields if they have content
+          notes = get_entity_notes(entity, schema_domain)
+          data.notes = notes if notes && !notes.empty?
 
-        localized_concept.uuid = localized_concept_id
-        localized_concept
+          examples = get_entity_examples(entity, schema_domain)
+          data.examples = examples if examples && !examples.empty?
+        end
+
+        Glossarist::LocalizedConcept.new.tap do |concept|
+          concept.data = localized_concept_data
+        end
       end
 
+      # We only deal with 1 schema
       def get_default_schema(repo)
         repo.schemas.first
       end
 
-      def get_identifier(schema)
-        remark_item = schema.remark_items.find do |s|
-          s.id == "__identifier"
-        end
-        remark_item&.remarks&.first || SecureRandom.uuid
+      def find_remark_value(schema, remark_id)
+        schema.remark_items.find { |s| s.id == remark_id }&.remarks&.first
       end
 
-      def get_title(schema)
-        remark_item = schema.remark_items.find do |s|
-          s.id == "__title"
-        end
-        remark_item&.remarks&.first
+      def get_entity_identifier(schema, entity)
+        "#{schema.id}.#{entity.id}"
       end
 
-      def get_source_ref(schema) # rubocop:disable Metrics/AbcSize
-        remark_item = schema.remark_items.find do |s|
-          s.id == "__published_in"
-        end
-        ref = remark_item&.remarks&.first
+      def get_source_ref(schema)
+        origin = Glossarist::Citation.new.tap do |citation|
+          citation.ref = "ISO 10303"
+          custom_locality = build_custom_locality(schema)
 
-        if ref
-          origin = Glossarist::Citation.new(ref: ref.split("-").first.strip)
-          custom_locality = get_custom_locality(schema)
           unless custom_locality.empty?
-            origin.custom_locality = custom_locality
+            citation.custom_locality = custom_locality
           end
+        end
 
-          Glossarist::ConceptSource.new(
-            type: "authoritative",
-            origin: origin,
+        Glossarist::ConceptSource.new(type: "authoritative", origin: origin)
+      end
+
+      # SCHEMA action_schema '{iso standard 10303 part(41) version(9) object(1) action-schema(1)}';
+      def build_custom_locality(schema)
+        [].tap do |localities|
+          # Add schema name
+          localities << Glossarist::CustomLocality.new(
+            name: "schema",
+            value: schema.id,
           )
-        end
-      end
 
-      def get_custom_locality(schema)
-        schema.version.items.filter_map do |i|
-          if CUSTOM_LOCALITY_NAMES.include?(i.name)
-            Glossarist::CustomLocality.new(name: i.name, value: i.value)
+          # Add version if available
+          version_item = schema.version.items.detect { |i| i.name == "version" }
+          if version_item
+            localities << Glossarist::CustomLocality.new(
+              name: "version",
+              value: version_item.value,
+            )
           end
         end
       end
 
+      # TODO: What if this was a "bom"?
       def get_domain(schema)
-        prefix = module?(schema) ? "application module" : "resource"
+        prefix = mim?(schema.id) || arm?(schema.id) ? "application module" : "resource"
         "#{prefix}: #{schema.id}"
-      end
-
-      def module?(schema)
-        remark_item = schema.remark_items.find do |s|
-          s.id == "__schema_file"
-        end
-
-        remark = remark_item&.remarks&.first
-
-        return File.basename(remark, ".*") == "module" if remark
-
-        # if remark is not defined then we check the file whether it is in
-        # resources folder
-        !schema.file.match?("/resources/")
       end
 
       def arm?(schema_id)
         schema_id.end_with?("_arm")
+      end
+
+      def mim?(schema_id)
+        schema_id.end_with?("_mim")
       end
 
       def get_terms(schema)
@@ -209,68 +211,209 @@ module Suma
         end
       end
 
-      def get_schema_type(schema)
-        return "resource" if !module?(schema)
-
-        return "arm" if arm?(schema.id)
-
-        "min"
+      def get_entity_terms(entity)
+        # For now, use the entity ID as the term
+        # This could be enhanced to look for entity-specific title remark items
+        [
+          Glossarist::Designation::Base.new(
+            designation: entity.id,
+            type: "expression",
+            normative_status: "preferred",
+          ),
+        ]
       end
 
-      def get_definitions(schema)
-        type = get_schema_type(schema)
-        subtype = get_subtype_of(schema)
+      def get_entity_definitions(entity, schema)
+        schema_type = extract_file_type(schema.file)
+        schema_domain = get_domain(schema)
 
-        represent_str = "that represents the #{get_title(schema)} {{entity}}"
-        if subtype
-          represent_str = "that is a type of #{subtype} #{represent_str}"
-        end
-
-        definition = case type
-                     when "arm"
-                       "{{application object}} #{represent_str}"
-                     else
-                       "{{entity data type}} #{represent_str}"
-                     end
+        definition = generate_entity_definition(entity, schema_domain,
+                                                schema_type)
         [Glossarist::DetailedDefinition.new(content: definition)]
       end
 
-      def get_subtype_of(schema)
-        schema.entities.first&.subtype_of&.first&.id # rubocop:disable Style/SafeNavigationChainLength
-      end
+      def get_entity_notes(entity, schema_domain)
+        notes = []
 
-      # get entities remarks and remark items with id `__note` as notes
-      def get_notes(schema, schema_domain) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity,Metrics/AbcSize
-        notes = schema.entities&.map do |entity|
-          [
-            entity.remarks,
-            entity.remark_items&.select do |ri|
-              ri.id == "__note"
-            end&.map(&:remarks),
-          ]
-        end&.flatten&.compact
+        # Add trimmed definition from entity description as first note
+        if entity.remarks && !entity.remarks.empty?
+          trimmed_def = trim_definition(entity.remarks)
+          if trimmed_def && !trimmed_def.empty?
+            notes << Glossarist::DetailedDefinition.new(
+              content: convert_express_xref(trimmed_def, schema_domain),
+            )
+          end
+        end
 
-        notes&.map do |note|
-          Glossarist::DetailedDefinition.new(
+        # Add other notes
+        other_notes = [
+          entity.remark_items&.select do |ri|
+            ri.id == "__note"
+          end&.map(&:remarks),
+        ].flatten.compact
+
+        other_notes.each do |note|
+          notes << Glossarist::DetailedDefinition.new(
             content: convert_express_xref(note, schema_domain),
           )
         end
+
+        notes
       end
 
-      # get entities remark items with id `__example` as examples
-      def get_examples(schema, schema_domain) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity,Metrics/AbcSize
-        examples = schema.entities&.map do |entity|
-          entity.remark_items&.select do |ri|
-            ri.id == "__example"
-          end&.map(&:remarks)
-        end&.flatten&.compact
+      def get_entity_examples(entity, schema_domain)
+        examples = entity.remark_items&.select do |ri|
+          ri.id == "__example"
+        end&.map(&:remarks)&.flatten&.compact || []
 
-        examples&.map do |example|
+        examples.map do |example|
           Glossarist::DetailedDefinition.new(
             content: convert_express_xref(example, schema_domain),
           )
         end
       end
+
+      def extract_file_type(filename)
+        match = filename.match(/(arm|mim|bom)_annotated\.exp$/)
+        return "resource" unless match
+
+        {
+          "arm" => "module_arm",
+          "mim" => "module_mim",
+          "bom" => "business_object_model",
+        }[match.captures[0]] || "resource"
+      end
+
+      def get_schema_type(schema)
+        return "mim" if mim?(schema.id)
+        return "arm" if arm?(schema.id)
+        return "bom" if bom?(schema.id)
+
+        "resource"
+      end
+
+      def bom?(schema_id)
+        schema_id.end_with?("_bom")
+      end
+
+      # rubocop:disable Metrics/MethodLength
+      def combine_paragraphs(full_paragraph, next_paragraph)
+        # If full_paragraph already contains a period, extract that.
+        if m = full_paragraph.match(/\A(?<inner_first>[^\n]*?\.)\s/)
+          # puts "CONDITION 1"
+          if m[:inner_first]
+            return m[:inner_first]
+          else
+            return full_paragraph
+          end
+        end
+
+        # If full_paragraph ends with a period, this is the last.
+        if /\.\s*\Z/.match?(full_paragraph)
+          # puts "CONDITION 2"
+          return full_paragraph
+        end
+
+        # If next_paragraph is a list
+        if next_paragraph.start_with?("*")
+          # puts "CONDITION 3"
+          return "#{full_paragraph}\n\n#{next_paragraph}"
+        end
+
+        # If next_paragraph is a continuation of a list
+        if next_paragraph.start_with?("which", "that")
+          # puts "CONDITION 4"
+          return "#{full_paragraph}\n\n#{next_paragraph}"
+        end
+
+        # puts "CONDITION 5"
+        full_paragraph
+      end
+
+      def trim_definition(definition)
+        return nil if definition.nil? || definition.empty?
+
+        # Handle case where definition is an array
+        definition_str = if definition.is_a?(Array)
+                           definition.join("\n\n")
+                         else
+                           definition.to_s
+                         end
+
+        return nil if definition_str.empty?
+
+        # Unless the first paragraph ends with "between" and is followed by a
+        # list, don't split
+        paragraphs = definition_str.split("\n\n")
+
+        # puts paragraphs.inspect
+
+        first_paragraph = paragraphs.first
+
+        combined = if paragraphs.length > 1
+                     paragraphs[1..-1].inject(first_paragraph) do |acc, p|
+                       combine_paragraphs(acc, p)
+                     end
+                   else
+                     combine_paragraphs(first_paragraph, "")
+                   end
+
+        # puts "combined--------- #{combined}"
+
+        # Remove comments until end of line
+        combined = "#{combined}\n"
+        combined.gsub!(/\n\/\/.*?\n/, "\n")
+        combined.strip!
+
+        express_reference_to_mention(combined)
+      end
+      # rubocop:enable Metrics/MethodLength
+
+      # Replace `<<express:{schema}.{entity},{render}>>` with {{entity,render}}
+      def express_reference_to_mention(description)
+        # TODO: Use Expressir to check whether the "entity" is really an
+        # EXPRESS ENTITY. If not, skip the mention.
+        description.gsub(/<<express:([^,]+),([^>]+)>>/) do |_match|
+          "{{#{Regexp.last_match[1].split('.').last},#{Regexp.last_match[2]}}}"
+        end
+      end
+
+      def entity_name_to_text(entity_id)
+        entity_id.downcase.gsub("_", " ")
+      end
+
+      # rubocop:disable Layout/LineLength
+      def generate_entity_definition(entity, _domain, schema_type)
+        return "" if entity.nil?
+
+        # See: metanorma/iso-10303-2#90
+        entity_type = case schema_type
+                      when "module_arm"
+                        "{{application object}}"
+                      when "module_mim"
+                        "{{entity data type}}"
+                      when "resource", "business_object_model"
+                        "{{entity data type}}"
+                      else
+                        raise Error.new("[suma] encountered unsupported schema_type")
+                      end
+
+        if entity.subtype_of.empty?
+          "#{entity_type} " \
+            "that represents the " \
+            "#{entity_name_to_text(entity.id)} {{entity}}"
+        else
+          entity_subtypes = entity.subtype_of.map do |e|
+            "{{#{e.id}}}"
+          end
+
+          "#{entity_type} that is a type of " \
+            "#{entity_subtypes.join(' and ')} " \
+            "that represents the " \
+            "#{entity_name_to_text(entity.id)} {{entity}}"
+        end
+      end
+      # rubocop:enable Layout/LineLength
 
       def convert_express_xref(content, schema_domain)
         content.gsub(/<<express:(.*),(.*)>>/) do
@@ -279,13 +422,8 @@ module Suma
         end
       end
 
-      def get_concept_filename(concept)
-        identifier = concept["data"]["identifier"]
-        "#{sanitize_string(identifier)}.yaml"
-      end
-
-      def sanitize_string(str)
-        str.gsub(" ", "_").gsub("/", "_").gsub(":", "_")
+      def id_from_designation(designation)
+        designation.gsub(" ", "_").gsub("/", "_").gsub(":", "_")
       end
     end
   end

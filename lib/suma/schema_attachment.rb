@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "fileutils"
-# require "metanorma/cli"
 require "expressir"
+# require "metanorma/cli"
 
 module Suma
   class SchemaAttachment
