@@ -2,6 +2,7 @@
 
 require "thor"
 require_relative "../utils"
+require "expressir"
 
 module Suma
   module Cli
