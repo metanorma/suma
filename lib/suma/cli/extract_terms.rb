@@ -93,7 +93,7 @@ module Suma
               source_ref: source_ref,
             )
 
-            managed_concept_data = Glossarist::ManagedConceptData.new.tap do |data|
+            managed_data = Glossarist::ManagedConceptData.new.tap do |data|
               data.id = get_entity_identifier(schema, entity)
 
               # TODO: Why do we need both localizations and localized_concepts??
@@ -107,7 +107,7 @@ module Suma
             managed_concept = Glossarist::ManagedConcept.new.tap do |concept|
               # uuid is automatically set from the serialization of the object
               concept.id = get_entity_identifier(schema, entity)
-              concept.data = managed_concept_data
+              concept.data = managed_data
             end
 
             collection.store(managed_concept)
@@ -164,7 +164,8 @@ module Suma
         Glossarist::ConceptSource.new(type: "authoritative", origin: origin)
       end
 
-      # SCHEMA action_schema '{iso standard 10303 part(41) version(9) object(1) action-schema(1)}';
+      # SCHEMA action_schema
+      # '{iso standard 10303 part(41) version(9) object(1) action-schema(1)}';
       def build_custom_locality(schema)
         [].tap do |localities|
           # Add schema name
@@ -186,7 +187,12 @@ module Suma
 
       # TODO: What if this was a "bom"?
       def get_domain(schema)
-        prefix = mim?(schema.id) || arm?(schema.id) ? "application module" : "resource"
+        prefix = if mim?(schema.id) || arm?(schema.id)
+                   "application module"
+                 else
+                   "resource"
+                 end
+
         "#{prefix}: #{schema.id}"
       end
 
