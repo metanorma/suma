@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "expressir"
 require_relative "suma/version"
 require_relative "suma/processor"
 

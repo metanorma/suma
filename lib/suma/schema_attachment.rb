@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 require "fileutils"
+require "expressir"
 # require "metanorma/cli"
-require_relative "schema_config"
 
 module Suma
   class SchemaAttachment
@@ -68,8 +68,8 @@ module Suma
 
     def to_config(path: nil)
       # return @config unless @config
-      @config = SchemaConfig::Config.new
-      @config.schemas << SchemaConfig::Schema.new(
+      @config = Expressir::SchemaManifest.new
+      @config.schemas << Expressir::SchemaManifestEntry.new(
         id: @schema.id,
         path: @schema.path,
       )

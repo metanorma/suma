@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "schema_config"
 require_relative "schema_collection"
 require_relative "utils"
 require_relative "collection_config"
