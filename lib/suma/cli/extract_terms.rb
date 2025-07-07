@@ -109,6 +109,7 @@ module Suma
             managed_concept = Glossarist::ManagedConcept.new.tap do |concept|
               # uuid is automatically set from the serialization of the object
               concept.id = get_entity_identifier(schema, entity)
+              concept.uuid = concept.id
               concept.data = managed_data
             end
 
