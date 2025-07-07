@@ -100,7 +100,9 @@ module Suma
               data.localizations[language_code] = localized_concept
               # uuid is automatically set from the serialization of the object
               data.localized_concepts = {
-                language_code => localized_concept.uuid,
+                language_code => get_localized_concept_identifier(
+                  schema, entity, language_code
+                ),
               }
             end
 
@@ -149,6 +151,10 @@ module Suma
 
       def get_entity_identifier(schema, entity)
         "#{schema.id}.#{entity.id}"
+      end
+
+      def get_localized_concept_identifier(schema, entity, lang)
+        "#{schema.id}.#{entity.id}-#{lang}"
       end
 
       def get_source_ref(schema)
