@@ -12,6 +12,17 @@ module Suma
     # ExtractTerms command using Expressir to extract terms into the
     # Glossarist v2 format
     class ExtractTerms < Thor
+      # Matches patterns like "A thing is a type of {{entity}}." or
+      # "An object is a type of a {{entity}}"
+      REDUNDANT_NOTE_REGEX =
+        %r{
+          ^An?                   # Starts with "A" or "An"
+          \s.*?\sis\sa\stype\sof # Text followed by "is a type of"
+          (\sa|\san)?            # Optional " a" or " an"
+          \s\{\{[^\}]*\}\}       # Text in double curly braces
+          \s*?\.?$               # Optional whitespace and period at the end
+        }x
+
       desc "extract_terms SCHEMA_MANIFEST_FILE GLOSSARIST_OUTPUT_PATH",
            "Extract terms from SCHEMA_MANIFEST_FILE into " \
            "Glossarist v2 format"
@@ -129,11 +140,12 @@ module Suma
           data.sources = [source_ref] if source_ref
 
           # Only assign optional fields if they have content
-          notes = get_entity_notes(entity, schema_domain)
+          notes = get_entity_notes(entity, schema_domain, data.definition)
           data.notes = notes if notes && !notes.empty?
 
-          examples = get_entity_examples(entity, schema_domain)
-          data.examples = examples if examples && !examples.empty?
+          # examples = get_entity_examples(entity, schema_domain)
+          # data.examples = examples if examples && !examples.empty?
+          data.examples = []
         end
 
         Glossarist::LocalizedConcept.new.tap do |concept|
@@ -245,9 +257,20 @@ module Suma
         [Glossarist::DetailedDefinition.new(content: definition)]
       end
 
-      def get_entity_notes(entity, schema_domain)
+      def get_entity_notes(entity, schema_domain, definitions)
+        puts "Extracting notes for entity: #{entity.id}"
         notes = []
 
+        notes = add_entity_notes(entity, schema_domain, notes)
+        # notes = add_other_notes(entity, schema_domain, notes)
+        notes = only_keep_first_sentence(notes)
+        notes = remove_see_content(notes)
+        notes = remove_redundant_note(notes)
+        notes = remove_invalid_references(notes)
+        compare_with_definitions(notes, definitions)
+      end
+
+      def add_entity_notes(entity, schema_domain, notes)
         # Add trimmed definition from entity description as first note
         if entity.remarks && !entity.remarks.empty?
           trimmed_def = trim_definition(entity.remarks)
@@ -258,7 +281,11 @@ module Suma
           end
         end
 
-        # Add other notes
+        notes.compact
+      end
+
+      def add_other_notes(entity, schema_domain, notes)
+        # Add other notes from entity remarks
         other_notes = [
           entity.remark_items&.select do |ri|
             ri.id == "__note"
@@ -272,6 +299,67 @@ module Suma
         end
 
         notes
+      end
+
+      # https://github.com/metanorma/iso-10303/issues/621
+      # 1. First sentence in first paragraph of the entity description
+      # (in EXPRESS remark) becomes NOTE 1 in ISO 10303-2 of the entity.
+      def only_keep_first_sentence(notes)
+        notes.each do |note|
+          # Split by period and take the first sentence
+          # Avoid splitting by pattern like "abc.def"
+          if note&.content
+            new_content = note.content
+              .split(".\n").first.strip
+              .split(". ").first.strip
+            note.content = if new_content.end_with?(".")
+                             new_content
+                           else
+                             "#{new_content}."
+                           end
+          end
+        end
+      end
+
+      # https://github.com/metanorma/iso-10303/issues/621
+      # 2. If this first sentence matches the 7-word magic sentence
+      # (2-3 forms of that), it is discarded so there will not be a NOTE 1.
+      def compare_with_definitions(notes, definitions)
+        if notes&.first&.content == definitions&.first&.content
+          # Discarding first note as it matches the definition
+          return []
+        end
+
+        notes
+      end
+
+      # https://github.com/metanorma/iso-10303/issues/621
+      # 3. No reference to any types or attribute or figures allowed in first
+      # sentence. Entity references “{{…}}” are allowed.
+      def remove_invalid_references(notes)
+        notes.reject do |note|
+          note.content.include?("image::") ||
+            note.content.match?(/<<(.*?){1,999}>>/)
+        end
+      end
+
+      # https://github.com/metanorma/iso-10303/issues/621
+      # 4. Entity notes and examples in EXPRESS remarks are NOT represented in
+      # part 2.
+      def remove_redundant_note(notes)
+        notes.reject do |note|
+          note.content.match?(REDUNDANT_NOTE_REGEX) &&
+            !note.content.include?("\n")
+        end
+      end
+
+      # https://github.com/metanorma/iso-10303/issues/621
+      # 5. If the sentence contains “\s+(see …)”, the contents including the
+      # parentheses are removed.
+      def remove_see_content(notes)
+        notes.each do |note|
+          note.content = note.content.gsub(/\s+\(see(.*?){1,999}\)/, "")
+        end
       end
 
       def get_entity_examples(entity, schema_domain)
