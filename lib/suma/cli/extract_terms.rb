@@ -382,13 +382,18 @@ module Suma
       end
       # rubocop:enable Metrics/MethodLength
 
-      # Replace `<<express:{schema}.{entity},{render}>>` with {{entity,render}}
+      # Replace `<<express:{schema}.{entity}>>` with {{entity}}
+      # and `<<express:{schema}.{entity},{render}>>` with {{entity,render}}
       def express_reference_to_mention(description)
         # TODO: Use Expressir to check whether the "entity" is really an
         # EXPRESS ENTITY. If not, skip the mention.
-        description.gsub(/<<express:([^,]+),([^>]+)>>/) do |_match|
-          "{{#{Regexp.last_match[1].split('.').last},#{Regexp.last_match[2]}}}"
-        end
+        description
+          .gsub(/<<express:([^,]+)>>/) do |_match|
+            "{{#{Regexp.last_match[1].split('.').last}}}"
+          end.gsub(/<<express:([^,]+),([^>]+)>>/) do |_match|
+            "{{#{Regexp.last_match[1].split('.').last}," \
+              "#{Regexp.last_match[2]}}}"
+          end
       end
 
       def entity_name_to_text(entity_id)
