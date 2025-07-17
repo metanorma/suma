@@ -103,6 +103,10 @@ module Suma
               language_code: language_code,
               source_ref: source_ref,
             )
+            localized_concept_id = get_localized_concept_identifier(
+              schema, entity, language_code
+            )
+            localized_concept.uuid = localized_concept_id
 
             managed_data = Glossarist::ManagedConceptData.new.tap do |data|
               data.id = get_entity_identifier(schema, entity)
@@ -111,9 +115,7 @@ module Suma
               data.localizations[language_code] = localized_concept
               # uuid is automatically set from the serialization of the object
               data.localized_concepts = {
-                language_code => get_localized_concept_identifier(
-                  schema, entity, language_code
-                ),
+                language_code => localized_concept_id,
               }
             end
 
