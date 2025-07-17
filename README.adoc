@@ -291,8 +291,9 @@ Replacement: AsciiMath: xx
 
 === Generate schemas command
 
-The `suma generate_schemas` command generates a schema manifest file containing
-all schemas defined in the Metanorma manifest file.
+The `suma generate_schemas` command generates an EXPRESS schema manifest file
+containing all schemas of documents referenced in the Metanorma manifest file,
+recursively.
 
 [source,sh]
 ----
@@ -331,6 +332,10 @@ out which schemas the document includes.
 
 === Extract terms command
 
+The "extract terms" command is implemented for ISO 10303-2, and could also be
+used for other EXPRESS schema collections that require term extraction for
+glossary or dictionary applications.
+
 The `suma extract_terms` command extracts terms from EXPRESS schemas and
 generates a Glossarist v2 dataset in the output directory. This command processes
 various types of STEP schemas and creates standardized terminology datasets
@@ -357,36 +362,35 @@ Options:
 
 The command supports extraction from the following EXPRESS schema types:
 
-* **ARM (Application Reference Model)** - Application module schemas ending with `_arm`
-* **MIM (Module Implementation Model)** - Application module schemas ending with `_mim`
+* **ARM (application reference model)** - application module schemas ending with `_arm`
+* **MIM (module implementation model)** - application module schemas ending with `_mim`
 * **Resource schemas** - General resource schemas
-* **BOM (Business Object Model)** - Business object model schemas ending with `_bom`
+* **BOM (business object model)** - business object model schemas ending with `_bom`
 
-==== Extracted terms
+NOTE: The "Long Form" EXPRESS schemas (ending with `_lf`) should be excluded
+from the manifest file as they do not contain definitions of `ENTITY` objects.
 
-The command extracts the following types of terms from EXPRESS schemas:
 
-* **Entities** - EXPRESS entity definitions with their attributes and relationships
-* **Types** - EXPRESS type definitions including enumerations and select types
-* **Functions** - EXPRESS function definitions
-* **Procedures** - EXPRESS procedure definitions
-* **Constants** - EXPRESS constant definitions
+==== Extracted concepts
 
-Each extracted term includes:
+The command extracts `ENTITY` objects from EXPRESS schemas, with the following
+information:
 
-* Unique identifier based on schema and term name
-* Term definition and description
-* Source schema information
-* Appropriate domain classification (application module, resource, or business object model)
+. a unique identifier in form of `{schema_name}.{entity_name}` (where `entity_name` is a slug
+  derived from the `ENTITY` name);
+. a generated definition depending on the schema type and entity type;
+. a "Note to entry" from its first coherent textual element described in Annotated EXPRESS;
+. source information including: schema name and schema version;
+. domain in the pattern of: `{domain_type}: {schema_name}`, where `domain_type` is one of
+  `application module`, `resource`, or `business object model`.
+
 
 ==== Output format
 
 The command generates a Glossarist v2 compliant dataset with:
 
-* `concept/` directory containing concept definition files
-* `localized_concept/` directory containing localized concept files
-* YAML format following Glossarist v2 schema specifications
-* Proper cross-references and citations to source schemas
+* `concept/` directory containing concept definition files in YAML
+* `localized_concept/` directory containing localized concept files in YAML
 
 .To extract terms from a schema manifest file
 [example]
@@ -394,7 +398,8 @@ The command generates a Glossarist v2 compliant dataset with:
 [source,sh]
 ----
 $ bundle exec suma extract_terms schemas-smrl-all.yml glossarist_output
-# => generates glossarist_output/concept/*.yaml and glossarist_output/localized_concept/*.yaml
+# => generates glossarist_output/concept/*.yaml and
+#      glossarist_output/localized_concept/*.yaml
 ----
 ====
 
@@ -408,7 +413,6 @@ $ bundle exec suma extract_terms schemas-activity-modules.yml terms_output
 ----
 ====
 
-The generated dataset is meant to be used for ISO 10303-2.
 
 
 == Usage: Ruby
