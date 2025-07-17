@@ -64,8 +64,6 @@ module Suma
       def load_yaml(file_path)
         YAML.safe_load(
           File.read(file_path, encoding: "UTF-8"),
-          permitted_classes: [Date, Time, Symbol],
-          permitted_symbols: [],
           aliases: true,
         )
       end
