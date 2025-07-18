@@ -308,7 +308,14 @@ module Suma
       # (in EXPRESS remark) becomes NOTE 1 in ISO 10303-2 of the entity.
       def only_keep_first_sentence(notes)
         notes.each do |note|
-          # Split by period and take the first sentence
+          # Skip truncation only for content that starts with a paragraph ending in ":"
+          # followed by a list (complete list structures that should be preserved)
+          if note&.content && should_preserve_complete_structure?(note.content)
+            # For complete list structures, keep the content as-is
+            next
+          end
+
+          # Split by period and take the first sentence for all other content
           # Avoid splitting by pattern like "abc.def"
           if note&.content
             new_content = note.content
@@ -321,6 +328,30 @@ module Suma
                            end
           end
         end
+      end
+
+      def should_preserve_complete_structure?(content)
+        return false if content.nil? || content.empty?
+
+        # Check if content starts with a single introductory sentence ending in ":"
+        # followed by a list. This indicates a complete list structure that should be preserved.
+        lines = content.split("\n")
+        first_paragraph = lines.first&.strip
+
+        # Look for pattern: Single sentence ending with ":" (introductory pattern)
+        if first_paragraph&.end_with?(":") && lines.length > 1
+          # Check if the first paragraph contains multiple sentences (periods before the colon)
+          # If it does, this is NOT an introductory paragraph - extract first sentence only
+          if first_paragraph.count(".") > 0
+            return false
+          end
+
+          # Check if there's a list after the colon
+          remaining_content = lines[1..].join("\n")
+          return starts_with_list?(remaining_content.strip)
+        end
+
+        false
       end
 
       # https://github.com/metanorma/iso-10303/issues/621
@@ -399,11 +430,112 @@ module Suma
         schema_id.end_with?("_bom")
       end
 
+      def contains_list?(content)
+        return false if content.nil? || content.empty?
+
+        # Check if content contains list markers
+        content.match?(/^\s*[\*\-\+]\s+/m) || content.match?(/^\s*\d+\.\s+/m)
+      end
+
+      def starts_with_list?(content)
+        return false if content.nil? || content.empty?
+
+        # Check if content starts with list markers
+        content.match?(/^\s*[\*\-\+]\s+/) || content.match?(/^\s*\d+\.\s+/)
+      end
+
+      def is_list_continuation?(content)
+        return false if content.nil? || content.empty?
+
+        # Check for AsciiDoc list continuation patterns
+        content.match?(/^\+\s*$/) ||
+          content.match?(/^--\s*$/) ||
+          content.match?(/^\s{2,}/) || # Indented content (continuation)
+          content.start_with?("which", "that") # Logical continuation
+      end
+
+      def extract_complete_list(paragraphs, start_index)
+        return paragraphs[start_index] if start_index >= paragraphs.length
+
+        combined = paragraphs[start_index].dup
+        current_index = start_index + 1
+
+        # Check if the first paragraph already contains an opening continuation block
+        in_continuation_block = combined.include?("--") && !combined.match?(/--.*--/m)
+
+        # Continue collecting paragraphs while we're in a list context
+        while current_index < paragraphs.length
+          next_para = paragraphs[current_index]
+
+          # Check if we're entering or exiting a continuation block
+          if next_para.match?(/^--\s*$/) || next_para.end_with?("--")
+            in_continuation_block = !in_continuation_block
+            combined += "\n\n#{next_para}"
+            current_index += 1
+            next
+          end
+
+          # If we're in a continuation block, include all content until we hit the closing --
+          if in_continuation_block
+            combined += "\n\n#{next_para}"
+            current_index += 1
+            next
+          end
+
+          # Check if this is a list item or list continuation
+          if starts_with_list?(next_para) || is_list_continuation?(next_para)
+            combined += "\n\n#{next_para}"
+            current_index += 1
+
+            # Check if this paragraph contains an opening continuation block
+            if next_para.include?("--") && !next_para.match?(/--.*--/m)
+              in_continuation_block = true
+            end
+          else
+            # This paragraph is not part of the list structure
+            break
+          end
+        end
+
+        combined
+      end
+
+      def ends_list_structure?(current_para, next_para)
+        return true if next_para.nil?
+
+        # List ends if:
+        # 1. Current paragraph doesn't end with continuation markers
+        # 2. Next paragraph starts a new section (not list or continuation)
+        !current_para.match?(/\+\s*$/) &&
+          !starts_with_list?(next_para) &&
+          !is_list_continuation?(next_para)
+      end
+
+      def apply_first_sentence_logic(paragraph)
+        # Apply the original first-sentence extraction logic
+        # Split by period and take the first sentence
+        # Avoid splitting by pattern like "abc.def"
+        new_content = paragraph
+          .split(".\n").first.strip
+          .split(". ").first.strip
+
+        if new_content.end_with?(".")
+          new_content
+        else
+          "#{new_content}."
+        end
+      end
+
       # rubocop:disable Metrics/MethodLength
       def combine_paragraphs(full_paragraph, next_paragraph)
+        # Check if we're dealing with a list structure
+        if contains_list?(full_paragraph) || starts_with_list?(next_paragraph)
+          return combine_list_content(full_paragraph, next_paragraph)
+        end
+
+        # For regular paragraphs, apply the original first-sentence logic
         # If full_paragraph already contains a period, extract that.
         if m = full_paragraph.match(/\A(?<inner_first>[^\n]*?\.)\s/)
-          # puts "CONDITION 1"
           if m[:inner_first]
             return m[:inner_first]
           else
@@ -413,24 +545,26 @@ module Suma
 
         # If full_paragraph ends with a period, this is the last.
         if /\.\s*\Z/.match?(full_paragraph)
-          # puts "CONDITION 2"
           return full_paragraph
         end
 
-        # If next_paragraph is a list
-        if next_paragraph.start_with?("*")
-          # puts "CONDITION 3"
+        # If next_paragraph is a continuation of a paragraph
+        if next_paragraph&.start_with?("which", "that")
           return "#{full_paragraph}\n\n#{next_paragraph}"
         end
 
-        # If next_paragraph is a continuation of a list
-        if next_paragraph.start_with?("which", "that")
-          # puts "CONDITION 4"
-          return "#{full_paragraph}\n\n#{next_paragraph}"
-        end
-
-        # puts "CONDITION 5"
         full_paragraph
+      end
+
+      def combine_list_content(full_paragraph, next_paragraph)
+        combined = full_paragraph.dup
+
+        # If we have a next paragraph, add it
+        unless next_paragraph.nil? || next_paragraph.empty?
+          combined += "\n\n#{next_paragraph}"
+        end
+
+        combined
       end
 
       def trim_definition(definition)
@@ -445,23 +579,22 @@ module Suma
 
         return nil if definition_str.empty?
 
-        # Unless the first paragraph ends with "between" and is followed by a
-        # list, don't split
         paragraphs = definition_str.split("\n\n")
-
-        # puts paragraphs.inspect
-
         first_paragraph = paragraphs.first
 
-        combined = if paragraphs.length > 1
-                     paragraphs[1..].inject(first_paragraph) do |acc, p|
-                       combine_paragraphs(acc, p)
-                     end
-                   else
-                     combine_paragraphs(first_paragraph, "")
-                   end
-
-        # puts "combined--------- #{combined}"
+        # If we only have one paragraph, apply the original logic
+        if paragraphs.length == 1
+          combined = apply_first_sentence_logic(first_paragraph)
+        elsif first_paragraph.end_with?(":") && paragraphs.length > 1 && starts_with_list?(paragraphs[1])
+          # Case 1: First paragraph ends with ":" and leads into a list
+          # Extract the complete list structure (this is an introductory paragraph)
+          complete_list = extract_complete_list(paragraphs, 1)
+          combined = "#{first_paragraph}\n\n#{complete_list}"
+        else
+          # Case 2: For all other cases (including sentences followed by lists)
+          # Extract only the first sentence from the first paragraph
+          combined = apply_first_sentence_logic(first_paragraph)
+        end
 
         # Remove comments until end of line
         combined = "#{combined}\n"
