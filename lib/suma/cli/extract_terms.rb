@@ -342,7 +342,7 @@ module Suma
         if first_paragraph&.end_with?(":") && lines.length > 1
           # Check if the first paragraph contains multiple sentences (periods before the colon)
           # If it does, this is NOT an introductory paragraph - extract first sentence only
-          if first_paragraph.count(".") > 0
+          if first_paragraph.count(".").positive?
             return false
           end
 
