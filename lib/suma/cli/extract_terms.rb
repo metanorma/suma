@@ -451,7 +451,7 @@ module Suma
         content.match?(/^\+\s*$/) ||
           content.match?(/^--\s*$/) ||
           content.match?(/^\s{2,}/) || # Indented content (continuation)
-          content.start_with?("which", "that") # Logical continuation
+          content.start_with?("which", "where", "that") # Logical continuation
       end
 
       def extract_complete_list(paragraphs, start_index)
@@ -549,7 +549,7 @@ module Suma
         end
 
         # If next_paragraph is a continuation of a paragraph
-        if next_paragraph&.start_with?("which", "that")
+        if next_paragraph&.start_with?("which", "where", "that")
           return "#{full_paragraph}\n\n#{next_paragraph}"
         end
 
