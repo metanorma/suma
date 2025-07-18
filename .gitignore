@@ -9,7 +9,6 @@
 
 # rspec failure tracking
 .rspec_status
-.rubocop_todo.yml
 .rubocop-https---*-yml
 .ruby-version
 Gemfile.lock
