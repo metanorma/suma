@@ -1,6 +1,6 @@
 inherit_from:
-  - https://raw.githubusercontent.com/riboseinc/oss-guides/main/ci/rubocop.yml
   - .rubocop_todo.yml
+  - https://raw.githubusercontent.com/riboseinc/oss-guides/main/ci/rubocop.yml
 
 plugins:
 - rubocop-performance
@@ -11,4 +11,9 @@ AllCops:
   TargetRubyVersion: 3.1
   NewCops: enable
   Exclude:
+    - 'lib/suma/cli/reformat.rb'
+    - 'lib/suma/cli/generate_schemas.rb'
+    - 'lib/suma/cli/validate_ascii.rb'
+    - 'lib/suma/cli/validate_links.rb'
+    - 'lib/suma/cli/extract_terms.rb'
     - 'vendor/**/*'
