@@ -1,0 +1,62 @@
+(*"action_schema.__expressg"
+[[action_schema_expg2]]
+[.svgmap]
+====
+image::action_schemaexpg2.svg[]
+
+* <<express:action_schema.as_name_attribute_select>>; 1
+* <<express:action_schema.as_description_attribute_select>>; 2
+* <<express:action_schema.as_id_attribute_select>>; 3
+* <<express:action_schema.as_role_select>>; 4
+* <<express:action_schema.supported_item>>; 5
+* <<express:support_resource_schema.identifier>>; 6
+* <<express:support_resource_schema.label>>; 7
+* <<express:support_resource_schema.label>>; 8
+* <<express:support_resource_schema.label>>; 9
+* <<express:support_resource_schema.identifier>>; 10
+* <<express:support_resource_schema.text>>; 11
+* <<express:support_resource_schema.text>>; 12
+* <<express:basic_attribute_schema.id_attribute_select>>; 13
+* <<express:support_resource_schema.label>>; 14
+* <<express:support_resource_schema.text>>; 15
+* <<express:support_resource_schema.label>>; 16
+* <<express:support_resource_schema.text>>; 17
+* <<express:basic_attribute_schema.description_attribute_select>>; 18
+* <<express:support_resource_schema.label>>; 19
+* <<express:basic_attribute_schema.object_role>>; 20
+* <<express:support_resource_schema.text>>; 21
+* <<express:basic_attribute_schema.name_attribute_select>>; 22
+* <<express:basic_attribute_schema.role_select>>; 23
+* <<express:support_resource_schema.label>>; 24
+* <<express:support_resource_schema.identifier>>; 25
+* <<express:support_resource_schema.label>>; 26
+* <<express:support_resource_schema.text>>; 27
+* <<express:support_resource_schema.label>>; 28
+* <<express:support_resource_schema.label>>; 29
+* <<express:support_resource_schema.text>>; 30
+* <<express:support_resource_schema.text>>; 31
+* <<express:support_resource_schema.label>>; 32
+* <<express:support_resource_schema.label>>; 33
+* <<express:support_resource_schema.label>>; 34
+* <<express:support_resource_schema.text>>; 35
+* <<express:support_resource_schema.text>>; 36
+* <<express:support_resource_schema.label>>; 37
+* <<express:action_schema.action_resource_relationship>>; 38
+* <<express:action_schema.action_directive_relationship>>; 39
+* <<express:action_schema.action_resource_type>>; 40
+* <<express:action_schema.action_method_relationship>>; 41
+* <<express:action_schema.action_status>>; 42
+* <<express:action_schema.action_directive>>; 43
+* <<express:action_schema.directed_action>>; 44
+* <<express:action_schema.directed_action_assignment>>; 45
+* <<express:action_schema.action>>; 46
+* <<express:action_schema.action_request_solution>>; 47
+* <<express:action_schema.action_request_status>>; 48
+* <<express:action_schema.action_resource>>; 49
+* <<express:action_schema.action_relationship>>; 50
+* <<express:action_schema.versioned_action_request>>; 51
+* <<express:action_schema.versioned_action_request_relationship>>; 52
+* <<express:action_schema.action_method>>; 53
+* <<express:action_schema.executed_action>>; 54
+====
+*)

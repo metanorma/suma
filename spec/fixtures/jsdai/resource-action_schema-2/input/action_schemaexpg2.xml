@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="../../../xsl/res_doc/imgfile.xsl"?>
+<!DOCTYPE imgfile.content SYSTEM "../../../dtd/text.ent">
+<imgfile.content module="fundamentals_of_product_description_and_support" file="action_schemaexpg2.xml">
+<img src="action_schemaexpg2.gif">
+<img.area shape="rect" coords="85,220,414,251" href="../../resources/action_schema/action_schema.xml#action_schema.as_name_attribute_select" />
+<img.area shape="rect" coords="84,272,415,297" href="../../resources/action_schema/action_schema.xml#action_schema.as_description_attribute_select" />
+<img.area shape="rect" coords="1272,937,1447,962" href="../../resources/action_schema/action_schema.xml#action_schema.as_id_attribute_select" />
+<img.area shape="rect" coords="1344,1142,1462,1167" href="../../resources/action_schema/action_schema.xml#action_schema.as_role_select" />
+<img.area shape="rect" coords="10,507,135,532" href="../../resources/action_schema/action_schema.xml#action_schema.supported_item" />
+<img.area shape="rect" coords="31,1609,294,1640" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.identifier" />
+<img.area shape="rect" coords="1273,212,1505,243" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.label" />
+<img.area shape="rect" coords="61,1686,293,1717" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.label" />
+<img.area shape="rect" coords="1273,1300,1532,1335" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.label" />
+<img.area shape="rect" coords="1275,812,1538,843" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.identifier" />
+<img.area shape="rect" coords="1272,93,1505,125" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.text" />
+<img.area shape="rect" coords="1567,731,1792,762" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.text" />
+<img.area shape="rect" coords="1567,934,1876,965" href="../../resources/basic_attribute_schema/basic_attribute_schema.xml#basic_attribute_schema.id_attribute_select" />
+<img.area shape="rect" coords="313,1212,545,1243" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.label" />
+<img.area shape="rect" coords="1274,853,1499,884" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.text" />
+<img.area shape="rect" coords="1272,894,1504,925" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.label" />
+<img.area shape="rect" coords="68,1481,293,1512" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.text" />
+<img.area shape="rect" coords="83,317,415,367" href="../../resources/basic_attribute_schema/basic_attribute_schema.xml#basic_attribute_schema.description_attribute_select" />
+<img.area shape="rect" coords="1272,126,1505,164" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.label" />
+<img.area shape="rect" coords="1273,1260,1533,1291" href="../../resources/basic_attribute_schema/basic_attribute_schema.xml#basic_attribute_schema.object_role" />
+<img.area shape="rect" coords="1273,381,1504,586" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.text" />
+<img.area shape="rect" coords="83,176,415,207" href="../../resources/basic_attribute_schema/basic_attribute_schema.xml#basic_attribute_schema.name_attribute_select" />
+<img.area shape="rect" coords="1274,1086,1532,1117" href="../../resources/basic_attribute_schema/basic_attribute_schema.xml#basic_attribute_schema.role_select" />
+<img.area shape="rect" coords="61,1546,293,1577" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.label" />
+<img.area shape="rect" coords="1278,1535,1541,1566" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.identifier" />
+<img.area shape="rect" coords="1273,604,1505,635" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.label" />
+<img.area shape="rect" coords="1274,1341,1533,1434" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.text" />
+<img.area shape="rect" coords="1270,10,1506,42" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.label" />
+<img.area shape="rect" coords="1567,1038,1799,1069" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.label" />
+<img.area shape="rect" coords="1273,245,1498,276" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.text" />
+<img.area shape="rect" coords="84,434,414,466" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.text" />
+<img.area shape="rect" coords="86,570,416,602" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.label" />
+<img.area shape="rect" coords="1567,771,1799,802" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.label" />
+<img.area shape="rect" coords="33,67,265,98" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.label" />
+<img.area shape="rect" coords="28,121,265,152" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.text" />
+<img.area shape="rect" coords="1279,1635,1541,1747" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.text" />
+<img.area shape="rect" coords="1279,1592,1542,1623" href="../../resources/support_resource_schema/support_resource_schema.xml#support_resource_schema.label" />
+<img.area shape="rect" coords="341,55,529,163" href="../../resources/action_schema/action_schema.xml#action_schema.action_resource_relationship" />
+<img.area shape="rect" coords="366,1301,493,1435" href="../../resources/action_schema/action_schema.xml#action_schema.action_directive_relationship" />
+<img.area shape="rect" coords="1272,57,1505,90" href="../../resources/action_schema/action_schema.xml#action_schema.action_resource_type" />
+<img.area shape="rect" coords="665,383,829,653" href="../../resources/action_schema/action_schema.xml#action_schema.action_method_relationship" />
+<img.area shape="rect" coords="1273,1037,1377,1070" href="../../resources/action_schema/action_schema.xml#action_schema.action_status" />
+<img.area shape="rect" coords="709,1301,826,1435" href="../../resources/action_schema/action_schema.xml#action_schema.action_directive" />
+<img.area shape="rect" coords="955,1136,1106,1274" href="../../resources/action_schema/action_schema.xml#action_schema.directed_action" />
+<img.area shape="rect" coords="1272,1189,1534,1222" href="../../resources/action_schema/action_schema.xml#action_schema.directed_action_assignment" />
+<img.area shape="rect" coords="952,726,1109,970" href="../../resources/action_schema/action_schema.xml#action_schema.action" />
+<img.area shape="rect" coords="660,211,830,309" href="../../resources/action_schema/action_schema.xml#action_schema.action_request_solution" />
+<img.area shape="rect" coords="354,1685,517,1718" href="../../resources/action_schema/action_schema.xml#action_schema.action_request_status" />
+<img.area shape="rect" coords="662,55,823,164" href="../../resources/action_schema/action_schema.xml#action_schema.action_resource" />
+<img.area shape="rect" coords="1275,727,1374,806" href="../../resources/action_schema/action_schema.xml#action_schema.action_relationship" />
+<img.area shape="rect" coords="712,1466,830,1748" href="../../resources/action_schema/action_schema.xml#action_schema.versioned_action_request" />
+<img.area shape="rect" coords="376,1466,498,1657" href="../../resources/action_schema/action_schema.xml#action_schema.versioned_action_request_relationship" />
+<img.area shape="rect" coords="949,383,1109,653" href="../../resources/action_schema/action_schema.xml#action_schema.action_method" />
+<img.area shape="rect" coords="954,984,1107,1122" href="../../resources/action_schema/action_schema.xml#action_schema.executed_action" />
+</img>
+</imgfile.content>
