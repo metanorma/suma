@@ -116,8 +116,21 @@ RSpec.describe Suma::Jsdai::Figure do
     end
 
     it "generates SVG for geometric_model_schemaexpg1" do
-      xml_file = "spec/fixtures/jsdai/resource-geometry_model_schema-1/input/geometric_model_schemaexpg1.xml"
-      image_file = "spec/fixtures/jsdai/resource-geometry_model_schema-1/input/geometric_model_schemaexpg1.gif"
+      xml_file = "spec/fixtures/jsdai/resource-geometric_model_schema-1/input/geometric_model_schemaexpg1.xml"
+      image_file = "spec/fixtures/jsdai/resource-geometric_model_schema-1/input/geometric_model_schemaexpg1.gif"
+
+      figure = described_class.new(xml_file, image_file)
+      svg_output = figure.to_svg
+
+      expect(svg_output).to include('<?xml version="1.0" encoding="UTF-8"?>')
+      expect(svg_output).to include("<svg")
+      expect(svg_output).to include("<rect")
+      expect(svg_output.scan(/<a href=/).count).to eq(6)
+    end
+
+    it "generates SVG for geometry_schemaexpg1" do
+      xml_file = "spec/fixtures/jsdai/resource-geometry_schema-1/input/geometry_schemaexpg1.xml"
+      image_file = "spec/fixtures/jsdai/resource-geometry_schema-1/input/geometry_schemaexpg1.gif"
 
       figure = described_class.new(xml_file, image_file)
       svg_output = figure.to_svg
@@ -202,8 +215,8 @@ RSpec.describe Suma::Jsdai::Figure do
     end
 
     it "generates EXP for resource geometric_model_schemaexpg1" do
-      xml_file = "spec/fixtures/jsdai/resource-geometry_model_schema-1/input/geometric_model_schemaexpg1.xml"
-      image_file = "spec/fixtures/jsdai/resource-geometry_model_schema-1/input/geometric_model_schemaexpg1.gif"
+      xml_file = "spec/fixtures/jsdai/resource-geometric_model_schema-1/input/geometric_model_schemaexpg1.xml"
+      image_file = "spec/fixtures/jsdai/resource-geometric_model_schema-1/input/geometric_model_schemaexpg1.gif"
 
       figure = described_class.new(xml_file, image_file)
       exp_output = figure.to_exp
@@ -212,6 +225,20 @@ RSpec.describe Suma::Jsdai::Figure do
       expect(exp_output).to include("[[geometric_model_schema_expg1]]")
       expect(exp_output).to include("<<express:measure_schema>>; 1")
       expect(exp_output).to include("<<express:topology_schema>>; 6")
+      expect(exp_output).to end_with("*)\n")
+
+    end
+    it "generates EXP for resource geometry_schemaexpg1" do
+      xml_file = "spec/fixtures/jsdai/resource-geometry_schema-1/input/geometry_schemaexpg1.xml"
+      image_file = "spec/fixtures/jsdai/resource-geometry_schema-1/input/geometry_schemaexpg1.gif"
+
+      figure = described_class.new(xml_file, image_file)
+      exp_output = figure.to_exp
+
+      expect(exp_output).to include('(*"geometry_schema.__expressg"')
+      expect(exp_output).to include("[[geometry_schema_expg1]]")
+      expect(exp_output).to include("<<express:topology_schema>>; 1")
+      expect(exp_output).to include("<<express:scan_data_3d_shape_model_schema>>; 6")
       expect(exp_output).to end_with("*)\n")
     end
   end
