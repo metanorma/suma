@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<?xml-stylesheet 
+      type="text/xsl" 
+      href="../../../xsl/imgfile.xsl"
+    ?> <!DOCTYPE imgfile.content SYSTEM "../../../dtd/text.ent">
+<imgfile.content module="activity" file="mimexpg1.xml">
+<img src="mimexpg1.gif">
+<img.area shape="polygon" coords="208,105,208,161,321,161,321,105,208,105" href="../activity/mimexpg2.xml" />
+<img.area shape="polygon" coords="453,105,453,161,567,161,567,105,453,105" href="../../resources/action_schema/action_schema.xml#action_schema" />
+<img.area shape="polygon" coords="208,1,208,57,321,57,321,1,208,1" href="../activity_method/mimexpg1.xml" />
+<img.area shape="polygon" coords="0,105,0,161,132,161,132,105,0,105" href="../../resources/basic_attribute_schema/basic_attribute_schema.xml#basic_attribute_schema" />
+<img.area shape="polygon" coords="181,257,181,313,351,313,351,257,181,257" href="../../resources/management_resources_schema/management_resources_schema.xml#management_resources_schema" />
+</img>
+</imgfile.content>

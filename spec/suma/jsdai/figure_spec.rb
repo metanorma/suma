@@ -102,6 +102,31 @@ RSpec.describe Suma::Jsdai::Figure do
       # Should generate: x="210" y="186" width="133" height="41"
       expect(svg_output).to include('height="41" width="133" y="186" x="210"')
     end
+
+    it "generates SVG with polygons for module armexpg1" do
+      xml_file = "spec/fixtures/jsdai/module-activity-arm-1/input/armexpg1.xml"
+      image_file = "spec/fixtures/jsdai/module-activity-arm-1/input/armexpg1.gif"
+
+      figure = described_class.new(xml_file, image_file)
+      svg_output = figure.to_svg
+
+      expect(svg_output).to include("<polygon")
+      expect(svg_output).to include('points="61,0,61,56,175,56,175,0,61,0"')
+      expect(svg_output.scan(/<a href=/).count).to eq(2)
+    end
+
+    it "generates SVG for geometric_model_schemaexpg1" do
+      xml_file = "spec/fixtures/jsdai/resource-geometry_model_schema-1/input/geometric_model_schemaexpg1.xml"
+      image_file = "spec/fixtures/jsdai/resource-geometry_model_schema-1/input/geometric_model_schemaexpg1.gif"
+
+      figure = described_class.new(xml_file, image_file)
+      svg_output = figure.to_svg
+
+      expect(svg_output).to include('<?xml version="1.0" encoding="UTF-8"?>')
+      expect(svg_output).to include("<svg")
+      expect(svg_output).to include("<rect")
+      expect(svg_output.scan(/<a href=/).count).to eq(6)
+    end
   end
 
   describe "#to_exp" do
@@ -135,6 +160,58 @@ RSpec.describe Suma::Jsdai::Figure do
       expect(exp_output).to include("image::action_schemaexpg2.svg[]")
       expect(exp_output).to include("<<express:action_schema.as_name_attribute_select>>; 1")
       expect(exp_output).to include("<<express:action_schema.executed_action>>; 54")
+      expect(exp_output).to end_with("*)\n")
+    end
+
+    it "generates EXP for module armexpg1" do
+      xml_file = "spec/fixtures/jsdai/module-activity-arm-1/input/armexpg1.xml"
+      image_file = "spec/fixtures/jsdai/module-activity-arm-1/input/armexpg1.gif"
+
+      figure = described_class.new(xml_file, image_file)
+      exp_output = figure.to_exp
+
+      expect(exp_output).to include('(*"Activity_arm.__expressg"')
+      expect(exp_output).to include("[[Activity_arm_expg1]]")
+      expect(exp_output).to include("<<Activity_method_arm_expg1>>; 1")
+      expect(exp_output).to include("<<Activity_arm_expg2>>; 2")
+      expect(exp_output).to end_with("*)\n")
+    end
+
+    it "generates SVG with polygons for armexpg1" do
+      xml_file = "spec/fixtures/jsdai/module-activity-arm-1/input/armexpg1.xml"
+      image_file = "spec/fixtures/jsdai/module-activity-arm-1/input/armexpg1.gif"
+
+      figure = described_class.new(xml_file, image_file)
+      svg_output = figure.to_svg
+
+      expect(svg_output).to include("<polygon")
+      expect(svg_output).to include('points="61,0,61,56,175,56,175,0,61,0"')
+      expect(svg_output.scan(/<a href=/).count).to eq(2)
+    end
+
+    it "generates EXP for module mimexpg1" do
+      xml_file = "spec/fixtures/jsdai/module-activity-mim-2/input/mimexpg1.xml"
+      image_file = "spec/fixtures/jsdai/module-activity-mim-2/input/mimexpg1.gif"
+
+      figure = described_class.new(xml_file, image_file)
+      exp_output = figure.to_exp
+
+      expect(exp_output).to include('(*"Activity_mim.__expressg"')
+      expect(exp_output).to include("[[Activity_mim_expg1]]")
+      expect(exp_output).to end_with("*)\n")
+    end
+
+    it "generates EXP for resource geometric_model_schemaexpg1" do
+      xml_file = "spec/fixtures/jsdai/resource-geometry_model_schema-1/input/geometric_model_schemaexpg1.xml"
+      image_file = "spec/fixtures/jsdai/resource-geometry_model_schema-1/input/geometric_model_schemaexpg1.gif"
+
+      figure = described_class.new(xml_file, image_file)
+      exp_output = figure.to_exp
+
+      expect(exp_output).to include('(*"geometric_model_schema.__expressg"')
+      expect(exp_output).to include("[[geometric_model_schema_expg1]]")
+      expect(exp_output).to include("<<express:measure_schema>>; 1")
+      expect(exp_output).to include("<<express:topology_schema>>; 6")
       expect(exp_output).to end_with("*)\n")
     end
   end
