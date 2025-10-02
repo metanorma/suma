@@ -1,0 +1,13 @@
+(*"Activity_mim.__expressg"
+[[Activity_mim_expg1]]
+[.svgmap]
+====
+image::mimexpg1.svg[]
+
+* <<Activity_mim_expg2>>; 1
+* <<express:action_schema>>; 2
+* <<Activity_method_mim_expg1>>; 3
+* <<express:basic_attribute_schema>>; 4
+* <<express:management_resources_schema>>; 5
+====
+*)

@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<?xml-stylesheet 
+      type="text/xsl" 
+      href="../../../xsl/imgfile.xsl"
+    ?> <!DOCTYPE imgfile.content SYSTEM "../../../dtd/text.ent">
+<imgfile.content module="activity" file="armexpg1.xml">
+<img src="armexpg1.gif">
+<img.area shape="poly" coords="61,0,61,56,175,56,175,0,61,0" href="../activity_method/armexpg1.xml" />
+<img.area shape="poly" coords="61,115,61,171,175,171,175,115,61,115" href="../activity/armexpg2.xml" />
+</img>
+</imgfile.content>

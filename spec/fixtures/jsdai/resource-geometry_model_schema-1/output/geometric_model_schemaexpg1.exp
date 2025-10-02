@@ -1,0 +1,15 @@
+(*"geometric_model_schema.__expressg"
+[[geometric_model_schema_expg1]]
+[.svgmap]
+====
+image::geometric_model_schemaexpg1.svg[]
+
+* <<express:measure_schema>>; 1
+* <<express:representation_schema>>; 2
+* <<express:geometric_model_schema>>; 3
+* <<express:geometry_schema>>; 4
+* <<express:product_property_representation_schema>>; 5
+* <<express:topology_schema>>; 6
+====
+
+*)

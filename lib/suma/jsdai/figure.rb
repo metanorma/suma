@@ -44,20 +44,8 @@ module Suma
 
         # Add clickable areas
         area_parts = @xml.img.areas.each_with_index.map do |area, index|
-          coords = parse_coords(area.coords)
-          rect_attrs = []
-          rect_attrs << 'onmouseout="this.style.opacity=0" '
-          rect_attrs << 'onmouseover="this.style.opacity=1" '
-          rect_attrs << 'style="opacity: 0; fill: rgb(33, 128, 255); '
-          rect_attrs << "fill-opacity: 0.3; stroke: rgb(0, 128, 255); "
-          rect_attrs << 'stroke-width: 1px; stroke-linecap: butt; '
-          rect_attrs << 'stroke-linejoin: miter; stroke-opacity: 1;" '
-          rect_attrs << "height=\"#{coords[:height]}\" "
-          rect_attrs << "width=\"#{coords[:width]}\" "
-          rect_attrs << "y=\"#{coords[:y]}\" "
-          rect_attrs << "x=\"#{coords[:x]}\"/>"
-
-          "<a href=\"#{index + 1}\"><rect #{rect_attrs.join}</a>"
+          shape_element = generate_shape_element(area)
+          "<a href=\"#{index + 1}\">#{shape_element}</a>"
         end
 
         svg_parts << area_parts.join
@@ -68,7 +56,7 @@ module Suma
       def to_exp
         basename = File.basename(@xml_file, ".xml")
         schema_name = extract_schema_name(basename)
-        anchor_id = basename.sub(/expg/, "_expg")
+        anchor_id = extract_anchor_id(basename)
 
         exp_parts = []
         exp_parts << "(*\"#{schema_name}.__expressg\""
@@ -90,7 +78,38 @@ module Suma
 
       private
 
-      def parse_coords(coords_str)
+      def generate_shape_element(area)
+        shape_attrs = []
+        shape_attrs << 'onmouseout="this.style.opacity=0" '
+        shape_attrs << 'onmouseover="this.style.opacity=1" '
+        shape_attrs << 'style="opacity: 0; fill: rgb(33, 128, 255); '
+        shape_attrs << "fill-opacity: 0.3; stroke: rgb(0, 128, 255); "
+        shape_attrs << 'stroke-width: 1px; stroke-linecap: butt; '
+        shape_attrs << 'stroke-linejoin: miter; stroke-opacity: 1;" '
+
+        case area.shape
+        when "rect"
+          coords = parse_rect_coords(area.coords)
+          shape_attrs << "height=\"#{coords[:height]}\" "
+          shape_attrs << "width=\"#{coords[:width]}\" "
+          shape_attrs << "y=\"#{coords[:y]}\" "
+          shape_attrs << "x=\"#{coords[:x]}\"/>"
+          "<rect #{shape_attrs.join}"
+        when "poly", "polygon"
+          shape_attrs << "points=\"#{area.coords}\"/>"
+          "<polygon #{shape_attrs.join}"
+        else
+          # Unsupported shape, default to rectangle
+          coords = parse_rect_coords(area.coords)
+          shape_attrs << "height=\"#{coords[:height]}\" "
+          shape_attrs << "width=\"#{coords[:width]}\" "
+          shape_attrs << "y=\"#{coords[:y]}\" "
+          shape_attrs << "x=\"#{coords[:x]}\"/>"
+          "<rect #{shape_attrs.join}"
+        end
+      end
+
+      def parse_rect_coords(coords_str)
         parts = coords_str.split(",").map(&:to_i)
         {
           x: parts[0],
@@ -100,22 +119,69 @@ module Suma
         }
       end
 
+      def parse_coords(coords_str)
+        parse_rect_coords(coords_str)
+      end
+
+      def extract_anchor_id(basename)
+        # For module schemas like "armexpg1" with module="activity"
+        # Result should be "Activity_arm_expg1"
+        # For resource schemas like "action_schemaexpg2"
+        # Result should be "action_schema_expg2"
+
+        if basename =~ /^(arm|mim)expg(\d+)$/
+          # Module schema: use schema_name + _expg + number
+          schema_name = extract_schema_name(basename)
+          "#{schema_name}_expg#{::Regexp.last_match(2)}"
+        else
+          # Resource schema: insert underscore before expg
+          basename.sub(/expg/, "_expg")
+        end
+      end
+
       def extract_schema_name(basename)
-        # Extract schema name from basename like "action_schemaexpg2"
+        # For module schemas like "armexpg1" with module="activity"
+        # Result should be "Activity_arm"
+        # For resource schemas like "action_schemaexpg2"
         # Result should be "action_schema"
-        basename.sub(/expg\d+$/, "")
+
+        if basename =~ /^(arm|mim)expg\d+$/
+          # Module schema: use XML module attribute + arm/mim
+          # Capitalize only the first letter of the module name
+          module_name = @xml.module.split("_").map.with_index do |part, idx|
+            idx.zero? ? part.capitalize : part
+          end.join("_")
+          "#{module_name}_#{::Regexp.last_match(1)}"
+        else
+          # Resource schema: strip expg suffix
+          basename.sub(/expg\d+$/, "")
+        end
       end
 
       def extract_target_from_href(href)
-        # Extract the target from href like
-        # "../../resources/action_schema/action_schema.xml#action_schema.as_name_attribute_select"
-        # Result should be "express:action_schema.as_name_attribute_select"
-        #
-        # Or from href like "../../resources/basic_attribute_schema/basic_attribute_schema.xml"
-        # Result should be "express:basic_attribute_schema"
+        # Extract the target from href
+        # Type 1: "../../resources/action_schema/action_schema.xml#action_schema.as_name_attribute_select"
+        #   → "express:action_schema.as_name_attribute_select"
+        # Type 2: "../../resources/basic_attribute_schema/basic_attribute_schema.xml"
+        #   → "express:basic_attribute_schema"
+        # Type 3: "../activity_method/armexpg1.xml"
+        #   → "Activity_method_arm_expg1"
+
         if href =~ /#(.+)$/
+          # Has fragment - use it
           "express:#{::Regexp.last_match(1)}"
+        elsif href =~ %r{^\.\./([\w_]+)/(arm|mim)expg(\d+)\.xml$}
+          # Module image reference like "../activity_method/armexpg1.xml"
+          module_dir = ::Regexp.last_match(1)
+          schema_type = ::Regexp.last_match(2)
+          expg_num = ::Regexp.last_match(3)
+          # Capitalize only the first letter of the module name
+          module_name = module_dir.split("_").map.with_index do |part, idx|
+            idx.zero? ? part.capitalize : part
+          end.join("_")
+          "#{module_name}_#{schema_type}_expg#{expg_num}"
         elsif href =~ %r{/([^/]+)\.xml$}
+          # Resource schema reference
           "express:#{::Regexp.last_match(1)}"
         else
           href
