@@ -43,12 +43,14 @@ module Suma
         svg_parts << "\n\t\t\t</image>\n\t\t\t"
 
         # Add clickable areas
-        area_parts = @xml.img.areas.each_with_index.map do |area, index|
-          shape_element = generate_shape_element(area)
-          "<a href=\"#{index + 1}\">#{shape_element}</a>"
-        end
+        if @xml.img.areas && !@xml.img.areas.empty?
+          area_parts = @xml.img.areas.each_with_index.map do |area, index|
+            shape_element = generate_shape_element(area)
+            "<a href=\"#{index + 1}\">#{shape_element}</a>"
+          end
 
-        svg_parts << area_parts.join
+          svg_parts << area_parts.join
+        end
         svg_parts << "\n\t\t</svg>"
         svg_parts.join
       end
@@ -64,11 +66,13 @@ module Suma
         exp_parts << "\n[.svgmap]"
         exp_parts << "\n===="
         exp_parts << "\nimage::#{basename}.svg[]"
-        exp_parts << "\n"
 
-        @xml.img.areas.each_with_index do |area, index|
-          target = extract_target_from_href(area.href)
-          exp_parts << "\n* <<#{target}>>; #{index + 1}"
+        if @xml.img.areas && !@xml.img.areas.empty?
+          exp_parts << "\n"
+          @xml.img.areas.each_with_index do |area, index|
+            target = extract_target_from_href(area.href)
+            exp_parts << "\n* <<#{target}>>; #{index + 1}"
+          end
         end
 
         exp_parts << "\n===="
@@ -166,9 +170,11 @@ module Suma
         #   → "express:basic_attribute_schema"
         # Type 3: "../activity_method/armexpg1.xml"
         #   → "Activity_method_arm_expg1"
+        # Type 4: "../../resources/geometry_schema/geometry_schemaexpg3.xml"
+        #   → "geometry_schema_expg3" (image reference in same resource)
 
         if href =~ /#(.+)$/
-          # Has fragment - use it
+          # Has fragment - use it as entity reference
           "express:#{::Regexp.last_match(1)}"
         elsif href =~ %r{^\.\./([\w_]+)/(arm|mim)expg(\d+)\.xml$}
           # Module image reference like "../activity_method/armexpg1.xml"
@@ -180,8 +186,15 @@ module Suma
             idx.zero? ? part.capitalize : part
           end.join("_")
           "#{module_name}_#{schema_type}_expg#{expg_num}"
+        elsif href =~ %r{/([^/]+)expg(\d+)\.xml$}
+          # Image reference to another diagram in same or different resource
+          # e.g., "../../resources/geometry_schema/geometry_schemaexpg3.xml"
+          # Result: "geometry_schema_expg3" (no "express:" prefix for images)
+          schema_name = ::Regexp.last_match(1)
+          expg_num = ::Regexp.last_match(2)
+          "#{schema_name}_expg#{expg_num}"
         elsif href =~ %r{/([^/]+)\.xml$}
-          # Resource schema reference
+          # Resource schema reference (no expg)
           "express:#{::Regexp.last_match(1)}"
         else
           href

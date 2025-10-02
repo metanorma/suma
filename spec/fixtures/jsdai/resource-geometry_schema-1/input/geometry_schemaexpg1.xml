@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="../../../xsl/res_doc/imgfile.xsl"?>
+<!DOCTYPE imgfile.content SYSTEM "../../../dtd/text.ent">
+<imgfile.content module="geometric_and_topological_representation" file="geometry_schemaexpg1.xml">
+<img src="geometry_schemaexpg1.gif">
+<img.area shape="rect" coords="297,892,412,937" href="../../resources/topology_schema/topology_schema.xml" />
+<img.area shape="rect" coords="297,727,448,772" href="../../resources/representation_schema/representation_schema.xml" />
+<img.area shape="rect" coords="297,563,409,608" href="../../resources/measure_schema/measure_schema.xml" />
+<img.area shape="rect" coords="10,10,129,55" href="../../resources/geometry_schema/geometry_schema.xml" />
+<img.area shape="rect" coords="297,418,464,463" href="../../resources/geometric_model_schema/geometric_model_schema.xml" />
+<img.area shape="rect" coords="297,781,526,826" href="../../resources/scan_data_3d_shape_model_schema/scan_data_3d_shape_model_schema.xml" />
+</img>
+</imgfile.content>
