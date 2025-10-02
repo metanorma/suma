@@ -414,6 +414,112 @@ $ bundle exec suma extract_terms schemas-activity-modules.yml terms_output
 ====
 
 
+=== Convert JSDAI image outputs to SVG and Annotated EXPRESS
+
+The `suma convert_jsdai` command converts JSDAI EXPRESS-G diagram outputs
+(XML + image file) into SVG and Annotated EXPRESS formats suitable for
+Metanorma documentation.
+
+JSDAI (Java Step Data Access Interface) Java tool is used by ISO/TC 184/SC 4 to
+create EXPRESS-G diagrams.
+
+JSDAI generates two files for each diagram:
+
+* a raster image file (GIF or JPEG)
+* an XML file containing image metadata and clickable area definitions
+
+This command converts these inputs into:
+
+* an SVG file that embeds the raster image as Base64 with clickable rectangular areas
+* an Annotated EXPRESS file with a Metanorma `svgmap` block for easy copy-paste
+
+[source,sh]
+----
+$ suma convert_jsdai XML_FILE IMAGE_FILE OUTPUT_DIR
+----
+
+Where:
+
+`XML_FILE`:: Path to the JSDAI XML file (e.g., "action_schemaexpg1.xml")
+
+`IMAGE_FILE`:: Path to the raster image file (GIF or JPEG format)
+
+`OUTPUT_DIR`:: Path to the output directory where SVG and EXP files will be generated
+
+[example]
+.To convert JSDAI outputs for a resource schema diagram
+[source,sh]
+----
+$ bundle exec suma convert_jsdai \
+    documents/resources/action_schema/action_schemaexpg1.xml \
+    documents/resources/action_schema/action_schemaexpg1.gif \
+    output/
+# => generates:
+#    output/action_schemaexpg1.svg
+#    output/action_schemaexpg1.exp
+----
+
+.To convert JSDAI outputs with JPEG image
+[source,sh]
+----
+$ bundle exec suma convert_jsdai \
+    diagrams/geometric_model_schemaexpg1.xml \
+    diagrams/geometric_model_schemaexpg1.jpg \
+    converted/
+# => generates:
+#    converted/geometric_model_schemaexpg1.svg
+#    converted/geometric_model_schemaexpg1.exp
+----
+
+This command:
+
+* Parses the JSDAI XML file to extract image metadata and clickable area definitions
+* Reads the raster image file and converts it to base64 format
+* Generates an SVG file with:
+** The embedded base64-encoded image
+** Clickable rectangular areas (`<a>` and `<rect>` elements) corresponding to the XML definitions
+** Proper viewBox dimensions matching the source image
+* Generates an Annotated EXPRESS file containing:
+** A Metanorma `svgmap` block with numbered cross-references
+** Proper anchor IDs for document integration
+** Cross-reference targets extracted from the XML href attributes
+
+
+The generated SVG and EXP files work together through a numbered mapping system:
+
+. In the SVG file, each clickable area is assigned a sequential number:
++
+[source,xml]
+----
+<a href="1"><rect .../></a>
+<a href="2"><rect .../></a>
+<a href="3"><rect .../></a>
+----
+
+. In the EXPRESS file, the `svgmap` block maps these numbers to targets which
+are either EXPRESS or AsciiDoc anchors:
++
+[source,asciidoc]
+----
+[.svgmap]
+image::action_schemaexpg1.svg[]
+
+* <<express:basic_attribute_schema>>; 1
+* <<express:action_schema>>; 2
+* <<express:support_resource_schema>>; 3
+----
+
+. When rendered in Metanorma, clicking on "area 1" in the SVG, will navigate to
+the `express:basic_attribute_schema` anchor, "area 2" to
+`express:action_schema`, and so on.
+
+The mapping is derived from the original JSDAI XML file, where each `<img.area>`
+element contains:
+
+* `coords` attribute → converted to SVG `<rect>` dimensions
+* `href` attribute → converted to EXPRESS cross-reference target in the `svgmap` block
+* Sequential position → assigned as the numbered href in both SVG and `svgmap` list
+
 
 == Usage: Ruby
 

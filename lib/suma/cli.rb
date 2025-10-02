@@ -53,6 +53,13 @@ module Suma
         Cli::ExtractTerms.start
       end
 
+      desc "convert_jsdai XML_FILE IMAGE_FILE OUTPUT_DIR",
+           "Convert JSDAI XML and image files to SVG and EXP files"
+      def convert_jsdai(_xml_file, _image_file, _output_dir)
+        require_relative "cli/convert_jsdai"
+        Cli::ConvertJsdai.start
+      end
+
       desc "validate SUBCOMMAND ...ARGS", "Validate express documents"
       subcommand "validate", Cli::Validate
 
