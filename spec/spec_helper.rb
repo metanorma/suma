@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require "suma"
+require_relative "../lib/suma"
+require_relative "../lib/suma/jsdai"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

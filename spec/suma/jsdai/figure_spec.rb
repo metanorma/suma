@@ -1,12 +1,6 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "suma/jsdai/figure"
-
-# Configure XML adapter for tests
-Lutaml::Model::Config.configure do |config|
-  config.xml_adapter_type = :nokogiri
-end
 
 RSpec.describe Suma::Jsdai::Figure do
   describe "XML parsing and round-trip" do
