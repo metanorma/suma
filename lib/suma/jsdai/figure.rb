@@ -15,6 +15,7 @@ module Suma
         @xml_file = xml_file
       end
 
+      # rubocop:disable Metrics/MethodLength
       def to_svg
         width, height = @image.dimensions
         svg_parts = []
@@ -48,7 +49,9 @@ module Suma
         svg_parts << "\n\t\t</svg>"
         svg_parts.join
       end
+      # rubocop:enable Metrics/MethodLength
 
+      # rubocop:disable Metrics/MethodLength
       def to_exp
         basename = File.basename(@xml_file, ".xml")
         schema_name = extract_schema_name(basename)
@@ -73,9 +76,11 @@ module Suma
         exp_parts << "\n*)\n"
         exp_parts.join
       end
+      # rubocop:enable Metrics/MethodLength
 
       private
 
+      # rubocop:disable Metrics/MethodLength
       def generate_shape_element(area)
         shape_attrs = []
         shape_attrs << 'onmouseout="this.style.opacity=0" '
@@ -106,6 +111,7 @@ module Suma
           "<rect #{shape_attrs.join}"
         end
       end
+      # rubocop:enable Metrics/MethodLength
 
       def parse_rect_coords(coords_str)
         parts = coords_str.split(",").map(&:to_i)
@@ -137,6 +143,7 @@ module Suma
         end
       end
 
+      # rubocop:disable Metrics/MethodLength
       def extract_schema_name(basename)
         # For module schemas like "armexpg1" with module="activity"
         # Result should be "Activity_arm"
@@ -155,7 +162,9 @@ module Suma
           basename.sub(/expg\d+$/, "")
         end
       end
+      # rubocop:enable Metrics/MethodLength
 
+      # rubocop:disable Metrics/MethodLength
       def extract_target_from_href(href)
         # Extract the target from href
         # Type 1: "../../resources/action_schema/action_schema.xml#action_schema.as_name_attribute_select"
@@ -195,6 +204,7 @@ module Suma
           href
         end
       end
+      # rubocop:enable Metrics/MethodLength
     end
   end
 end
