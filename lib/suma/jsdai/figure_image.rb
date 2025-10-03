@@ -17,7 +17,7 @@ module Suma
       end
 
       def to_base64
-        @base64_data ||= begin
+        @to_base64 ||= begin
           image_data = File.binread(@path)
           "data:image/#{@image_type};base64,#{Base64.strict_encode64(image_data)}"
         end
@@ -71,8 +71,8 @@ module Suma
 
             # SOF markers: 0xFFC0-0xFFC3, 0xFFC5-0xFFC7, 0xFFC9-0xFFCB, 0xFFCD-0xFFCF
             if marker[0] == "\xFF".b &&
-               (marker[1].ord >= 0xC0 && marker[1].ord <= 0xCF) &&
-               marker[1].ord != 0xC4 && marker[1].ord != 0xC8 && marker[1].ord != 0xCC
+                marker[1].ord.between?(0xC0, 0xCF) &&
+                marker[1].ord != 0xC4 && marker[1].ord != 0xC8 && marker[1].ord != 0xCC
               file.read(3) # Skip length (2 bytes) and precision (1 byte)
               height_bytes = file.read(2)
               width_bytes = file.read(2)
