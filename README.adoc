@@ -36,13 +36,14 @@ $ gem install suma
 ----
 # Defaults to `suma help`
 $ suma
-Commands:
-  suma build METANORMA_SITE_MANIFEST        # Build collection specified in site manifest (`metanorma*.yml`)
-  suma reformat EXPRESS_FILE_PATH           # Reformat EXPRESS files
-  suma validate SUBCOMMAND ...ARGS          # Validate express documents
-  suma generate_schemas METANORMA_MANIFEST_FILE SCHEMA_MANIFEST_FILE # Generate schemas manifest file from Metanorma manifest YAML file
-  suma extract_terms SCHEMA_MANIFEST_FILE GLOSSARIST_OUTPUT_PATH # Extract terms from schema manifest file
-  suma help [COMMAND]                       # Describe available commands or one specific command
+ Commands:
+  suma build METANORMA_SITE_MANIFEST                                  # Build collection specified in site manifest (`metanorma*.yml`)
+  suma convert-jsdai XML_FILE IMAGE_FILE OUTPUT_DIR                   # Convert JSDAI XML and image files to SVG and EXP files
+  suma extract-terms SCHEMA_MANIFEST_FILE GLOSSARIST_OUTPUT_PATH      # Extract terms from SCHEMA_MANIFEST_FILE into Glossarist v2 format
+  suma generate-schemas METANORMA_MANIFEST_FILE SCHEMA_MANIFEST_FILE  # Generate EXPRESS schema manifest file from Metanorma site manifest
+  suma help [COMMAND]                                                 # Describe available commands or one specific command
+  suma reformat EXPRESS_FILE_PATH                                     # Reformat EXPRESS files
+  suma validate SUBCOMMAND ...ARGS                                    # Validate express documents
 ----
 
 === Build command
@@ -291,13 +292,13 @@ Replacement: AsciiMath: xx
 
 === Generate schemas command
 
-The `suma generate_schemas` command generates an EXPRESS schema manifest file
+The `suma generate-schemas` command generates an EXPRESS schema manifest file
 containing all schemas of documents referenced in the Metanorma manifest file,
 recursively.
 
 [source,sh]
 ----
-$ suma generate_schemas METANORMA_MANIFEST_FILE SCHEMA_MANIFEST_FILE [options]
+$ suma generate-schemas METANORMA_MANIFEST_FILE SCHEMA_MANIFEST_FILE [options]
 ----
 
 Parameters:
@@ -314,14 +315,14 @@ Options:
 .To generate schemas manifest file from Metanorma manifest file
 [source,sh]
 ----
-$ bundle exec suma generate_schemas metanorma-smrl-all.yml schemas-smrl-all.yml
+$ bundle exec suma generate-schemas metanorma-smrl-all.yml schemas-smrl-all.yml
 # => generates schemas-smrl-all.yml
 ----
 
 .To generate schemas manifest file from Metanorma manifest file and exclude schemas with names like `*_lf.exp`
 [source,sh]
 ----
-$ bundle exec suma generate_schemas metanorma-smrl-all.yml schemas-smrl-all.yml -e *_lf.exp
+$ bundle exec suma generate-schemas metanorma-smrl-all.yml schemas-smrl-all.yml -e *_lf.exp
 # => generates schemas-smrl-all.yml without schemas with names like *_lf.exp
 ----
 ====
@@ -336,14 +337,14 @@ The "extract terms" command is implemented for ISO 10303-2, and could also be
 used for other EXPRESS schema collections that require term extraction for
 glossary or dictionary applications.
 
-The `suma extract_terms` command extracts terms from EXPRESS schemas and
+The `suma extract-terms` command extracts terms from EXPRESS schemas and
 generates a Glossarist v2 dataset in the output directory. This command processes
 various types of STEP schemas and creates standardized terminology datasets
 suitable for glossary and dictionary applications.
 
 [source,sh]
 ----
-$ suma extract_terms SCHEMA_MANIFEST_FILE GLOSSARIST_OUTPUT_PATH [options]
+$ suma extract-terms SCHEMA_MANIFEST_FILE GLOSSARIST_OUTPUT_PATH [options]
 ----
 
 Parameters:
@@ -397,7 +398,7 @@ The command generates a Glossarist v2 compliant dataset with:
 ====
 [source,sh]
 ----
-$ bundle exec suma extract_terms schemas-smrl-all.yml glossarist_output
+$ bundle exec suma extract-terms schemas-smrl-all.yml glossarist_output
 # => generates glossarist_output/concept/*.yaml and
 #      glossarist_output/localized_concept/*.yaml
 ----
@@ -408,7 +409,7 @@ $ bundle exec suma extract_terms schemas-smrl-all.yml glossarist_output
 ====
 [source,sh]
 ----
-$ bundle exec suma extract_terms schemas-activity-modules.yml terms_output
+$ bundle exec suma extract-terms schemas-activity-modules.yml terms_output
 # => processes only schemas listed in the manifest file
 ----
 ====
@@ -416,7 +417,7 @@ $ bundle exec suma extract_terms schemas-activity-modules.yml terms_output
 
 === Convert JSDAI image outputs to SVG and Annotated EXPRESS
 
-The `suma convert_jsdai` command converts JSDAI EXPRESS-G diagram outputs
+The `suma convert-jsdai` command converts JSDAI EXPRESS-G diagram outputs
 (XML + image file) into SVG and Annotated EXPRESS formats suitable for
 Metanorma documentation.
 
@@ -435,7 +436,7 @@ This command converts these inputs into:
 
 [source,sh]
 ----
-$ suma convert_jsdai XML_FILE IMAGE_FILE OUTPUT_DIR
+$ suma convert-jsdai XML_FILE IMAGE_FILE OUTPUT_DIR
 ----
 
 Where:
@@ -448,9 +449,10 @@ Where:
 
 [example]
 .To convert JSDAI outputs for a resource schema diagram
+====
 [source,sh]
 ----
-$ bundle exec suma convert_jsdai \
+$ bundle exec suma convert-jsdai \
     documents/resources/action_schema/action_schemaexpg1.xml \
     documents/resources/action_schema/action_schemaexpg1.gif \
     output/
@@ -458,18 +460,7 @@ $ bundle exec suma convert_jsdai \
 #    output/action_schemaexpg1.svg
 #    output/action_schemaexpg1.exp
 ----
-
-.To convert JSDAI outputs with JPEG image
-[source,sh]
-----
-$ bundle exec suma convert_jsdai \
-    diagrams/geometric_model_schemaexpg1.xml \
-    diagrams/geometric_model_schemaexpg1.jpg \
-    converted/
-# => generates:
-#    converted/geometric_model_schemaexpg1.svg
-#    converted/geometric_model_schemaexpg1.exp
-----
+====
 
 This command:
 
@@ -497,17 +488,49 @@ The generated SVG and EXP files work together through a numbered mapping system:
 ----
 
 . In the EXPRESS file, the `svgmap` block maps these numbers to targets which
-are either EXPRESS or AsciiDoc anchors:
+are either EXPRESS or AsciiDoc anchors.
 +
-[source,asciidoc]
+--
+[example]
+.Resource schema diagram with SVG and Annotated EXPRESS cross-references
+=====
+[source,express]
 ----
+(*"action_schema.__expressg"
+[[action_schema_expg1]]
 [.svgmap]
+====
 image::action_schemaexpg1.svg[]
 
 * <<express:basic_attribute_schema>>; 1
 * <<express:action_schema>>; 2
 * <<express:support_resource_schema>>; 3
+====
+*)
 ----
+=====
+
+[example]
+.Module schema diagram with SVG and Annotated EXPRESS cross-references
+=====
+[source,express]
+----
+(*"Activity_mim.__expressg"
+[[Activity_mim_expg1]]
+[.svgmap]
+====
+image::mimexpg1.svg[]
+
+* <<Activity_mim_expg2>>; 1
+* <<express:action_schema>>; 2
+* <<Activity_method_mim_expg1>>; 3
+* <<express:basic_attribute_schema>>; 4
+* <<express:management_resources_schema>>; 5
+====
+*)
+----
+=====
+--
 
 . When rendered in Metanorma, clicking on "area 1" in the SVG, will navigate to
 the `express:basic_attribute_schema` anchor, "area 2" to
@@ -516,9 +539,13 @@ the `express:basic_attribute_schema` anchor, "area 2" to
 The mapping is derived from the original JSDAI XML file, where each `<img.area>`
 element contains:
 
-* `coords` attribute → converted to SVG `<rect>` dimensions
-* `href` attribute → converted to EXPRESS cross-reference target in the `svgmap` block
-* Sequential position → assigned as the numbered href in both SVG and `svgmap` list
+`coords` attribute:: converted to SVG `<rect>` dimensions
+
+`href` attribute:: converted to EXPRESS cross-reference target in the `svgmap`
+block
+
+Sequential position:: assigned as the numbered href in both SVG and `svgmap`
+list
 
 
 == Usage: Ruby
