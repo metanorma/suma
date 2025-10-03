@@ -72,7 +72,7 @@ RSpec.describe Suma::Jsdai::Figure do
       expect(svg_output).to include("</svg>")
 
       # Check that we have the right number of clickable areas
-      expect(svg_output.scan(/<a href=/).count).to eq(3)
+      expect(svg_output.scan("<a href=").count).to eq(3)
     end
 
     it "generates SVG for action_schemaexpg2" do
@@ -88,7 +88,7 @@ RSpec.describe Suma::Jsdai::Figure do
       expect(svg_output).to include("<image href=\"data:image/gif;base64,")
 
       # Check that we have the right number of clickable areas
-      expect(svg_output.scan(/<a href=/).count).to eq(54)
+      expect(svg_output.scan("<a href=").count).to eq(54)
     end
 
     it "generates correct rect coordinates from coords" do
@@ -112,7 +112,7 @@ RSpec.describe Suma::Jsdai::Figure do
 
       expect(svg_output).to include("<polygon")
       expect(svg_output).to include('points="61,0,61,56,175,56,175,0,61,0"')
-      expect(svg_output.scan(/<a href=/).count).to eq(2)
+      expect(svg_output.scan("<a href=").count).to eq(2)
     end
 
     it "generates SVG for geometric_model_schemaexpg1" do
@@ -125,7 +125,7 @@ RSpec.describe Suma::Jsdai::Figure do
       expect(svg_output).to include('<?xml version="1.0" encoding="UTF-8"?>')
       expect(svg_output).to include("<svg")
       expect(svg_output).to include("<rect")
-      expect(svg_output.scan(/<a href=/).count).to eq(6)
+      expect(svg_output.scan("<a href=").count).to eq(6)
     end
 
     it "generates SVG for geometry_schemaexpg1" do
@@ -138,7 +138,7 @@ RSpec.describe Suma::Jsdai::Figure do
       expect(svg_output).to include('<?xml version="1.0" encoding="UTF-8"?>')
       expect(svg_output).to include("<svg")
       expect(svg_output).to include("<rect")
-      expect(svg_output.scan(/<a href=/).count).to eq(6)
+      expect(svg_output.scan("<a href=").count).to eq(6)
     end
   end
 
@@ -199,7 +199,7 @@ RSpec.describe Suma::Jsdai::Figure do
 
       expect(svg_output).to include("<polygon")
       expect(svg_output).to include('points="61,0,61,56,175,56,175,0,61,0"')
-      expect(svg_output.scan(/<a href=/).count).to eq(2)
+      expect(svg_output.scan("<a href=").count).to eq(2)
     end
 
     it "generates EXP for module mimexpg1" do
@@ -226,8 +226,8 @@ RSpec.describe Suma::Jsdai::Figure do
       expect(exp_output).to include("<<express:measure_schema>>; 1")
       expect(exp_output).to include("<<express:topology_schema>>; 6")
       expect(exp_output).to end_with("*)\n")
-
     end
+
     it "generates EXP for resource geometry_schemaexpg1" do
       xml_file = "spec/fixtures/jsdai/resource-geometry_schema-1/input/geometry_schemaexpg1.xml"
       image_file = "spec/fixtures/jsdai/resource-geometry_schema-1/input/geometry_schemaexpg1.gif"

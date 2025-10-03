@@ -88,7 +88,7 @@ module Suma
         shape_attrs << 'onmouseover="this.style.opacity=1" '
         shape_attrs << 'style="opacity: 0; fill: rgb(33, 128, 255); '
         shape_attrs << "fill-opacity: 0.3; stroke: rgb(0, 128, 255); "
-        shape_attrs << 'stroke-width: 1px; stroke-linecap: butt; '
+        shape_attrs << "stroke-width: 1px; stroke-linecap: butt; "
         shape_attrs << 'stroke-linejoin: miter; stroke-opacity: 1;" '
 
         case area.shape
@@ -139,7 +139,7 @@ module Suma
           "#{schema_name}_expg#{::Regexp.last_match(2)}"
         else
           # Resource schema: insert underscore before expg
-          basename.sub(/expg/, "_expg")
+          basename.sub("expg", "_expg")
         end
       end
 
@@ -173,10 +173,11 @@ module Suma
         # Type 4: "../../resources/geometry_schema/geometry_schemaexpg3.xml"
         #   → "geometry_schema_expg3" (image reference in same resource)
 
-        if href =~ /#(.+)$/
+        case href
+        when /#(.+)$/
           # Has fragment - use it as entity reference
           "express:#{::Regexp.last_match(1)}"
-        elsif href =~ %r{^\.\./([\w_]+)/(arm|mim)expg(\d+)\.xml$}
+        when %r{^\.\./([\w_]+)/(arm|mim)expg(\d+)\.xml$}
           # Module image reference like "../activity_method/armexpg1.xml"
           module_dir = ::Regexp.last_match(1)
           schema_type = ::Regexp.last_match(2)
@@ -186,14 +187,14 @@ module Suma
             idx.zero? ? part.capitalize : part
           end.join("_")
           "#{module_name}_#{schema_type}_expg#{expg_num}"
-        elsif href =~ %r{/([^/]+)expg(\d+)\.xml$}
+        when %r{/([^/]+)expg(\d+)\.xml$}
           # Image reference to another diagram in same or different resource
           # e.g., "../../resources/geometry_schema/geometry_schemaexpg3.xml"
           # Result: "geometry_schema_expg3" (no "express:" prefix for images)
           schema_name = ::Regexp.last_match(1)
           expg_num = ::Regexp.last_match(2)
           "#{schema_name}_expg#{expg_num}"
-        elsif href =~ %r{/([^/]+)\.xml$}
+        when %r{/([^/]+)\.xml$}
           # Resource schema reference (no expg)
           "express:#{::Regexp.last_match(1)}"
         else
