@@ -23,7 +23,7 @@ module Suma
         Cli::Build.start
       end
 
-      desc "generate_schemas METANORMA_MANIFEST_FILE SCHEMA_MANIFEST_FILE",
+      desc "generate-schemas METANORMA_MANIFEST_FILE SCHEMA_MANIFEST_FILE",
            "Generate EXPRESS schema manifest file from Metanorma site manifest"
       option :exclude_paths, type: :string, default: nil, aliases: "-e",
                              desc: "Exclude schemas paths by pattern " \
@@ -43,7 +43,7 @@ module Suma
         Cli::Reformat.start
       end
 
-      desc "extract_terms SCHEMA_MANIFEST_FILE GLOSSARIST_OUTPUT_PATH",
+      desc "extract-terms SCHEMA_MANIFEST_FILE GLOSSARIST_OUTPUT_PATH",
            "Extract terms from SCHEMA_MANIFEST_FILE into " \
            "Glossarist v2 format"
       option :language_code, type: :string, default: "eng", aliases: "-l",
@@ -53,7 +53,7 @@ module Suma
         Cli::ExtractTerms.start
       end
 
-      desc "convert_jsdai XML_FILE IMAGE_FILE OUTPUT_DIR",
+      desc "convert-jsdai XML_FILE IMAGE_FILE OUTPUT_DIR",
            "Convert JSDAI XML and image files to SVG and EXP files"
       def convert_jsdai(_xml_file, _image_file, _output_dir)
         require_relative "cli/convert_jsdai"

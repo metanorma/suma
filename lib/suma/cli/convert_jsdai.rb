@@ -2,7 +2,7 @@
 
 require "thor"
 require_relative "../thor_ext"
-require_relative "../jsdai/figure"
+require_relative "../jsdai"
 require "fileutils"
 
 module Suma

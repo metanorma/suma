@@ -1,13 +1,7 @@
 # frozen_string_literal: true
 
-require "lutaml/model"
 require_relative "figure_xml"
 require_relative "figure_image"
-
-# Configure XML adapter
-Lutaml::Model::Config.configure do |config|
-  config.xml_adapter_type = :nokogiri
-end
 
 module Suma
   module Jsdai
