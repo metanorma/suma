@@ -39,7 +39,7 @@ Gem::Specification.new do |spec| # rubocop:disable Metrics/BlockLength
   spec.add_dependency "metanorma-cli"
   spec.add_dependency "plurimath"
   spec.add_dependency "ruby-progressbar"
-  spec.add_dependency "terminal-table", "~> 3.0"
+  spec.add_dependency "table_tennis"
   spec.add_dependency "thor", ">= 0.20"
   spec.metadata["rubygems_mfa_required"] = "true"
 end
