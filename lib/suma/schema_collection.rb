@@ -63,6 +63,7 @@ module Suma
       end
     end
 
+    # rubocop:disable Metrics/MethodLength
     def compile
       finalize
 
@@ -104,5 +105,6 @@ module Suma
       # end
       # pp results
     end
+    # rubocop:enable Metrics/MethodLength
   end
 end

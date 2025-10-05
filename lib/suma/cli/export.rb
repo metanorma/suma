@@ -48,6 +48,7 @@ module Suma
         exporter.export
       end
 
+      # rubocop:disable Metrics/MethodLength
       def load_and_merge_configs(primary_path, additional_paths)
         primary_config = Expressir::SchemaManifest.from_file(primary_path)
         return primary_config unless additional_paths && !additional_paths.empty?
@@ -64,6 +65,7 @@ module Suma
         # Merge all configs into the primary
         merge_all_configs(primary_config, additional_configs)
       end
+      # rubocop:enable Metrics/MethodLength
 
       def merge_all_configs(primary, additional_configs)
         # Collect all schemas from primary and all additional manifests

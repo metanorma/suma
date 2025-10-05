@@ -55,6 +55,7 @@ module Suma
       express_schema.save_exp(with_annotations: options[:annotations])
     end
 
+    # rubocop:disable Metrics/MethodLength
     def categorize_schema(schema)
       path = schema.path.to_s
 
@@ -71,7 +72,9 @@ module Suma
         "other"
       end
     end
+    # rubocop:enable Metrics/MethodLength
 
+    # rubocop:disable Metrics/MethodLength
     def create_zip_archive
       require "zip"
 
@@ -89,5 +92,6 @@ module Suma
 
       Utils.log "ZIP archive created: #{zip_path}"
     end
+    # rubocop:enable Metrics/MethodLength
   end
 end
