@@ -7,11 +7,13 @@ require "fileutils"
 RSpec.describe Suma::Cli::Export do
   let(:fixtures_path) { File.join(__dir__, "../../fixtures/extract_terms") }
   let(:manifest_file) { File.join(fixtures_path, "schemas-smrl-all.yml") }
-  let(:output_path) { File.join(Dir.tmpdir, "suma_export_test_#{Time.now.to_i}") }
+  let(:output_path) do
+    File.join(Dir.tmpdir, "suma_export_test_#{Time.now.to_i}")
+  end
 
   after do
-    FileUtils.rm_rf(output_path) if File.exist?(output_path)
-    FileUtils.rm_f("#{output_path}.zip") if File.exist?("#{output_path}.zip")
+    FileUtils.rm_rf(output_path)
+    FileUtils.rm_f("#{output_path}.zip")
   end
 
   describe "#export" do
@@ -28,10 +30,10 @@ RSpec.describe Suma::Cli::Export do
       it "exports schemas with annotations when flag is set" do
         expect do
           described_class.start([
-            "export", manifest_file,
-            "-o", output_path,
-            "--annotations"
-          ])
+                                  "export", manifest_file,
+                                  "-o", output_path,
+                                  "--annotations"
+                                ])
         end.not_to raise_error
 
         expect(File.directory?(output_path)).to be true
@@ -40,10 +42,10 @@ RSpec.describe Suma::Cli::Export do
       it "creates ZIP archive when flag is set" do
         expect do
           described_class.start([
-            "export", manifest_file,
-            "-o", output_path,
-            "--zip"
-          ])
+                                  "export", manifest_file,
+                                  "-o", output_path,
+                                  "--zip"
+                                ])
         end.not_to raise_error
 
         expect(File.directory?(output_path)).to be true
@@ -53,11 +55,11 @@ RSpec.describe Suma::Cli::Export do
       it "exports with all options enabled" do
         expect do
           described_class.start([
-            "export", manifest_file,
-            "-o", output_path,
-            "--annotations",
-            "--zip"
-          ])
+                                  "export", manifest_file,
+                                  "-o", output_path,
+                                  "--annotations",
+                                  "--zip"
+                                ])
         end.not_to raise_error
 
         expect(File.directory?(output_path)).to be true
@@ -73,10 +75,10 @@ RSpec.describe Suma::Cli::Export do
       it "merges schemas from both manifests" do
         expect do
           described_class.start([
-            "export", manifest_file,
-            "-o", output_path,
-            "-a", additional_manifest
-          ])
+                                  "export", manifest_file,
+                                  "-o", output_path,
+                                  "-a", additional_manifest
+                                ])
         end.not_to raise_error
 
         expect(File.directory?(output_path)).to be true
@@ -94,11 +96,11 @@ RSpec.describe Suma::Cli::Export do
       it "merges schemas from all manifests" do
         expect do
           described_class.start([
-            "export", manifest_file,
-            "-o", output_path,
-            "-a", additional_manifest_1,
-            "-a", additional_manifest_2
-          ])
+                                  "export", manifest_file,
+                                  "-o", output_path,
+                                  "-a", additional_manifest_1,
+                                  "-a", additional_manifest_2
+                                ])
         end.not_to raise_error
 
         expect(File.directory?(output_path)).to be true
@@ -114,19 +116,19 @@ RSpec.describe Suma::Cli::Export do
       it "raises error for missing manifest file" do
         expect do
           described_class.start([
-            "export", "nonexistent.yml",
-            "-o", output_path
-          ])
+                                  "export", "nonexistent.yml",
+                                  "-o", output_path
+                                ])
         end.to raise_error(Errno::ENOENT, /not found/)
       end
 
       it "raises error for missing additional manifest file" do
         expect do
           described_class.start([
-            "export", manifest_file,
-            "-o", output_path,
-            "-a", "nonexistent-additional.yml"
-          ])
+                                  "export", manifest_file,
+                                  "-o", output_path,
+                                  "-a", "nonexistent-additional.yml"
+                                ])
         end.to raise_error(Errno::ENOENT, /not found/)
       end
 
