@@ -42,7 +42,7 @@ module Suma
           options: {
             annotations: options[:annotations],
             create_zip: options[:zip],
-          }
+          },
         )
 
         exporter.export
@@ -75,7 +75,7 @@ module Suma
 
         Expressir::SchemaManifest.new(
           path: primary.path,
-          schemas: all_schemas
+          schemas: all_schemas,
         )
       end
 

@@ -49,7 +49,7 @@ module Suma
       express_schema = ExpressSchema.new(
         id: schema.id,
         path: schema.path.to_s,
-        output_path: schema_output_path
+        output_path: schema_output_path,
       )
 
       express_schema.save_exp(with_annotations: options[:annotations])

@@ -70,7 +70,7 @@ module Suma
       exporter = SchemaExporter.new(
         config: @config,
         output_path: @output_path_schemas,
-        options: { annotations: false }
+        options: { annotations: false },
       )
       exporter.export
 
