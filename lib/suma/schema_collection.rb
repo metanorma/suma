@@ -3,6 +3,7 @@
 require_relative "express_schema"
 require_relative "schema_attachment"
 require_relative "schema_document"
+require_relative "schema_exporter"
 require "expressir"
 require_relative "utils"
 
@@ -64,9 +65,14 @@ module Suma
 
     def compile
       finalize
-      schemas.each_pair do |_schema_id, entry|
-        entry.save_exp
-      end
+
+      # Use SchemaExporter for schema export
+      exporter = SchemaExporter.new(
+        config: @config,
+        output_path: @output_path_schemas,
+        options: { annotations: false }
+      )
+      exporter.export
 
       docs.each_pair do |_schema_id, entry|
         entry.compile

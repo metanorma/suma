@@ -42,14 +42,16 @@ module Suma
       File.join(@output_path, type, id, File.basename(@path))
     end
 
-    def save_exp
+    def save_exp(with_annotations: false)
       relative_path = Pathname.new(filename_plain).relative_path_from(Dir.pwd)
-      Utils.log "Save plain schema: #{relative_path}"
+      schema_type = with_annotations ? "annotated" : "plain"
+      Utils.log "Save #{schema_type} schema: #{relative_path}"
 
       # return if File.exist?(filename_plain)
       FileUtils.mkdir_p(File.dirname(filename_plain))
 
-      File.write(filename_plain, to_plain)
+      content = with_annotations ? parsed.to_s(no_remarks: false) : to_plain
+      File.write(filename_plain, content)
     end
   end
 end

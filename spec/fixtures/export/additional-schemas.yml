@@ -1,0 +1,5 @@
+---
+path: .
+schemas:
+  action_schema_additional:
+    path: spec/fixtures/extract_terms/resources/action_schema/action_schema.exp
