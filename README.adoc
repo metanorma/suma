@@ -548,6 +548,141 @@ Sequential position:: assigned as the numbered href in both SVG and `svgmap`
 list
 
 
+=== Export schemas command
+
+==== General
+
+The `suma export` command exports EXPRESS schemas from a manifest file to a
+specified output directory. This command is useful for extracting plain or
+annotated EXPRESS schemas for distribution or further processing.
+
+[source,sh]
+----
+$ suma export MANIFEST_FILE [options]
+----
+
+Parameters:
+
+`MANIFEST_FILE`:: Path to the EXPRESS schema manifest file (e.g., "schemas-srl.yml")
+
+Options:
+
+`--output=PATH`, `-o PATH`:: (required) Output directory path
+
+`--additional=PATH`, `-a PATH`:: Additional schemas manifest file to merge
+
+`--[no-]annotations`:: Include annotations (remarks/comments) in exported schemas (default: false)
+
+`--[no-]zip`:: Create ZIP archive of exported schemas (default: false)
+
+==== Behavior
+
+The command exports schemas while preserving the directory structure from the
+manifest file paths:
+
+* Schemas under `resources/` are exported to `OUTPUT/resources/`
+* Schemas under `modules/` are exported to `OUTPUT/modules/`
+* Other categories (`business_object_models/`, `core_model/`) follow the same pattern
+
+By default, schemas are exported without annotations (plain EXPRESS). Use the
+`--annotations` flag to include remarks and comments.
+
+The `--zip` flag creates a ZIP archive in addition to the directory output,
+named `OUTPUT.zip`.
+
+[example]
+.To export schemas without annotations
+[source,sh]
+----
+$ bundle exec suma export -o express-files schemas-srl.yml
+# => generates express-files/ directory with plain EXPRESS schemas
+----
+
+[example]
+.To export schemas with annotations
+[source,sh]
+----
+$ bundle exec suma export -o express-files --annotations schemas-srl.yml
+# => generates express-files/ directory with annotated EXPRESS schemas
+----
+
+[example]
+.To export and create ZIP archive
+[source,sh]
+----
+$ bundle exec suma export -o express-files --zip schemas-srl.yml
+# => generates both:
+#    - express-files/ directory
+#    - express-files.zip archive
+----
+
+[example]
+.To merge additional schemas and export
+[source,sh]
+----
+$ bundle exec suma export -o express-files \
+    -a additional-schemas.yml \
+    schemas-srl.yml
+# => exports schemas from both manifest files
+----
+
+[example]
+.To merge multiple additional schemas
+[source,sh]
+----
+$ bundle exec suma export -o express-files \
+    -a additional-schemas-1.yml \
+    -a additional-schemas-2.yml \
+    schemas-srl.yml
+# => exports schemas from primary manifest and all additional manifests
+----
+
+[example]
+.To export with all options
+[source,sh]
+----
+$ bundle exec suma export -o express-files \
+    -a additional-schemas.yml \
+    schemas-srl.yml
+# => exports schemas from both manifest files
+----
+
+[example]
+.To export with all options
+[source,sh]
+----
+$ bundle exec suma export -o express-files \
+    --annotations \
+    --zip \
+    -a additional-schemas.yml \
+    schemas-srl.yml
+# => generates annotated schemas in both directory and ZIP format,
+#    including schemas from both manifest files
+----
+
+==== Output structure
+
+The exported directory structure mirrors the schema paths in the manifest:
+
+[source]
+----
+express-files/
+├── resources/
+│   ├── action_schema/
+│   │   └── action_schema.exp
+│   └── ...
+├── modules/
+│   ├── activity/
+│   │   ├── arm.exp
+│   │   └── mim.exp
+│   └── ...
+├── business_object_models/
+│   └── ...
+└── core_model/
+    └── ...
+----
+
+
 == Usage: Ruby
 
 === General

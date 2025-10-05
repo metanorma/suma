@@ -1,0 +1,9 @@
+---
+path: .
+schemas:
+  Activity_arm:
+    path: spec/fixtures/extract_terms/modules/activity/arm.exp
+  Activity_mim:
+    path: spec/fixtures/extract_terms/modules/activity/mim.exp
+  action_schema:
+    path: spec/fixtures/extract_terms/resources/action_schema/action_schema.exp
