@@ -61,7 +61,7 @@ module Suma
       end
 
       desc "export *FILES",
-           "Export EXPRESS schemas from manifest files or independent EXPRESS files"
+           "Export EXPRESS schemas from manifest files or standalone EXPRESS files"
       option :output, type: :string, aliases: "-o", required: true,
                       desc: "Output directory path"
       option :annotations, type: :boolean, default: false,

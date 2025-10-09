@@ -553,7 +553,7 @@ list
 ==== General
 
 The `suma export` command exports EXPRESS schemas from manifest files and/or
-independent EXPRESS files to a specified output directory.
+standalone EXPRESS files to a specified output directory.
 
 This command is useful for extracting plain or annotated EXPRESS schemas for
 distribution or further processing.
@@ -570,7 +570,7 @@ Parameters:
 An EXPRESS schema manifest file (`.yml`, `.yaml`)::: schemas listed in the
 manifest will be exported
 
-An independent EXPRESS file (`.exp`)::: the schema will be exported directly
+An standalone EXPRESS file (`.exp`)::: the schema will be exported directly
 
 Options:
 
@@ -591,7 +591,7 @@ The command exports schemas based on the input file types:
 * Schemas under `modules/` are exported to `OUTPUT/modules/`
 * Other categories (`business_object_models/`, `core_model/`) follow the same pattern
 
-**For independent EXPRESS files:**
+**For standalone EXPRESS files:**
 
 * Schemas are exported directly to the output directory root
 * Output filename format: `{schema_id}.exp`
@@ -679,8 +679,8 @@ The exported directory structure depends on the input file types:
 [source]
 ----
 express-files/
-├── geometry_schema.exp          # independent EXPRESS file (at root)
-├── topology_schema.exp          # independent EXPRESS file (at root)
+├── geometry_schema.exp          # standalone EXPRESS file (at root)
+├── topology_schema.exp          # standalone EXPRESS file (at root)
 ├── resources/                   # from manifest files
 │   ├── action_schema/
 │   │   └── action_schema.exp

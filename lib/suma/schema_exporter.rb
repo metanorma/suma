@@ -42,11 +42,11 @@ module Suma
     end
 
     def export_single_schema(schema)
-      # Check if this is a plain file (not from a manifest structure)
-      is_plain_file = schema.is_a?(Cli::Export::PlainSchema)
+      # Check if this is a standalone EXPRESS file (not from a manifest structure)
+      is_standalone_file = schema.is_a?(Cli::Export::StandaloneSchema)
 
-      if is_plain_file
-        # For plain files, output directly to the root
+      if is_standalone_file
+        # For standalone EXPRESS files, output directly to the root
         schema_output_path = output_path.to_s
       else
         # For manifest schemas, preserve directory structure
@@ -58,7 +58,7 @@ module Suma
         id: schema.id,
         path: schema.path.to_s,
         output_path: schema_output_path,
-        is_plain_file: is_plain_file,
+        is_standalone_file: is_standalone_file,
       )
 
       express_schema.save_exp(with_annotations: options[:annotations])
@@ -68,7 +68,7 @@ module Suma
     def categorize_schema(schema)
       path = schema.path.to_s
 
-      # Check if this is from a manifest structure or a plain file
+      # Check if this is from a manifest structure or a standalone EXPRESS file
       case path
       when %r{/resources/}
         "resources"
@@ -79,8 +79,8 @@ module Suma
       when %r{/core_model/}
         "core_model"
       else
-        # Independent EXPRESS file not from a manifest structure
-        "independent"
+        # standalone EXPRESS file not from a manifest structure
+        "standalone"
       end
     end
     # rubocop:enable Metrics/MethodLength
