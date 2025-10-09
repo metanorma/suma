@@ -15,16 +15,16 @@ module Suma
       @is_standalone_file = is_standalone_file
     end
 
-    def type
-      case @path.to_s
-      when %r{.*/resources/.*}
-        "resources"
-      when %r{.*/modules/.*}
-        "modules"
-      else
-        "unknown_type"
-      end
+  def type
+    path_str = @path.to_s
+    if path_str.include?("/resources/")
+      "resources"
+    elsif path_str.include?("/modules/")
+      "modules"
+    else
+      "unknown_type"
     end
+  end
 
     def parsed
       return @parsed if @parsed
