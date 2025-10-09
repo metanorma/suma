@@ -9,8 +9,8 @@ require_relative "utils"
 
 module Suma
   class SchemaCollection
-    attr_accessor :config, :schemas, :docs, :output_path_docs, :output_path_schemas,
-                  :manifest
+    attr_accessor :config, :schemas, :docs, :output_path_docs,
+                  :output_path_schemas, :manifest
 
     def initialize(config: nil, config_yaml: nil, output_path_docs: nil,
                    output_path_schemas: nil, manifest: nil)
@@ -18,7 +18,9 @@ module Suma
       @docs = {}
       @schema_name_to_docs = {}
       @output_path_docs = Pathname.new(output_path_docs || Dir.pwd).expand_path
-      @output_path_schemas = Pathname.new(output_path_schemas || Dir.pwd).expand_path
+      @output_path_schemas = Pathname.new(
+        output_path_schemas || Dir.pwd,
+      ).expand_path
       @config = config
       @config ||= config_yaml && Expressir::SchemaManifest.from_file(config_yaml)
       @manifest = manifest

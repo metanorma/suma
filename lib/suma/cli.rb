@@ -15,10 +15,9 @@ module Suma
       option :compile, type: :boolean, default: true,
                        desc: "Compile or skip compile of collection"
       option :schemas_all_path, type: :string, aliases: "-s",
-                                desc: "Generate file that contains all schemas in the collection."
+                                desc: "Generate file that contains all " \
+                                      "schemas in the collection."
       def build(_site_manifest)
-        # # If no arguments, add an empty array to ensure the default command is triggered
-        # args = [] if args.empty?
         require_relative "cli/build"
         Cli::Build.start
       end
@@ -61,7 +60,8 @@ module Suma
       end
 
       desc "export *FILES",
-           "Export EXPRESS schemas from manifest files or standalone EXPRESS files"
+           "Export EXPRESS schemas from manifest files or " \
+           "standalone EXPRESS files"
       option :output, type: :string, aliases: "-o", required: true,
                       desc: "Output directory path"
       option :annotations, type: :boolean, default: false,

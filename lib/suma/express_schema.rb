@@ -40,16 +40,20 @@ module Suma
     end
 
     def filename_plain
-      unless @id
-        parsed
-      end
+      ensure_id_loaded
+      build_output_filename
+    end
+
+    def ensure_id_loaded
+      parsed unless @id
+    end
+
+    def build_output_filename
       if @is_standalone_file
-        # For standalone EXPRESS files, ensure schema is parsed to get the id
-        # Output directly to output_path with schema name
+        # For standalone files, output directly to output_path
         File.join(@output_path, "#{@id}.exp")
       else
-        # For manifest schemas, ensure id is set
-        # Preserve directory structure
+        # For manifest schemas, preserve directory structure
         File.join(@output_path, type, @id, File.basename(@path))
       end
     end
