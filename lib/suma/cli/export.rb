@@ -7,37 +7,41 @@ module Suma
   module Cli
     # Export command for exporting EXPRESS schemas from a manifest
     class Export < Thor
-      desc "export MANIFEST_FILE",
-           "Export EXPRESS schemas from manifest"
+      desc "export *FILES",
+           "Export EXPRESS schemas from manifest files or independent EXPRESS files"
       option :output, type: :string, aliases: "-o", required: true,
                       desc: "Output directory path"
-      option :additional, type: :array, aliases: "-a",
-                          desc: "Additional schemas manifest files to merge (can be specified multiple times)"
       option :annotations, type: :boolean, default: false,
                            desc: "Include annotations (remarks/comments)"
       option :zip, type: :boolean, default: false,
                    desc: "Create ZIP archive of exported schemas"
 
-      def export(manifest_file)
+      def export(*files)
         require_relative "../schema_exporter"
         require_relative "../utils"
         require "expressir"
 
-        unless File.exist?(manifest_file)
-          raise Errno::ENOENT, "Specified manifest file " \
-                               "`#{manifest_file}` not found."
+        if files.empty?
+          raise ArgumentError, "At least one file must be specified"
         end
 
-        run(manifest_file, options)
+        # Validate all files exist
+        files.each do |file|
+          unless File.exist?(file)
+            raise Errno::ENOENT, "Specified file `#{file}` not found."
+          end
+        end
+
+        run(files, options)
       end
 
       private
 
-      def run(manifest_file, options)
-        config = load_and_merge_configs(manifest_file, options[:additional])
+      def run(files, options)
+        schemas = load_schemas_from_files(files)
 
         exporter = SchemaExporter.new(
-          config: config,
+          schemas: schemas,
           output_path: options[:output],
           options: {
             annotations: options[:annotations],
@@ -48,37 +52,44 @@ module Suma
         exporter.export
       end
 
-      # rubocop:disable Metrics/MethodLength
-      def load_and_merge_configs(primary_path, additional_paths)
-        primary_config = Expressir::SchemaManifest.from_file(primary_path)
-        return primary_config unless additional_paths && !additional_paths.empty?
+      def load_schemas_from_files(files)
+        all_schemas = []
 
-        # Load all additional manifests
-        additional_configs = additional_paths.map do |path|
-          unless File.exist?(path)
-            raise Errno::ENOENT, "Specified additional manifest file " \
-                                 "`#{path}` not found."
+        files.each do |file|
+          case File.extname(file).downcase
+          when ".yml", ".yaml"
+            # Load manifest file
+            manifest = Expressir::SchemaManifest.from_file(file)
+            all_schemas += manifest.schemas
+          when ".exp"
+            # Load independent EXPRESS file
+            all_schemas << create_schema_from_exp_file(file)
+          else
+            raise ArgumentError, "Unsupported file type: #{file}. " \
+                                 "Only .yml, .yaml, and .exp files are supported."
           end
-          Expressir::SchemaManifest.from_file(path)
         end
 
-        # Merge all configs into the primary
-        merge_all_configs(primary_config, additional_configs)
+        all_schemas
       end
-      # rubocop:enable Metrics/MethodLength
 
-      def merge_all_configs(primary, additional_configs)
-        # Collect all schemas from primary and all additional manifests
-        all_schemas = primary.schemas.dup
-
-        additional_configs.each do |config|
-          all_schemas += config.schemas
-        end
-
-        Expressir::SchemaManifest.new(
-          path: primary.path,
-          schemas: all_schemas,
+      def create_schema_from_exp_file(exp_file)
+        # Create a schema object from a independent EXPRESS file
+        # The id will be determined during parsing
+        IndependentSchema.new(
+          id: nil,
+          path: File.expand_path(exp_file),
         )
+      end
+
+      # Simple schema class for independent EXPRESS files
+      class IndependentSchema
+        attr_accessor :id, :path
+
+        def initialize(id:, path:)
+          @id = id
+          @path = path
+        end
       end
 
       def self.exit_on_failure?

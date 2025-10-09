@@ -552,24 +552,29 @@ list
 
 ==== General
 
-The `suma export` command exports EXPRESS schemas from a manifest file to a
-specified output directory. This command is useful for extracting plain or
-annotated EXPRESS schemas for distribution or further processing.
+The `suma export` command exports EXPRESS schemas from manifest files and/or
+independent EXPRESS files to a specified output directory.
+
+This command is useful for extracting plain or annotated EXPRESS schemas for
+distribution or further processing.
 
 [source,sh]
 ----
-$ suma export MANIFEST_FILE [options]
+$ suma export -o OUTPUT_DIR FILE1 [FILE2 FILE3 ...]
 ----
 
 Parameters:
 
-`MANIFEST_FILE`:: Path to the EXPRESS schema manifest file (e.g., "schemas-srl.yml")
+`FILE1 [FILE2 FILE3 ...]`:: One or more files to export. Each file can be:
+
+An EXPRESS schema manifest file (`.yml`, `.yaml`)::: schemas listed in the
+manifest will be exported
+
+An independent EXPRESS file (`.exp`)::: the schema will be exported directly
 
 Options:
 
 `--output=PATH`, `-o PATH`:: (required) Output directory path
-
-`--additional=PATH`, `-a PATH`:: Additional schemas manifest file to merge
 
 `--[no-]annotations`:: Include annotations (remarks/comments) in exported schemas (default: false)
 
@@ -577,12 +582,19 @@ Options:
 
 ==== Behavior
 
-The command exports schemas while preserving the directory structure from the
-manifest file paths:
+The command exports schemas based on the input file types:
 
+**For EXPRESS schema manifest files:**
+
+* Schemas are exported while preserving the directory structure from the manifest file paths
 * Schemas under `resources/` are exported to `OUTPUT/resources/`
 * Schemas under `modules/` are exported to `OUTPUT/modules/`
 * Other categories (`business_object_models/`, `core_model/`) follow the same pattern
+
+**For independent EXPRESS files:**
+
+* Schemas are exported directly to the output directory root
+* Output filename format: `{schema_id}.exp`
 
 By default, schemas are exported without annotations (plain EXPRESS). Use the
 `--annotations` flag to include remarks and comments.
@@ -591,11 +603,44 @@ The `--zip` flag creates a ZIP archive in addition to the directory output,
 named `OUTPUT.zip`.
 
 [example]
-.To export schemas without annotations
+.To export schemas from a manifest file
 [source,sh]
 ----
 $ bundle exec suma export -o express-files schemas-srl.yml
 # => generates express-files/ directory with plain EXPRESS schemas
+----
+
+[example]
+.To export a single plain schema
+[source,sh]
+----
+$ bundle exec suma export -o express-files geometry_schema.exp
+# => generates express-files/geometry_schema.exp
+----
+
+[example]
+.To export multiple plain schemas
+[source,sh]
+----
+$ bundle exec suma export -o express-files schema1.exp schema2.exp schema3.exp
+# => generates express-files/{schema1,schema2,schema3}.exp
+----
+
+[example]
+.To export from multiple manifest files
+[source,sh]
+----
+$ bundle exec suma export -o express-files schemas-srl.yml additional-schemas.yml
+# => exports schemas from both manifest files
+----
+
+[example]
+.To export mix of manifest and plain schemas
+[source,sh]
+----
+$ bundle exec suma export -o express-files schemas-srl.yml geometry_schema.exp
+# => exports schemas from manifest with directory structure
+#    plus geometry_schema.exp at the root
 ----
 
 [example]
@@ -617,68 +662,37 @@ $ bundle exec suma export -o express-files --zip schemas-srl.yml
 ----
 
 [example]
-.To merge additional schemas and export
-[source,sh]
-----
-$ bundle exec suma export -o express-files \
-    -a additional-schemas.yml \
-    schemas-srl.yml
-# => exports schemas from both manifest files
-----
-
-[example]
-.To merge multiple additional schemas
-[source,sh]
-----
-$ bundle exec suma export -o express-files \
-    -a additional-schemas-1.yml \
-    -a additional-schemas-2.yml \
-    schemas-srl.yml
-# => exports schemas from primary manifest and all additional manifests
-----
-
-[example]
-.To export with all options
-[source,sh]
-----
-$ bundle exec suma export -o express-files \
-    -a additional-schemas.yml \
-    schemas-srl.yml
-# => exports schemas from both manifest files
-----
-
-[example]
 .To export with all options
 [source,sh]
 ----
 $ bundle exec suma export -o express-files \
     --annotations \
     --zip \
-    -a additional-schemas.yml \
-    schemas-srl.yml
-# => generates annotated schemas in both directory and ZIP format,
-#    including schemas from both manifest files
+    schemas-srl.yml geometry_schema.exp
+# => generates annotated schemas in both directory and ZIP format
 ----
 
 ==== Output structure
 
-The exported directory structure mirrors the schema paths in the manifest:
+The exported directory structure depends on the input file types:
 
 [source]
 ----
 express-files/
-├── resources/
+├── geometry_schema.exp          # independent EXPRESS file (at root)
+├── topology_schema.exp          # independent EXPRESS file (at root)
+├── resources/                   # from manifest files
 │   ├── action_schema/
 │   │   └── action_schema.exp
 │   └── ...
-├── modules/
+├── modules/                     # from manifest files
 │   ├── activity/
 │   │   ├── arm.exp
 │   │   └── mim.exp
 │   └── ...
-├── business_object_models/
+├── business_object_models/      # from manifest files
 │   └── ...
-└── core_model/
+└── core_model/                  # from manifest files
     └── ...
 ----
 

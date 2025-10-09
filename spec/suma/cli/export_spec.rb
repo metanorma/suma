@@ -17,10 +17,10 @@ RSpec.describe Suma::Cli::Export do
   end
 
   describe "#export" do
-    context "with valid manifest" do
+    context "with valid manifest file" do
       it "exports schemas to directory without annotations" do
         expect do
-          described_class.start(["export", manifest_file, "-o", output_path])
+          described_class.start(["export", "-o", output_path, manifest_file])
         end.not_to raise_error
 
         expect(File.directory?(output_path)).to be true
@@ -30,9 +30,10 @@ RSpec.describe Suma::Cli::Export do
       it "exports schemas with annotations when flag is set" do
         expect do
           described_class.start([
-                                  "export", manifest_file,
+                                  "export",
                                   "-o", output_path,
-                                  "--annotations"
+                                  "--annotations",
+                                  manifest_file
                                 ])
         end.not_to raise_error
 
@@ -42,9 +43,10 @@ RSpec.describe Suma::Cli::Export do
       it "creates ZIP archive when flag is set" do
         expect do
           described_class.start([
-                                  "export", manifest_file,
+                                  "export",
                                   "-o", output_path,
-                                  "--zip"
+                                  "--zip",
+                                  manifest_file
                                 ])
         end.not_to raise_error
 
@@ -55,10 +57,11 @@ RSpec.describe Suma::Cli::Export do
       it "exports with all options enabled" do
         expect do
           described_class.start([
-                                  "export", manifest_file,
+                                  "export",
                                   "-o", output_path,
                                   "--annotations",
-                                  "--zip"
+                                  "--zip",
+                                  manifest_file
                                 ])
         end.not_to raise_error
 
@@ -67,25 +70,7 @@ RSpec.describe Suma::Cli::Export do
       end
     end
 
-    context "with additional manifest" do
-      let(:additional_manifest) do
-        File.join(fixtures_path, "additional-schemas.yml")
-      end
-
-      it "merges schemas from both manifests" do
-        expect do
-          described_class.start([
-                                  "export", manifest_file,
-                                  "-o", output_path,
-                                  "-a", additional_manifest
-                                ])
-        end.not_to raise_error
-
-        expect(File.directory?(output_path)).to be true
-      end
-    end
-
-    context "with multiple additional manifests" do
+    context "with multiple manifest files" do
       let(:additional_manifest_1) do
         File.join(fixtures_path, "additional-schemas.yml")
       end
@@ -93,43 +78,105 @@ RSpec.describe Suma::Cli::Export do
         File.join(fixtures_path, "additional-schemas-2.yml")
       end
 
-      it "merges schemas from all manifests" do
+      it "merges schemas from multiple manifests" do
         expect do
           described_class.start([
-                                  "export", manifest_file,
+                                  "export",
                                   "-o", output_path,
-                                  "-a", additional_manifest_1,
-                                  "-a", additional_manifest_2
+                                  manifest_file,
+                                  additional_manifest_1,
+                                  additional_manifest_2
                                 ])
         end.not_to raise_error
 
         expect(File.directory?(output_path)).to be true
-
-        # Verify that schemas from all manifests were merged and exported
-        # The command should successfully merge all manifests without errors
         exported_files = Dir.glob("#{output_path}/**/*.exp")
         expect(exported_files).not_to be_empty
       end
     end
 
-    context "with invalid inputs" do
-      it "raises error for missing manifest file" do
+    context "with independent EXPRESS files" do
+      let(:exp_file) do
+        File.join(fixtures_path, "resources/action_schema/action_schema.exp")
+      end
+
+      it "exports a single independent EXPRESS file" do
         expect do
           described_class.start([
-                                  "export", "nonexistent.yml",
-                                  "-o", output_path
+                                  "export",
+                                  "-o", output_path,
+                                  exp_file
+                                ])
+        end.not_to raise_error
+
+        expect(File.directory?(output_path)).to be true
+        # Plain files should be exported to the root with schema_id.exp
+        exported_files = Dir.glob("#{output_path}/*.exp")
+        expect(exported_files).not_to be_empty
+      end
+
+      it "exports multiple independent EXPRESS files" do
+        arm_file = File.join(fixtures_path, "modules/activity/arm.exp")
+        mim_file = File.join(fixtures_path, "modules/activity/mim.exp")
+
+        expect do
+          described_class.start([
+                                  "export",
+                                  "-o", output_path,
+                                  exp_file,
+                                  arm_file,
+                                  mim_file
+                                ])
+        end.not_to raise_error
+
+        expect(File.directory?(output_path)).to be true
+        exported_files = Dir.glob("#{output_path}/*.exp")
+        expect(exported_files.size).to be >= 3
+      end
+    end
+
+    context "with mixed manifest and EXP files" do
+      let(:exp_file) do
+        File.join(fixtures_path, "resources/action_schema/action_schema.exp")
+      end
+
+      it "exports both manifest and independent EXPRESS files" do
+        expect do
+          described_class.start([
+                                  "export",
+                                  "-o", output_path,
+                                  manifest_file,
+                                  exp_file
+                                ])
+        end.not_to raise_error
+
+        expect(File.directory?(output_path)).to be true
+        # Should have both categorized schemas from manifest and plain files at root
+        all_files = Dir.glob("#{output_path}/**/*.exp")
+        expect(all_files).not_to be_empty
+      end
+    end
+
+    context "with invalid inputs" do
+      it "raises error for missing file" do
+        expect do
+          described_class.start([
+                                  "export",
+                                  "-o", output_path,
+                                  "nonexistent.yml"
                                 ])
         end.to raise_error(Errno::ENOENT, /not found/)
       end
 
-      it "raises error for missing additional manifest file" do
+      it "raises error for unsupported file type" do
+        invalid_file = File.join(fixtures_path, "modules/activity/invalid.txt")
         expect do
           described_class.start([
-                                  "export", manifest_file,
+                                  "export",
                                   "-o", output_path,
-                                  "-a", "nonexistent-additional.yml"
+                                  invalid_file
                                 ])
-        end.to raise_error(Errno::ENOENT, /not found/)
+        end.to raise_error(ArgumentError, /Unsupported file type/)
       end
 
       it "raises error when output option is missing" do
@@ -137,14 +184,20 @@ RSpec.describe Suma::Cli::Export do
           described_class.start(["export", manifest_file])
         end.to raise_error(SystemExit)
       end
+
+      it "raises error when no files are provided" do
+        expect do
+          described_class.start(["export", "-o", output_path])
+        end.to raise_error(ArgumentError, /At least one file must be specified/)
+      end
     end
 
     context "directory structure" do
       before do
-        described_class.start(["export", manifest_file, "-o", output_path])
+        described_class.start(["export", "-o", output_path, manifest_file])
       end
 
-      it "preserves schema directory structure" do
+      it "preserves schema directory structure for manifest files" do
         expect(File.directory?(output_path)).to be true
         # Check for categorized directories
         %w[resources modules].each do |category|
@@ -155,11 +208,29 @@ RSpec.describe Suma::Cli::Export do
         end
       end
 
-      it "places schemas in correct categories" do
+      it "places manifest schemas in correct categories" do
         resource_schemas = Dir.glob("#{output_path}/resources/**/*.exp")
         module_schemas = Dir.glob("#{output_path}/modules/**/*.exp")
 
         expect(resource_schemas + module_schemas).not_to be_empty
+      end
+    end
+
+    context "plain file output structure" do
+      let(:exp_file) do
+        File.join(fixtures_path, "resources/action_schema/action_schema.exp")
+      end
+
+      before do
+        described_class.start(["export", "-o", output_path, exp_file])
+      end
+
+      it "places independent EXPRESS files directly in output root" do
+        expect(File.directory?(output_path)).to be true
+        root_files = Dir.glob("#{output_path}/*.exp")
+        expect(root_files).not_to be_empty
+        # Files should be named {schema_id}.exp
+        expect(root_files.first).to match(/action_schema\.exp$/)
       end
     end
   end

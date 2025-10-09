@@ -6,12 +6,13 @@ require "expressir"
 
 module Suma
   class ExpressSchema
-    attr_accessor :path, :id, :parsed, :output_path
+    attr_accessor :path, :id, :parsed, :output_path, :is_plain_file
 
-    def initialize(id:, path:, output_path:)
+    def initialize(id:, path:, output_path:, is_plain_file: false)
       @path = Pathname.new(path).expand_path
       @id = id
       @output_path = output_path
+      @is_plain_file = is_plain_file
     end
 
     def type
@@ -39,7 +40,21 @@ module Suma
     end
 
     def filename_plain
-      File.join(@output_path, type, id, File.basename(@path))
+      if @is_plain_file
+        # For plain files, ensure schema is parsed to get the id
+        unless @id
+          parsed
+        end
+        # Output directly to output_path with schema name
+        File.join(@output_path, "#{@id}.exp")
+      else
+        # For manifest schemas, ensure id is set
+        unless @id
+          parsed
+        end
+        # Preserve directory structure
+        File.join(@output_path, type, @id, File.basename(@path))
+      end
     end
 
     def save_exp(with_annotations: false)
