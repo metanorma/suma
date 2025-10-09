@@ -8,10 +8,10 @@ module Suma
   # SchemaExporter exports EXPRESS schemas from a manifest
   # with configurable options for annotations and ZIP packaging
   class SchemaExporter
-    attr_reader :config, :output_path, :options
+    attr_reader :schemas, :output_path, :options
 
-    def initialize(config:, output_path:, options: {})
-      @config = config
+    def initialize(schemas:, output_path:, options: {})
+      @schemas = schemas
       @output_path = Pathname.new(output_path).expand_path
       @options = default_options.merge(options)
     end
@@ -19,7 +19,6 @@ module Suma
     def export
       Utils.log "Exporting schemas to: #{output_path}"
 
-      schemas = config.schemas
       export_to_directory(schemas)
       create_zip_archive if options[:create_zip]
 
@@ -43,13 +42,23 @@ module Suma
     end
 
     def export_single_schema(schema)
-      category = categorize_schema(schema)
-      schema_output_path = output_path.join(category).to_s
+      # Check if this is a plain file (not from a manifest structure)
+      is_plain_file = schema.is_a?(Cli::Export::PlainSchema)
+
+      if is_plain_file
+        # For plain files, output directly to the root
+        schema_output_path = output_path.to_s
+      else
+        # For manifest schemas, preserve directory structure
+        category = categorize_schema(schema)
+        schema_output_path = output_path.join(category).to_s
+      end
 
       express_schema = ExpressSchema.new(
         id: schema.id,
         path: schema.path.to_s,
         output_path: schema_output_path,
+        is_plain_file: is_plain_file,
       )
 
       express_schema.save_exp(with_annotations: options[:annotations])
@@ -59,6 +68,7 @@ module Suma
     def categorize_schema(schema)
       path = schema.path.to_s
 
+      # Check if this is from a manifest structure or a plain file
       case path
       when %r{/resources/}
         "resources"
@@ -69,7 +79,8 @@ module Suma
       when %r{/core_model/}
         "core_model"
       else
-        "other"
+        # Independent EXPRESS file not from a manifest structure
+        "independent"
       end
     end
     # rubocop:enable Metrics/MethodLength

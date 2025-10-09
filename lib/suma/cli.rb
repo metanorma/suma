@@ -60,17 +60,15 @@ module Suma
         Cli::ConvertJsdai.start
       end
 
-      desc "export MANIFEST_FILE",
-           "Export EXPRESS schemas from manifest"
+      desc "export *FILES",
+           "Export EXPRESS schemas from manifest files or independent EXPRESS files"
       option :output, type: :string, aliases: "-o", required: true,
                       desc: "Output directory path"
-      option :additional, type: :array, aliases: "-a",
-                          desc: "Additional schemas manifest files to merge (can be specified multiple times)"
       option :annotations, type: :boolean, default: false,
                            desc: "Include annotations (remarks/comments)"
       option :zip, type: :boolean, default: false,
                    desc: "Create ZIP archive of exported schemas"
-      def export(_manifest_file)
+      def export(*_files)
         require_relative "cli/export"
         Cli::Export.start
       end
