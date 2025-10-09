@@ -8,7 +8,7 @@ module Suma
     # Export command for exporting EXPRESS schemas from a manifest
     class Export < Thor
       desc "export *FILES",
-           "Export EXPRESS schemas from manifest files or independent EXPRESS files"
+           "Export EXPRESS schemas from manifest files or standalone EXPRESS files"
       option :output, type: :string, aliases: "-o", required: true,
                       desc: "Output directory path"
       option :annotations, type: :boolean, default: false,
@@ -62,7 +62,7 @@ module Suma
             manifest = Expressir::SchemaManifest.from_file(file)
             all_schemas += manifest.schemas
           when ".exp"
-            # Load independent EXPRESS file
+            # Load standalone EXPRESS file
             all_schemas << create_schema_from_exp_file(file)
           else
             raise ArgumentError, "Unsupported file type: #{file}. " \
@@ -74,16 +74,16 @@ module Suma
       end
 
       def create_schema_from_exp_file(exp_file)
-        # Create a schema object from a independent EXPRESS file
+        # Create a schema object from a standalone EXPRESS file
         # The id will be determined during parsing
-        IndependentSchema.new(
+        StandaloneSchema.new(
           id: nil,
           path: File.expand_path(exp_file),
         )
       end
 
-      # Simple schema class for independent EXPRESS files
-      class IndependentSchema
+      # Simple schema class for standalone EXPRESS files
+      class StandaloneSchema
         attr_accessor :id, :path
 
         def initialize(id:, path:)

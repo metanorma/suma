@@ -6,13 +6,13 @@ require "expressir"
 
 module Suma
   class ExpressSchema
-    attr_accessor :path, :id, :parsed, :output_path, :is_plain_file
+    attr_accessor :path, :id, :parsed, :output_path, :is_standalone_file
 
-    def initialize(id:, path:, output_path:, is_plain_file: false)
+    def initialize(id:, path:, output_path:, is_standalone_file: false)
       @path = Pathname.new(path).expand_path
       @id = id
       @output_path = output_path
-      @is_plain_file = is_plain_file
+      @is_standalone_file = is_standalone_file
     end
 
     def type
@@ -43,8 +43,8 @@ module Suma
       unless @id
         parsed
       end
-      if @is_plain_file
-        # For plain files, ensure schema is parsed to get the id
+      if @is_standalone_file
+        # For standalone EXPRESS files, ensure schema is parsed to get the id
         # Output directly to output_path with schema name
         File.join(@output_path, "#{@id}.exp")
       else

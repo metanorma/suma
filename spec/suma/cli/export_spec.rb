@@ -95,12 +95,12 @@ RSpec.describe Suma::Cli::Export do
       end
     end
 
-    context "with independent EXPRESS files" do
+    context "with standalone EXPRESS files" do
       let(:exp_file) do
         File.join(fixtures_path, "resources/action_schema/action_schema.exp")
       end
 
-      it "exports a single independent EXPRESS file" do
+      it "exports a single standalone EXPRESS file" do
         expect do
           described_class.start([
                                   "export",
@@ -110,12 +110,13 @@ RSpec.describe Suma::Cli::Export do
         end.not_to raise_error
 
         expect(File.directory?(output_path)).to be true
-        # Plain files should be exported to the root with schema_id.exp
+        # standalone EXPRESS files should be exported to the root with
+        # schema_id.exp
         exported_files = Dir.glob("#{output_path}/*.exp")
         expect(exported_files).not_to be_empty
       end
 
-      it "exports multiple independent EXPRESS files" do
+      it "exports multiple standalone EXPRESS files" do
         arm_file = File.join(fixtures_path, "modules/activity/arm.exp")
         mim_file = File.join(fixtures_path, "modules/activity/mim.exp")
 
@@ -140,7 +141,7 @@ RSpec.describe Suma::Cli::Export do
         File.join(fixtures_path, "resources/action_schema/action_schema.exp")
       end
 
-      it "exports both manifest and independent EXPRESS files" do
+      it "exports both manifest and standalone EXPRESS files" do
         expect do
           described_class.start([
                                   "export",
@@ -151,7 +152,8 @@ RSpec.describe Suma::Cli::Export do
         end.not_to raise_error
 
         expect(File.directory?(output_path)).to be true
-        # Should have both categorized schemas from manifest and plain files at root
+        # Should have both categorized schemas from manifest and standalone
+        # EXPRESS files at root
         all_files = Dir.glob("#{output_path}/**/*.exp")
         expect(all_files).not_to be_empty
       end
@@ -216,7 +218,7 @@ RSpec.describe Suma::Cli::Export do
       end
     end
 
-    context "plain file output structure" do
+    context "standalone EXPRESS file output structure" do
       let(:exp_file) do
         File.join(fixtures_path, "resources/action_schema/action_schema.exp")
       end
@@ -225,7 +227,7 @@ RSpec.describe Suma::Cli::Export do
         described_class.start(["export", "-o", output_path, exp_file])
       end
 
-      it "places independent EXPRESS files directly in output root" do
+      it "places standalone EXPRESS files directly in output root" do
         expect(File.directory?(output_path)).to be true
         root_files = Dir.glob("#{output_path}/*.exp")
         expect(root_files).not_to be_empty
