@@ -40,18 +40,15 @@ module Suma
     end
 
     def filename_plain
+      unless @id
+        parsed
+      end
       if @is_plain_file
         # For plain files, ensure schema is parsed to get the id
-        unless @id
-          parsed
-        end
         # Output directly to output_path with schema name
         File.join(@output_path, "#{@id}.exp")
       else
         # For manifest schemas, ensure id is set
-        unless @id
-          parsed
-        end
         # Preserve directory structure
         File.join(@output_path, type, @id, File.basename(@path))
       end
