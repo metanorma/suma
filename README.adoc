@@ -138,8 +138,9 @@ $ suma validate SUBCOMMAND [options]
 ----
 
 Subcommands:
-- `links` - Validate EXPRESS links
-- `ascii` - Check for non-ASCII characters in EXPRESS files
+
+`links`:: Validate EXPRESS links
+`ascii`:: Check for non-ASCII characters in EXPRESS files
 
 ==== Links subcommand
 
@@ -695,6 +696,168 @@ express-files/
 └── core_model/                  # from manifest files
     └── ...
 ----
+
+
+=== Expressir command
+
+==== General
+
+The `suma expressir` command provides access to all Expressir commands for
+working with EXPRESS schemas. This includes documentation coverage analysis,
+schema formatting, validation, and other EXPRESS-related operations.
+
+Expressir is a comprehensive toolkit for EXPRESS schema processing that Suma
+integrates to provide additional functionality beyond Suma's core features.
+
+[source,sh]
+----
+$ suma expressir SUBCOMMAND ...ARGS [options]
+----
+
+Available subcommands:
+
+`coverage`:: Check documentation coverage of EXPRESS schemas
+`format`:: Pretty print EXPRESS schemas
+`clean`:: Strip remarks and prettify EXPRESS schemas
+`validate`:: Validate EXPRESS schemas
+`benchmark`:: Benchmark schema loading performance
+`version`:: Display expressir version
+
+==== Coverage subcommand
+
+The `coverage` subcommand analyzes EXPRESS schemas to determine documentation
+coverage, reporting how many EXPRESS objects (entities, constants, functions,
+types, etc.) have been documented with Annotated EXPRESS.
+
+This addresses the need to measure and improve documentation quality in EXPRESS
+schema collections.
+
+[source,sh]
+----
+$ suma expressir coverage PATH [PATH...] [options]
+----
+
+Parameters:
+
+`PATH`:: One or more paths to analyze. Each path can be:
++
+--
+* An EXPRESS schema manifest file (`.yml`, `.yaml`)
+* A single EXPRESS file (`.exp`)
+* A directory containing EXPRESS files
+--
+
+Options:
+
+`--format=FORMAT`:: Output format: `text` (default), `json`, or `yaml`
+`--output=FILE`:: Output file path for JSON/YAML formats (defaults to
+`coverage_report.json` or `coverage_report.yaml`)
+`--exclude=TYPES`:: Comma-separated list of EXPRESS entity types to exclude
+from coverage analysis (e.g., `TYPE,CONSTANT,TYPE:SELECT`)
+`--ignore-files=FILE`:: Path to YAML file containing array of file patterns
+to ignore from overall coverage calculation
+
+[example]
+.To analyze documentation coverage of a schema collection
+[source,sh]
+----
+$ suma expressir coverage schemas-srl.yml
+----
+
+.To analyze coverage and export as JSON
+[source,sh]
+----
+$ suma expressir coverage schemas-srl.yml --format=json --output=coverage.json
+----
+
+.To analyze with exclusions
+[source,sh]
+----
+$ suma expressir coverage schemas/ --exclude=TYPE:ENUMERATION,PARAMETER
+----
+
+.To analyze multiple sources
+[source,sh]
+----
+$ suma expressir coverage schemas-srl.yml additional-schemas.yml
+----
+
+The coverage report includes:
+
+* Overall coverage statistics (total entities, documented entities, percentage)
+* Per-file coverage details
+* Per-directory coverage summaries
+* List of undocumented entities by type and name
+
+==== Format subcommand
+
+The `format` subcommand pretty-prints EXPRESS schemas.
+
+[source,sh]
+----
+$ suma expressir format PATH
+----
+
+Parameters:
+
+`PATH`:: Path to the EXPRESS schema file to format
+
+[example]
+.To format an EXPRESS schema
+[source,sh]
+----
+$ suma expressir format schema.exp
+----
+
+==== Clean subcommand
+
+The `clean` subcommand strips remarks and prettifies EXPRESS schemas.
+
+[source,sh]
+----
+$ suma expressir clean PATH [options]
+----
+
+Parameters:
+
+`PATH`:: Path to the EXPRESS schema file to clean
+
+Options:
+
+`--output=FILE`:: Output file path (defaults to stdout)
+
+[example]
+.To clean an EXPRESS schema and save to file
+[source,sh]
+----
+$ suma expressir clean schema.exp --output=cleaned_schema.exp
+----
+
+==== Validate subcommand
+
+The `validate` subcommand validates EXPRESS schemas for syntactic correctness.
+
+[source,sh]
+----
+$ suma expressir validate PATH [PATH...]
+----
+
+Parameters:
+
+`PATH`:: One or more paths to EXPRESS schema files or directories to validate
+
+[example]
+.To validate EXPRESS schemas
+[source,sh]
+----
+$ suma expressir validate schema.exp
+$ suma expressir validate schemas/
+----
+
+==== Additional information
+
+For complete documentation of all Expressir commands and options, see the
+https://github.com/lutaml/expressir[Expressir documentation].
 
 
 == Usage: Ruby

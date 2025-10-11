@@ -3,6 +3,7 @@
 require "thor"
 require_relative "thor_ext"
 require_relative "cli/validate"
+require "expressir/cli"
 
 module Suma
   module Cli
@@ -75,6 +76,9 @@ module Suma
 
       desc "validate SUBCOMMAND ...ARGS", "Validate express documents"
       subcommand "validate", Cli::Validate
+
+      desc "expressir SUBCOMMAND ...ARGS", "Expressir commands"
+      subcommand "expressir", Expressir::Cli
 
       def self.exit_on_failure?
         true
