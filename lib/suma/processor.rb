@@ -47,6 +47,7 @@ output_directory: "_site")
       # @param metanorma_yaml_path [String] Path to Metanorma site manifest
       # @param schemas_all_path [String] Output path for unified schema manifest
       # @return [CollectionConfig] The loaded collection configuration
+      # rubocop:disable Metrics/MethodLength
       def export_schema_config(metanorma_yaml_path, schemas_all_path)
         # This reads the metanorma.yml file
         site_config = Suma::SiteConfig::Config.from_file(metanorma_yaml_path)
@@ -67,6 +68,7 @@ output_directory: "_site")
 
         collection_config
       end
+      # rubocop:enable Metrics/MethodLength
 
       def compile_schema(schemas_all_path, collection_config)
         # now get rid of the source documents for schema sources
