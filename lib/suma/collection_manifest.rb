@@ -36,12 +36,25 @@ module Suma
       model.entry = CollectionManifest.from_yaml(value.to_yaml)
     end
 
+    # Recursively exports schema configuration by traversing collection manifests.
+    #
+    # This method builds an EXPRESS Schema Manifest (Expressir::SchemaManifest) by:
+    # 1. Starting with an empty or existing Expressir::SchemaManifest
+    # 2. Recursively traversing child entries to collect schemas
+    # 3. Using Expressir::SchemaManifest#concat to combine manifests
+    #
+    # The actual schema manifest operations (creation, concatenation, serialization)
+    # are handled by Expressir's SchemaManifest class, keeping the logic DRY.
+    #
+    # @param path [String] Base path for resolving relative schema paths
+    # @return [Expressir::SchemaManifest] Combined schema manifest
     def export_schema_config(path)
       export_config = @schema_config || Expressir::SchemaManifest.new
       return export_config unless entry
 
       entry.each do |x|
         child_config = x.export_schema_config(path)
+        # Use Expressir's concat method to combine schema manifests
         export_config.concat(child_config) if child_config
       end
 
