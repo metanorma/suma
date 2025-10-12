@@ -216,6 +216,51 @@ RSpec.describe Suma::Cli::Export do
 
         expect(resource_schemas + module_schemas).not_to be_empty
       end
+
+      it "does not create duplicate category directories (regression for issue #66)" do
+        # This test ensures schemas are placed at the correct depth
+        # Should be: output_path/category/schema_id/file.exp
+        # NOT: output_path/category/category/schema_id/file.exp
+
+        all_exp_files = Dir.glob("#{output_path}/**/*.exp")
+        all_exp_files.each do |file_path|
+          relative_path = file_path.sub("#{output_path}/", "")
+          path_components = relative_path.split("/")
+
+          # For manifest schemas (not standalone), the structure should be:
+          # category/schema_id/filename.exp (3 components)
+          # Check that category names don't appear twice in the path
+          next if path_components.length == 1 # Skip standalone files
+
+          category_count = path_components.count do |comp|
+            %w[resources modules].include?(comp)
+          end
+          expect(category_count).to eq(1),
+                                    "Path #{relative_path} has duplicate category directories"
+        end
+      end
+
+      it "generates correct path depth for resource schemas" do
+        # Expected structure: resources/action_schema/action_schema.exp
+        resource_schemas = Dir.glob("#{output_path}/resources/**/*.exp")
+        resource_schemas.each do |schema_path|
+          relative_path = schema_path.sub("#{output_path}/", "")
+          # Should be exactly 3 components: category/schema_id/filename.exp
+          expect(relative_path.split("/").length).to eq(3),
+                                                     "Expected 3 path components for #{relative_path}"
+        end
+      end
+
+      it "generates correct path depth for module schemas" do
+        # Expected structure: modules/Activity_arm/arm.exp
+        module_schemas = Dir.glob("#{output_path}/modules/**/*.exp")
+        module_schemas.each do |schema_path|
+          relative_path = schema_path.sub("#{output_path}/", "")
+          # Should be exactly 3 components: category/schema_id/filename.exp
+          expect(relative_path.split("/").length).to eq(3),
+                                                     "Expected 3 path components for #{relative_path}"
+        end
+      end
     end
 
     context "standalone EXPRESS file output structure" do

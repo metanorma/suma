@@ -54,7 +54,8 @@ module Suma
         File.join(@output_path, "#{@id}.exp")
       else
         # For manifest schemas, preserve directory structure
-        File.join(@output_path, type, @id, File.basename(@path))
+        # Note: @output_path already contains the category (resources/modules)
+        File.join(@output_path, @id, File.basename(@path))
       end
     end
 
