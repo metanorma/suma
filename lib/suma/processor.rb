@@ -15,12 +15,15 @@ module Suma
       def run(metanorma_yaml_path:, schemas_all_path:, compile:,
 output_directory: "_site")
         Utils.log "Current directory: #{Dir.getwd}, writing #{schemas_all_path}..."
+
+        # Generate EXPRESS Schema Manifest by traversing Metanorma Site Manifest
+        # This uses Expressir::SchemaManifest for all manifest operations
         collection_config = export_schema_config(metanorma_yaml_path,
                                                  schemas_all_path)
 
         unless compile
           Utils.log "No compile option set. Skipping schema compilation."
-          nil
+          return nil
         end
 
         Utils.log "Compiling schema collection..."
@@ -33,6 +36,17 @@ output_directory: "_site")
 
       private
 
+      # Generates EXPRESS Schema Manifest from Metanorma Site Manifest structure.
+      #
+      # This method:
+      # 1. Reads the Metanorma site manifest to discover collection files
+      # 2. Traverses collection manifests to find individual schemas.yaml files
+      # 3. Uses Expressir::SchemaManifest to aggregate and manage schema entries
+      # 4. Saves the unified schema manifest using Expressir's to_file method
+      #
+      # @param metanorma_yaml_path [String] Path to Metanorma site manifest
+      # @param schemas_all_path [String] Output path for unified schema manifest
+      # @return [CollectionConfig] The loaded collection configuration
       def export_schema_config(metanorma_yaml_path, schemas_all_path)
         # This reads the metanorma.yml file
         site_config = Suma::SiteConfig::Config.from_file(metanorma_yaml_path)
@@ -43,9 +57,12 @@ output_directory: "_site")
         collection_config.path = collection_config_path
         collection_config.manifest.expand_schemas_only("schema_docs")
 
+        # Recursively traverse collection manifests to build unified schema manifest
+        # Uses Expressir::SchemaManifest methods (concat, to_file) for operations
         exported_schema_config = collection_config.manifest.export_schema_config(schemas_all_path)
         exported_schema_config.path = schemas_all_path
 
+        # Save using Expressir's SchemaManifest#to_file method
         exported_schema_config.to_file
 
         collection_config
