@@ -2,6 +2,7 @@
 
 require "thor"
 require_relative "../thor_ext"
+require_relative "../export_standalone_schema"
 
 module Suma
   module Cli
@@ -86,20 +87,10 @@ module Suma
       def create_schema_from_exp_file(exp_file)
         # Create a schema object from a standalone EXPRESS file
         # The id will be determined during parsing
-        StandaloneSchema.new(
+        ExportStandaloneSchema.new(
           id: nil,
           path: File.expand_path(exp_file),
         )
-      end
-
-      # Simple schema class for standalone EXPRESS files
-      class StandaloneSchema
-        attr_accessor :id, :path
-
-        def initialize(id:, path:)
-          @id = id
-          @path = path
-        end
       end
 
       def self.exit_on_failure?

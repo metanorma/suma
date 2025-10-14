@@ -24,7 +24,7 @@ Gemspec/RequiredRubyVersion:
 # SupportedStyles: with_first_argument, with_fixed_indentation
 Layout/ArgumentAlignment:
   Exclude:
-    - 'spec/suma/cli/export_spec.rb'
+    - 'spec/suma/schema_exporter_spec.rb'
 
 # Offense count: 1
 # This cop supports safe autocorrection (--autocorrect).

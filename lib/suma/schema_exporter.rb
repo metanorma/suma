@@ -2,6 +2,7 @@
 
 require_relative "express_schema"
 require_relative "utils"
+require_relative "export_standalone_schema"
 require "fileutils"
 
 module Suma
@@ -44,7 +45,7 @@ module Suma
     def export_single_schema(schema)
       # Check if this is a standalone EXPRESS file
       # (not from a manifest structure)
-      is_standalone_file = schema.is_a?(Cli::Export::StandaloneSchema)
+      is_standalone_file = schema.is_a?(ExportStandaloneSchema)
       schema_output_path = determine_output_path(schema, is_standalone_file)
 
       express_schema = ExpressSchema.new(
