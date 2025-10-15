@@ -698,6 +698,125 @@ express-files/
 ----
 
 
+=== Compare schemas command
+
+==== General
+
+The `suma compare` command compares two EXPRESS schemas using eengine and
+generates an EXPRESS Changes YAML file tracking the differences.
+
+This command is essential for managing schema evolution across versions,
+particularly when working with multiple git branches of the same repository.
+
+[source,sh]
+----
+$ suma compare TRIAL_SCHEMA REFERENCE_SCHEMA --version VERSION [options]
+----
+
+Parameters:
+
+`TRIAL_SCHEMA`:: Path to the new/trial EXPRESS schema file
+`REFERENCE_SCHEMA`:: Path to the old/reference EXPRESS schema file
+
+Options:
+
+`--version=VERSION`, `-v VERSION`:: (required) Version number for this change edition
+`--output=PATH`, `-o PATH`:: Output Change YAML file path (default: `{schema}.changes.yaml` in trial schema directory)
+`--mode=MODE`:: Schema comparison mode: `resource` or `module` (default: `resource`)
+`--trial-stepmod=PATH`:: Override auto-detected trial repository root
+`--reference-stepmod=PATH`:: Override auto-detected reference repository root
+`--verbose`:: Enable verbose output
+
+==== Typical workflow
+
+The compare command is designed for a two-repository workflow where you have
+different branches checked out:
+
+[source,sh]
+----
+# 1. Check out old version at /path/to/repo-old
+# 2. Check out new version at /path/to/repo-new
+# 3. Compare schemas:
+$ suma compare \
+    /path/to/repo-new/schemas/resources/action_schema/action_schema.exp \
+    /path/to/repo-old/schemas/resources/action_schema/action_schema.exp \
+    --version 2
+----
+
+==== Behavior
+
+The command:
+
+* Auto-detects git repository roots from schema file paths
+* Uses detected roots as stepmod paths for eengine
+* Generates or updates `.changes.yaml` file in the trial schema directory
+* **Replaces** existing change edition if the version already exists
+* **Adds** new change edition if the version is different
+
+==== Requirements
+
+This command requires `eengine` to be installed:
+
+* macOS: https://github.com/expresslang/homebrew-eengine
+* Linux: https://github.com/expresslang/eengine-releases
+
+[example]
+.To compare schemas with auto-detection
+[source,sh]
+----
+$ suma compare \
+    ~/iso-10303-new/schemas/resources/support_resource_schema/support_resource_schema.exp \
+    ~/iso-10303-old/schemas/resources/support_resource_schema/support_resource_schema.exp \
+    --version 2
+# => generates or updates support_resource_schema.changes.yaml
+----
+
+[example]
+.To compare with verbose output
+[source,sh]
+----
+$ suma compare schema_new.exp schema_old.exp --version 2 --verbose
+# Shows: eengine version, detected repo roots, XML generation, etc.
+----
+
+[example]
+.To specify custom output location
+[source,sh]
+----
+$ suma compare schema_new.exp schema_old.exp \
+    --version 2 \
+    --output /path/to/custom.changes.yaml
+----
+
+[example]
+.To override auto-detected repository roots
+[source,sh]
+----
+$ suma compare schema_new.exp schema_old.exp \
+    --version 2 \
+    --trial-stepmod ~/repo-new \
+    --reference-stepmod ~/repo-old
+----
+
+==== Generated Change YAML format
+
+The command generates EXPRESS Changes YAML files in the ISO 10303 format:
+
+[source,yaml]
+----
+---
+schema: support_resource_schema
+editions:
+- version: '2'
+  description: 'TYPE text: Underlying Type changed'
+  modifications:
+  - type: TYPE
+    name: text
+----
+
+For complete format documentation, see the
+https://www.expresslang.org/docs/express-changes[EXPRESS Changes specification].
+
 === Expressir command
 
 ==== General

@@ -74,6 +74,25 @@ module Suma
         Cli::Export.start
       end
 
+      desc "compare TRIAL_SCHEMA REFERENCE_SCHEMA",
+           "Compare EXPRESS schemas using eengine and generate Change YAML"
+      option :output, type: :string, aliases: "-o",
+                      desc: "Output Change YAML file path"
+      option :version, type: :string, aliases: "-v", required: true,
+                       desc: "Version number for this change edition"
+      option :mode, type: :string, default: "resource",
+                    desc: "Schema comparison mode (resource/module)"
+      option :trial_stepmod, type: :string,
+                             desc: "Override auto-detected trial repo root"
+      option :reference_stepmod, type: :string,
+                                 desc: "Override auto-detected reference repo root"
+      option :verbose, type: :boolean, default: false,
+                       desc: "Enable verbose output"
+      def compare(_trial_schema, _reference_schema)
+        require_relative "cli/compare"
+        Cli::Compare.start
+      end
+
       desc "validate SUBCOMMAND ...ARGS", "Validate express documents"
       subcommand "validate", Cli::Validate
 

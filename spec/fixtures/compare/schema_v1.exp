@@ -1,0 +1,14 @@
+SCHEMA support_resource_schema;
+
+TYPE text = STRING;
+END_TYPE;
+
+TYPE label = STRING;
+END_TYPE;
+
+ENTITY document;
+  title : text;
+  author : label;
+END_ENTITY;
+
+END_SCHEMA;
