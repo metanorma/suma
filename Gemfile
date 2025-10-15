@@ -5,6 +5,7 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in suma.gemspec
 gemspec
 
+gem "canon"
 gem "nokogiri"
 gem "rake"
 gem "rspec"

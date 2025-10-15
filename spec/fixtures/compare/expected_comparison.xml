@@ -1,0 +1,29 @@
+<schema.changes>
+<!-- Express Engine -->
+<!--   5.2.7 (GIT eeng-5.2.7-1-g1faeefe) -->
+<!-- Reference_Schema: SUPPORT_RESOURCE_SCHEMA -->
+<!-- Path:   schema_v1.exp -->
+<!-- Trial_schema: SUPPORT_RESOURCE_SCHEMA -->
+<!-- Path:   schema_v2.exp -->
+
+<schema.modifications>
+<modified.object type="TYPE" name="text">
+<description>
+TYPE text: Underlying Type changed from STRING to STRING(256)
+</description>
+</modified.object>
+
+<added.object type="TYPE" name="status">
+<description>
+TYPE status: ENUMERATION OF (active, inactive) added
+</description>
+</added.object>
+
+<modified.object type="ENTITY" name="document">
+<description>
+ENTITY document: Attribute doc_status added
+</description>
+</modified.object>
+
+</schema.modifications>
+</schema.changes>

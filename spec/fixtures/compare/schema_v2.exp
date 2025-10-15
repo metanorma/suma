@@ -1,0 +1,18 @@
+SCHEMA support_resource_schema;
+
+TYPE text = STRING(256);
+END_TYPE;
+
+TYPE label = STRING;
+END_TYPE;
+
+TYPE status = ENUMERATION OF (active, inactive);
+END_TYPE;
+
+ENTITY document;
+  title : text;
+  author : label;
+  doc_status : status;
+END_ENTITY;
+
+END_SCHEMA;
