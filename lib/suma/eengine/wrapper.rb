@@ -91,7 +91,7 @@ module Suma
             "-reference_schema", reference,
             "-reference_stepmod", options[:reference_stepmod] || ".",
             "-mode", options[:mode] || "resource",
-            "--xml-output",
+            "--xml-output"
           ]
 
           # Add output directory if specified
