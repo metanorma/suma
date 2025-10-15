@@ -59,9 +59,8 @@ RSpec.describe Suma::Cli::Compare do
 
     context "when eengine is available and schemas exist" do
       before do
-        allow(Suma::Eengine::Wrapper).to receive(:available?).and_return(true)
-        allow(Suma::Eengine::Wrapper).to receive(:version)
-          .and_return("5.2.7")
+        allow(Suma::Eengine::Wrapper).to receive_messages(available?: true,
+                                                          version: "5.2.7")
       end
 
       it "compares schemas and generates changes.yaml" do
@@ -77,11 +76,11 @@ RSpec.describe Suma::Cli::Compare do
 
         allow(Suma::Eengine::Wrapper).to receive(:compare)
           .and_return({
-            success: true,
-            xml_path: xml_output,
-            has_changes: true,
-            output: "Comparing TYPE text\nWriting \"#{xml_output}\"",
-          })
+                        success: true,
+                        xml_path: xml_output,
+                        has_changes: true,
+                        output: "Comparing TYPE text\nWriting \"#{xml_output}\"",
+                      })
 
         # Run compare command
         compare = described_class.new([], { version: "1.0" })
@@ -107,11 +106,11 @@ RSpec.describe Suma::Cli::Compare do
 
         allow(Suma::Eengine::Wrapper).to receive(:compare)
           .and_return({
-            success: true,
-            xml_path: nil,
-            has_changes: false,
-            output: "No changes detected",
-          })
+                        success: true,
+                        xml_path: nil,
+                        has_changes: false,
+                        output: "No changes detected",
+                      })
 
         compare = described_class.new([], { version: "1.0" })
         expect { compare.compare(trial_schema, reference_schema) }
@@ -134,11 +133,11 @@ RSpec.describe Suma::Cli::Compare do
 
         allow(Suma::Eengine::Wrapper).to receive(:compare)
           .and_return({
-            success: true,
-            xml_path: xml_output,
-            has_changes: true,
-            output: "Writing \"#{xml_output}\"",
-          })
+                        success: true,
+                        xml_path: xml_output,
+                        has_changes: true,
+                        output: "Writing \"#{xml_output}\"",
+                      })
 
         compare = described_class.new(
           [],
@@ -172,11 +171,11 @@ RSpec.describe Suma::Cli::Compare do
 
         allow(Suma::Eengine::Wrapper).to receive(:compare)
           .and_return({
-            success: true,
-            xml_path: xml_output,
-            has_changes: true,
-            output: "Writing \"#{xml_output}\"",
-          })
+                        success: true,
+                        xml_path: xml_output,
+                        has_changes: true,
+                        output: "Writing \"#{xml_output}\"",
+                      })
 
         # Add version 2.0
         compare = described_class.new([], { version: "2.0" })
@@ -203,11 +202,11 @@ RSpec.describe Suma::Cli::Compare do
             hash_including(mode: "module"),
           )
           .and_return({
-            success: true,
-            xml_path: xml_output,
-            has_changes: true,
-            output: "Writing \"#{xml_output}\"",
-          })
+                        success: true,
+                        xml_path: xml_output,
+                        has_changes: true,
+                        output: "Writing \"#{xml_output}\"",
+                      })
 
         compare = described_class.new(
           [],
