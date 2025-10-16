@@ -141,16 +141,12 @@ RSpec.describe Suma::Cli::Compare do
             # Optional fields
             if item.key?("description")
               expect(item["description"]).to be_an(Array)
-              item["description"].each do |desc|
-                expect(desc).to be_a(String)
-              end
+              expect(item["description"]).to all(be_a(String))
             end
 
             if item.key?("interfaced_items")
               expect(item["interfaced_items"]).to be_an(Array)
-              item["interfaced_items"].each do |interfaced_item|
-                expect(interfaced_item).to be_a(String)
-              end
+              expect(item["interfaced_items"]).to all(be_a(String))
             end
           end
         end
@@ -159,7 +155,7 @@ RSpec.describe Suma::Cli::Compare do
         valid_version_keys = %w[
           version description additions modifications removals
         ]
-        version_entry.keys.each do |key|
+        version_entry.each_key do |key|
           expect(valid_version_keys).to include(key)
         end
       end
