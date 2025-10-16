@@ -720,7 +720,7 @@ Parameters:
 
 Options:
 
-`--version=VERSION`, `-v VERSION`:: (required) Version number for this change edition
+`--version=VERSION`, `-v VERSION`:: (required) Version number for this change version
 `--output=PATH`, `-o PATH`:: Output Change YAML file path (default: `{schema}.changes.yaml` in trial schema directory)
 `--mode=MODE`:: Schema comparison mode: `resource` or `module` (default: `resource`)
 `--trial-stepmod=PATH`:: Override auto-detected trial repository root
@@ -750,8 +750,8 @@ The command:
 * Auto-detects git repository roots from schema file paths
 * Uses detected roots as stepmod paths for eengine
 * Generates or updates `.changes.yaml` file in the trial schema directory
-* **Replaces** existing change edition if the version already exists
-* **Adds** new change edition if the version is different
+* **Replaces** existing change version if the version already exists
+* **Adds** new change version if the version is different
 
 ==== Requirements
 
@@ -806,7 +806,7 @@ The command generates EXPRESS Changes YAML files in the ISO 10303 format:
 ----
 ---
 schema: support_resource_schema
-editions:
+versions:
 - version: '2'
   description: 'TYPE text: Underlying Type changed'
   modifications:

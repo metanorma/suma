@@ -14,7 +14,7 @@ module Suma
 
     # Convert the eengine XML to a ChangeSchema
     #
-    # @param version [String] Version number for this change edition
+    # @param version [String] Version number for this change version
     # @param existing_change_schema [Expressir::Changes::SchemaChange, nil]
     #   Existing schema to append to, or nil to create new
     # @return [Expressir::Changes::SchemaChange] The updated change schema
