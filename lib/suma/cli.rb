@@ -79,7 +79,7 @@ module Suma
       option :output, type: :string, aliases: "-o",
                       desc: "Output Change YAML file path"
       option :version, type: :string, aliases: "-v", required: true,
-                       desc: "Version number for this change edition"
+                       desc: "Version number for this change version"
       option :mode, type: :string, default: "resource",
                     desc: "Schema comparison mode (resource/module)"
       option :trial_stepmod, type: :string,

@@ -33,7 +33,7 @@ Gem::Specification.new do |spec| # rubocop:disable Metrics/BlockLength
   spec.executables = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "expressir", "~> 2.1"
+  spec.add_dependency "expressir", ">= 2.1.29", "~> 2.1"
   spec.add_dependency "glossarist", "~> 2.3.7"
   spec.add_dependency "lutaml-model", "~> 0.7"
   spec.add_dependency "metanorma-cli"

@@ -32,7 +32,7 @@ module Suma
                       desc: "Output Change YAML file path " \
                             "(default: {schema}.changes.yaml in trial schema directory)"
       option :version, type: :string, aliases: "-v", required: true,
-                       desc: "Version number for this change edition"
+                       desc: "Version number for this change version"
       option :mode, type: :string, default: "resource",
                     enum: ["resource", "module"],
                     desc: "Schema comparison mode"
@@ -165,15 +165,15 @@ module Suma
 
         # Determine what action was taken
         if existing_schema
-          existing_edition = existing_schema.editions.find do |ed|
+          existing_version = existing_schema.versions.find do |ed|
             ed.version == options[:version]
           end
 
           say "Change YAML file updated: #{output_path}", :green
-          if existing_edition
+          if existing_version
             say "  Replaced existing version #{options[:version]}", :green
           else
-            say "  Added version #{options[:version]} to change editions",
+            say "  Added version #{options[:version]} to change versions",
                 :green
           end
         else
