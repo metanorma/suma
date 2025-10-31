@@ -4,9 +4,7 @@ require_relative "schema_collection"
 require_relative "utils"
 require_relative "collection_config"
 require_relative "site_config"
-require "metanorma/cli"
-require "metanorma/cli/collection"
-require "metanorma/collection/collection"
+require "metanorma"
 
 module Suma
   class Processor

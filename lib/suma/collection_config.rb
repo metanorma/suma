@@ -3,9 +3,7 @@
 require_relative "utils"
 require "lutaml/model"
 require_relative "collection_manifest"
-require "metanorma/cli"
-require "metanorma/cli/collection"
-require "metanorma/collection/collection"
+require "metanorma"
 
 module Suma
   class CollectionConfig < Metanorma::Collection::Config::Config

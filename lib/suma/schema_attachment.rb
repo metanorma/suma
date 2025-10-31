@@ -2,7 +2,6 @@
 
 require "fileutils"
 require "expressir"
-# require "metanorma/cli"
 
 module Suma
   class SchemaAttachment
