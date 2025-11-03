@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require "metanorma/cli"
-require "metanorma/cli/collection"
-require "metanorma/collection/collection"
+require "metanorma"
 require "expressir"
 
 module Suma
