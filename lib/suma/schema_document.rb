@@ -16,23 +16,23 @@ module Suma
 
         // _constants.liquid
         {% if schema.constants.size > 0 %}
-        #{bookmark("constants")}
+        #{bookmark('constants')}
         {% for thing in schema.constants %}
-        #{bookmark("{{thing.id}}")}
+        #{bookmark('{{thing.id}}')}
         {% endfor %}
         {% endif %}
 
         // _types.liquid
         {% if schema.types.size > 0 %}
-        #{bookmark("types")}
+        #{bookmark('types')}
         // _type.liquid
         {% for thing in schema.types %}
-        #{bookmark("{{thing.id}}")}
+        #{bookmark('{{thing.id}}')}
         {% if thing.items.size > 0 %}
         // _type_items.liquid
-        #{bookmark("{{thing.id}}.items")}
+        #{bookmark('{{thing.id}}.items')}
         {% for item in thing.items %}
-        #{bookmark("{{thing.id}}.items.{{item.id}}")}
+        #{bookmark('{{thing.id}}.items.{{item.id}}')}
         {% endfor %}
         {% endif %}
         {% endfor %}
@@ -40,10 +40,10 @@ module Suma
 
         // _entities.liquid
         {% if schema.entities.size > 0 %}
-        #{bookmark("entities")}
+        #{bookmark('entities')}
         {% for thing in schema.entities %}
         // _entity.liquid
-        #{bookmark("{{thing.id}}")}
+        #{bookmark('{{thing.id}}')}
         {% endfor %}
         {% endif %}
       HEREDOC
@@ -66,7 +66,7 @@ module Suma
       "xml"
     end
 
-    # can't use 
+    # can't use
     # :lutaml-express-index: schemas; #{path_to_schema_yaml};
     # because that kills any possibility of this file hyperlinking to other schemas
     def to_adoc(path_to_schema_yaml)
@@ -79,19 +79,17 @@ module Suma
 
         [lutaml,schemas,context]
         ----
-        {% for schema in context.schemas %}
-
-        {% if schema.id == "#{@id}" %}
+        {% assign array = context.schemas | where: "id", "#{@id}" %}
+        {% for schema in array %}
 
         [[#{@id}]]
         [%unnumbered,type=express]
-        == #{@id} #{schema_anchors.gsub(%r{//[^\r\n]+}, "").gsub(/[\n\r]+/, "").gsub(/^[\n\r]/, "")}
+        == #{@id} #{schema_anchors.gsub(%r{//[^\r\n]+}, '').gsub(/[\n\r]+/, '').gsub(/^[\n\r]/, '')}
 
         [source%unnumbered]
         --
         {{ schema.formatted_hyperlinked }}
         --
-        {% endif %}
         {% endfor %}
         ----
 
