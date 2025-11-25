@@ -3,4 +3,4 @@
 
 require "suma/cli"
 
-Suma::Cli.start(ARGV)
+Suma::Cli::Core.start(ARGV)

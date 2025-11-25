@@ -1,0 +1,11 @@
+(*"action_schema.__expressg"
+[[action_schema_expg1]]
+[.svgmap]
+====
+image::action_schemaexpg1.svg[]
+
+* <<express:basic_attribute_schema>>; 1
+* <<express:action_schema>>; 2
+* <<express:support_resource_schema>>; 3
+====
+*)

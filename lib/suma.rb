@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require "expressir"
+require "lutaml/model"
+
 require_relative "suma/version"
 require_relative "suma/processor"
 

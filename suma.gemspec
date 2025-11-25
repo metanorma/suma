@@ -2,14 +2,14 @@
 
 require_relative "lib/suma/version"
 
-Gem::Specification.new do |spec|
+Gem::Specification.new do |spec| # rubocop:disable Metrics/BlockLength
   spec.name = "suma"
   spec.version = Suma::VERSION
   spec.authors = ["Ribose Inc."]
   spec.email = ["open.source@ribose.com"]
 
   spec.summary = "Utility for SUMA " \
-  "(STEP Unified Model-Based Standards Architecture)"
+                 "(STEP Unified Model-Based Standards Architecture)"
   spec.description = <<~DESCRIPTION
     Utility for SUMA (STEP Unified Model-Based Standards Architecture)
   DESCRIPTION
@@ -20,7 +20,6 @@ Gem::Specification.new do |spec|
   spec.bindir = "bin"
   spec.require_paths = ["lib"]
   spec.files = `git ls-files`.split("\n")
-  spec.test_files = `git ls-files -- {spec}/*`.split("\n")
   spec.required_ruby_version = Gem::Requirement.new(">= 3.0.0")
 
   # Specify which files should be added to the gem when it is released.
@@ -34,11 +33,15 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_runtime_dependency "expressir"
-  spec.add_runtime_dependency "metanorma-cli"
-  spec.add_runtime_dependency "shale"
-  spec.add_runtime_dependency "thor", ">= 0.20"
-  spec.add_development_dependency "rubocop"
-  spec.add_development_dependency "rubocop-performance"
-  spec.add_development_dependency "rubocop-rails"
+  spec.add_dependency "expressir", ">= 2.1.29", "~> 2.1"
+  spec.add_dependency "glossarist", "~> 2.3.7"
+  spec.add_dependency "lutaml-model", "~> 0.7"
+  spec.add_dependency "metanorma"
+  spec.add_dependency "plurimath"
+  spec.add_dependency "ruby-progressbar"
+  spec.add_dependency "rubyzip", "~> 2.3"
+  spec.add_dependency "table_tennis"
+  spec.add_dependency "thor", ">= 0.20"
+
+  spec.metadata["rubygems_mfa_required"] = "true"
 end

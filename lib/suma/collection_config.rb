@@ -1,11 +1,9 @@
 # frozen_string_literal: true
 
 require_relative "utils"
-require "shale"
+require "lutaml/model"
 require_relative "collection_manifest"
-require "metanorma/cli"
-require "metanorma/cli/collection"
-require "metanorma/collection/collection"
+require "metanorma"
 
 module Suma
   class CollectionConfig < Metanorma::Collection::Config::Config
@@ -16,7 +14,7 @@ module Suma
     end
 
     def to_file(path)
-      File.open(path, "w") { |f| f.write to_yaml }
+      File.write(path, to_yaml)
     end
   end
 end

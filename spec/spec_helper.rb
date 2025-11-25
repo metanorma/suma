@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require "suma"
+require_relative "../lib/suma"
+require_relative "../lib/suma/jsdai"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
@@ -12,4 +13,11 @@ RSpec.configure do |config|
   config.expect_with :rspec do |c|
     c.syntax = :expect
   end
+end
+
+def strip_uuid(str)
+  str.gsub(
+    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/,
+    "redacted_uuid",
+  ).gsub("'redacted_uuid'", "redacted_uuid")
 end

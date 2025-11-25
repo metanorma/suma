@@ -5,7 +5,7 @@ require_relative "schema_attachment"
 module Suma
   class SchemaDocument < SchemaAttachment
     def bookmark(anchor)
-      a = anchor.gsub(/\}\}/, ' | replace: "\", "-"}}')
+      a = anchor.gsub("}}", ' | replace: "\", "-"}}')
       "[[#{@id}.#{a}]]"
     end
 
@@ -46,6 +46,42 @@ module Suma
         #{bookmark('{{thing.id}}')}
         {% endfor %}
         {% endif %}
+
+        // _subtype_constraints.liquid
+        {% if schema.subtype_constraints.size > 0 %}
+        #{bookmark('subtype_constraints')}
+        // _subtype_constraint.liquid
+        {% for thing in schema.subtype_constraints %}
+        #{bookmark('{{thing.id}}')}
+        {% endfor %}
+        {% endif %}
+
+        // _functions.liquid
+        {% if schema.functions.size > 0 %}
+        #{bookmark('functions')}
+        // _function.liquid
+        {% for thing in schema.functions %}
+        #{bookmark('{{thing.id}}')}
+        {% endfor %}
+        {% endif %}
+
+        // _procedures.liquid
+        {% if schema.procedures.size > 0 %}
+        #{bookmark('procedures')}
+        // _procedure.liquid
+        {% for thing in schema.procedures %}
+        #{bookmark('{{thing.id}}')}
+        {% endfor %}
+        {% endif %}
+
+        // _rules.liquid
+        {% if schema.rules.size > 0 %}
+        #{bookmark('rules')}
+        // _rule.liquid
+        {% for thing in schema.rules %}
+        #{bookmark('{{thing.id}}')}
+        {% endfor %}
+        {% endif %}
       HEREDOC
     end
 
@@ -77,7 +113,7 @@ module Suma
         :mn-document-class: iso
         :mn-output-extensions: xml,html
 
-        [lutaml,schemas,context]
+        [lutaml_express_liquid,schemas,context]
         ----
         {% assign array = context.schemas | where: "id", "#{@id}" %}
         {% for schema in array %}

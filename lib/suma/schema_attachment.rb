@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
 require "fileutils"
-# require "metanorma/cli"
-require_relative "schema_config"
+require "expressir"
 
 module Suma
   class SchemaAttachment
@@ -26,7 +25,7 @@ module Suma
         :mn-document-class: iso
         :mn-output-extensions: #{output_extensions}
 
-        [lutaml,schemas,context]
+        [lutaml_express_liquid,schemas,context]
         ----
         {% for schema in context.schemas %}
 
@@ -55,13 +54,11 @@ module Suma
       FileUtils.mkdir_p(File.dirname(filename_adoc))
 
       relative_path = Pathname.new(filename_config)
-                              .relative_path_from(Pathname.new(File.dirname(filename_adoc)))
+        .relative_path_from(Pathname.new(File.dirname(filename_adoc)))
 
       # Utils.log "relative_path #{relative_path}"
 
-      File.open(filename_adoc, "w") do |file|
-        file.write(to_adoc(relative_path))
-      end
+      File.write(filename_adoc, to_adoc(relative_path))
     end
 
     def filename_config
@@ -70,8 +67,8 @@ module Suma
 
     def to_config(path: nil)
       # return @config unless @config
-      @config = SchemaConfig::Config.new
-      @config.schemas << SchemaConfig::Schema.new(
+      @config = Expressir::SchemaManifest.new
+      @config.schemas << Expressir::SchemaManifestEntry.new(
         id: @schema.id,
         path: @schema.path,
       )
@@ -102,11 +99,8 @@ module Suma
 
       relative_path = Pathname.new(filename_adoc).relative_path_from(Dir.pwd)
       Utils.log "Compiling schema (id: #{id}, type: #{self.class}) => #{relative_path}"
-      Metanorma::Compile.new.compile(
-        filename_adoc,
-        agree_to_terms: true,
-        install_fonts: false,
-      )
+      Metanorma::Compile.new.compile(filename_adoc, agree_to_terms: true,
+                                                    install_fonts: false)
       Utils.log "Compiling schema (id: #{id}, type: #{self.class}) => #{relative_path}... done!"
 
       # clean_artifacts
