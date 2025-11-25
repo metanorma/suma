@@ -36,12 +36,14 @@ $ gem install suma
 ----
 # Defaults to `suma help`
 $ suma
-Commands:
-  suma build METANORMA_SITE_MANIFEST  # Build collection specified in site manifest (`metanorma*.yml`)
-  suma links SUBCOMMAND ...ARGS       # Manage EXPRESS links
-  suma validate-ascii EXPRESS_FILE_PATH  # Validate EXPRESS files for ASCII-only content
-  suma reformat EXPRESS_FILE_PATH     # Reformat EXPRESS files
-  suma help [COMMAND]                 # Describe available commands or one specific command
+ Commands:
+  suma build METANORMA_SITE_MANIFEST                                  # Build collection specified in site manifest (`metanorma*.yml`)
+  suma convert-jsdai XML_FILE IMAGE_FILE OUTPUT_DIR                   # Convert JSDAI XML and image files to SVG and EXP files
+  suma extract-terms SCHEMA_MANIFEST_FILE GLOSSARIST_OUTPUT_PATH      # Extract terms from SCHEMA_MANIFEST_FILE into Glossarist v2 format
+  suma generate-schemas METANORMA_MANIFEST_FILE SCHEMA_MANIFEST_FILE  # Generate EXPRESS schema manifest file from Metanorma site manifest
+  suma help [COMMAND]                                                 # Describe available commands or one specific command
+  suma reformat EXPRESS_FILE_PATH                                     # Reformat EXPRESS files
+  suma validate SUBCOMMAND ...ARGS                                    # Validate express documents
 ----
 
 === Build command
@@ -91,50 +93,7 @@ $ bundle exec suma build --no-compile metanorma-srl.yml
 All documents need to have a `schemas.yaml` in their document root that lists
 out which schemas the document includes.
 
-=== Links command
-
-==== General
-
-The `links` command provides utilities for managing EXPRESS links.
-
-==== Extract and validate
-
-Extracts and validates EXPRESS links without creating intermediate files.
-
-[source,sh]
-----
-$ suma links extract_and_validate SCHEMAS_FILE DOCUMENTS_PATH [OUTPUT_FILE]
-----
-
-Parameters:
-
-`SCHEMAS_FILE`:: Path to the schemas file (default: "schemas-srl.yml")
-
-`DOCUMENTS_PATH`:: Path to the documents directory (default: "documents")
-
-`OUTPUT_FILE`:: Path to write validation results (default: "validation_results.txt")
-
-[example]
-====
-.To validate EXPRESS links in documents
-[source,sh]
-----
-$ bundle exec suma links extract_and_validate schemas-srl.yml documents validation_results.txt
-----
-====
-
-This command:
-
-* Loads the schemas specified in the `SCHEMAS_FILE`
-* Searches for EXPRESS links in all AsciiDoc files in the `DOCUMENTS_PATH`
-* Validates these links against the loaded schemas
-* Writes validation results to the `OUTPUT_FILE`
-* Provides progress bars to track schema loading and link validation
-
-
 === Reformat command
-
-==== General
 
 The `reformat` command provides utilities for reformatting EXPRESS files.
 
@@ -150,7 +109,7 @@ files
 
 Options:
 
-`--[no-]recursive`:: Select EXPRESS files recursively based on the specified
+`--[no-]recursive`, `-r`:: Select EXPRESS files recursively based on the specified
 folder path (default: false)
 
 [example]
@@ -167,16 +126,63 @@ This command:
 * Loads the EXPRESS files specified in the `EXPRESS_FILE_PATH`
 * Reformats and saves the loaded EXPRESS files
 
-
-=== Validate-ASCII command
+=== Validate command
 
 ==== General
 
-The `validate-ascii` command detects non-ASCII characters in EXPRESS files and reports on those exact lines, providing replacement suggestions.
+The `validate` command groups various validation utilities for EXPRESS documents.
 
 [source,sh]
 ----
-$ suma validate-ascii EXPRESS_FILE_PATH [options]
+$ suma validate SUBCOMMAND [options]
+----
+
+Subcommands:
+
+`links`:: Validate EXPRESS links
+`ascii`:: Check for non-ASCII characters in EXPRESS files
+
+==== Links subcommand
+
+The `links` subcommand extracts and validates EXPRESS links without creating intermediate files.
+
+[source,sh]
+----
+$ suma validate links SCHEMAS_FILE DOCUMENTS_PATH [OUTPUT_FILE]
+----
+
+Parameters:
+
+`SCHEMAS_FILE`:: Path to the schemas file (default: "schemas-srl.yml")
+
+`DOCUMENTS_PATH`:: Path to the documents directory (default: "documents")
+
+`OUTPUT_FILE`:: Path to write validation results (default: "validation_results.txt")
+
+[example]
+====
+.To validate EXPRESS links in documents
+[source,sh]
+----
+$ bundle exec suma validate links schemas-srl.yml documents validation_results.txt
+----
+====
+
+This command:
+
+* Loads the schemas specified in the `SCHEMAS_FILE`
+* Searches for EXPRESS links in all AsciiDoc files in the `DOCUMENTS_PATH`
+* Validates these links against the loaded schemas
+* Writes validation results to the `OUTPUT_FILE`
+* Provides progress bars to track schema loading and link validation
+
+==== ASCII subcommand
+
+The `ascii` subcommand detects non-ASCII characters in EXPRESS files and reports on those exact lines, providing replacement suggestions.
+
+[source,sh]
+----
+$ suma validate ascii EXPRESS_FILE_PATH [options]
 ----
 
 Parameters:
@@ -195,13 +201,13 @@ folder path (default: false)
 .To validate all EXPRESS files in a specific directory recursively
 [source,sh]
 ----
-$ bundle exec suma validate-ascii ../iso-10303/schemas -r
+$ bundle exec suma validate ascii ../iso-10303/schemas -r
 ----
 
 .To validate and output results in YAML format
 [source,sh]
 ----
-$ bundle exec suma validate-ascii ../iso-10303/schemas -r -y > validation.yml
+$ bundle exec suma validate ascii ../iso-10303/schemas -r -y > validation.yml
 ----
 ====
 
@@ -236,13 +242,13 @@ Human-readable output format example:
                                        ^^^^^
       "é" - Hex: 0xe9, UTF-8 bytes: 0xc3 0xa9
       Replacement: ISO 10303-11: "000000E9"
-      
+
       "s" - Hex: 0x73, UTF-8 bytes: 0x73
-      
+
       "u" - Hex: 0x75, UTF-8 bytes: 0x75
-      
+
       "m" - Hex: 0x6d, UTF-8 bytes: 0x6d
-      
+
       "é" - Hex: 0xe9, UTF-8 bytes: 0xc3 0xa9
       Replacement: ISO 10303-11: "000000E9"
 
@@ -251,7 +257,7 @@ Human-readable output format example:
 Summary:
   Scanned 3 EXPRESS file(s)
   Found 1 non-ASCII sequence(s) in 1 file(s)
-  
+
 +------------------+--------------------+-----------------------------+-------------+
 |       File       |       Symbol       |        Replacement          | Occurrences |
 +------------------+--------------------+-----------------------------+-------------+
@@ -285,11 +291,700 @@ Replacement: AsciiMath: xx
 ----
 
 
+=== Generate schemas command
+
+The `suma generate-schemas` command generates an EXPRESS schema manifest file
+containing all schemas of documents referenced in the Metanorma manifest file,
+recursively.
+
+[source,sh]
+----
+$ suma generate-schemas METANORMA_MANIFEST_FILE SCHEMA_MANIFEST_FILE [options]
+----
+
+Parameters:
+
+`METANORMA_MANIFEST_FILE`:: Path to the Metanorma manifest file
+(e.g.: "metanorma-smrl-all.yml")
+
+Options:
+
+`--exclude_path`, `-e`:: Exclude schemas by pattern (e.g. `*_lf.exp`)
+
+[example]
+====
+.To generate schemas manifest file from Metanorma manifest file
+[source,sh]
+----
+$ bundle exec suma generate-schemas metanorma-smrl-all.yml schemas-smrl-all.yml
+# => generates schemas-smrl-all.yml
+----
+
+.To generate schemas manifest file from Metanorma manifest file and exclude schemas with names like `*_lf.exp`
+[source,sh]
+----
+$ bundle exec suma generate-schemas metanorma-smrl-all.yml schemas-smrl-all.yml -e *_lf.exp
+# => generates schemas-smrl-all.yml without schemas with names like *_lf.exp
+----
+====
+
+All documents need to have a `schemas.yaml` in their document root that lists
+out which schemas the document includes.
+
+
+=== Extract terms command
+
+The "extract terms" command is implemented for ISO 10303-2, and could also be
+used for other EXPRESS schema collections that require term extraction for
+glossary or dictionary applications.
+
+The `suma extract-terms` command extracts terms from EXPRESS schemas and
+generates a Glossarist v2 dataset in the output directory. This command processes
+various types of STEP schemas and creates standardized terminology datasets
+suitable for glossary and dictionary applications.
+
+[source,sh]
+----
+$ suma extract-terms SCHEMA_MANIFEST_FILE GLOSSARIST_OUTPUT_PATH [options]
+----
+
+Parameters:
+
+`SCHEMA_MANIFEST_FILE`:: Path to the schema manifest file that lists all schemas
+to process (e.g., "schemas-smrl-all.yml")
+
+`GLOSSARIST_OUTPUT_PATH`:: Path to the output directory where the Glossarist v2
+dataset will be generated
+
+Options:
+
+`--language_code`, `-l`:: Language code for the Glossarist dataset (default: "eng")
+
+==== Supported schema types
+
+The command supports extraction from the following EXPRESS schema types:
+
+* **ARM (application reference model)** - application module schemas ending with `_arm`
+* **MIM (module implementation model)** - application module schemas ending with `_mim`
+* **Resource schemas** - General resource schemas
+* **BOM (business object model)** - business object model schemas ending with `_bom`
+
+NOTE: The "Long Form" EXPRESS schemas (ending with `_lf`) should be excluded
+from the manifest file as they do not contain definitions of `ENTITY` objects.
+
+
+==== Extracted concepts
+
+The command extracts `ENTITY` objects from EXPRESS schemas, with the following
+information:
+
+. a unique identifier in form of `{schema_name}.{entity_name}` (where `entity_name` is a slug
+  derived from the `ENTITY` name);
+. a generated definition depending on the schema type and entity type;
+. a "Note to entry" from its first coherent textual element described in Annotated EXPRESS;
+. source information including: schema name and schema version;
+. domain in the pattern of: `{domain_type}: {schema_name}`, where `domain_type` is one of
+  `application module`, `resource`, or `business object model`.
+
+
+==== Output format
+
+The command generates a Glossarist v2 compliant dataset with:
+
+* `concept/` directory containing concept definition files in YAML
+* `localized_concept/` directory containing localized concept files in YAML
+
+.To extract terms from a schema manifest file
+[example]
+====
+[source,sh]
+----
+$ bundle exec suma extract-terms schemas-smrl-all.yml glossarist_output
+# => generates glossarist_output/concept/*.yaml and
+#      glossarist_output/localized_concept/*.yaml
+----
+====
+
+.To extract terms from a specific schema subset
+[example]
+====
+[source,sh]
+----
+$ bundle exec suma extract-terms schemas-activity-modules.yml terms_output
+# => processes only schemas listed in the manifest file
+----
+====
+
+
+=== Convert JSDAI image outputs to SVG and Annotated EXPRESS
+
+The `suma convert-jsdai` command converts JSDAI EXPRESS-G diagram outputs
+(XML + image file) into SVG and Annotated EXPRESS formats suitable for
+Metanorma documentation.
+
+JSDAI (Java Step Data Access Interface) Java tool is used by ISO/TC 184/SC 4 to
+create EXPRESS-G diagrams.
+
+JSDAI generates two files for each diagram:
+
+* a raster image file (GIF or JPEG)
+* an XML file containing image metadata and clickable area definitions
+
+This command converts these inputs into:
+
+* an SVG file that embeds the raster image as Base64 with clickable rectangular areas
+* an Annotated EXPRESS file with a Metanorma `svgmap` block for easy copy-paste
+
+[source,sh]
+----
+$ suma convert-jsdai XML_FILE IMAGE_FILE OUTPUT_DIR
+----
+
+Where:
+
+`XML_FILE`:: Path to the JSDAI XML file (e.g., "action_schemaexpg1.xml")
+
+`IMAGE_FILE`:: Path to the raster image file (GIF or JPEG format)
+
+`OUTPUT_DIR`:: Path to the output directory where SVG and EXP files will be generated
+
+[example]
+.To convert JSDAI outputs for a resource schema diagram
+====
+[source,sh]
+----
+$ bundle exec suma convert-jsdai \
+    documents/resources/action_schema/action_schemaexpg1.xml \
+    documents/resources/action_schema/action_schemaexpg1.gif \
+    output/
+# => generates:
+#    output/action_schemaexpg1.svg
+#    output/action_schemaexpg1.exp
+----
+====
+
+This command:
+
+* Parses the JSDAI XML file to extract image metadata and clickable area definitions
+* Reads the raster image file and converts it to base64 format
+* Generates an SVG file with:
+** The embedded base64-encoded image
+** Clickable rectangular areas (`<a>` and `<rect>` elements) corresponding to the XML definitions
+** Proper viewBox dimensions matching the source image
+* Generates an Annotated EXPRESS file containing:
+** A Metanorma `svgmap` block with numbered cross-references
+** Proper anchor IDs for document integration
+** Cross-reference targets extracted from the XML href attributes
+
+
+The generated SVG and EXP files work together through a numbered mapping system:
+
+. In the SVG file, each clickable area is assigned a sequential number:
++
+[source,xml]
+----
+<a href="1"><rect .../></a>
+<a href="2"><rect .../></a>
+<a href="3"><rect .../></a>
+----
+
+. In the EXPRESS file, the `svgmap` block maps these numbers to targets which
+are either EXPRESS or AsciiDoc anchors.
++
+--
+[example]
+.Resource schema diagram with SVG and Annotated EXPRESS cross-references
+=====
+[source,express]
+----
+(*"action_schema.__expressg"
+[[action_schema_expg1]]
+[.svgmap]
+====
+image::action_schemaexpg1.svg[]
+
+* <<express:basic_attribute_schema>>; 1
+* <<express:action_schema>>; 2
+* <<express:support_resource_schema>>; 3
+====
+*)
+----
+=====
+
+[example]
+.Module schema diagram with SVG and Annotated EXPRESS cross-references
+=====
+[source,express]
+----
+(*"Activity_mim.__expressg"
+[[Activity_mim_expg1]]
+[.svgmap]
+====
+image::mimexpg1.svg[]
+
+* <<Activity_mim_expg2>>; 1
+* <<express:action_schema>>; 2
+* <<Activity_method_mim_expg1>>; 3
+* <<express:basic_attribute_schema>>; 4
+* <<express:management_resources_schema>>; 5
+====
+*)
+----
+=====
+--
+
+. When rendered in Metanorma, clicking on "area 1" in the SVG, will navigate to
+the `express:basic_attribute_schema` anchor, "area 2" to
+`express:action_schema`, and so on.
+
+The mapping is derived from the original JSDAI XML file, where each `<img.area>`
+element contains:
+
+`coords` attribute:: converted to SVG `<rect>` dimensions
+
+`href` attribute:: converted to EXPRESS cross-reference target in the `svgmap`
+block
+
+Sequential position:: assigned as the numbered href in both SVG and `svgmap`
+list
+
+
+=== Export schemas command
+
+==== General
+
+The `suma export` command exports EXPRESS schemas from manifest files and/or
+standalone EXPRESS files to a specified output directory.
+
+This command is useful for extracting plain or annotated EXPRESS schemas for
+distribution or further processing.
+
+[source,sh]
+----
+$ suma export -o OUTPUT_DIR FILE1 [FILE2 FILE3 ...]
+----
+
+Parameters:
+
+`FILE1 [FILE2 FILE3 ...]`:: One or more files to export. Each file can be:
+
+An EXPRESS schema manifest file (`.yml`, `.yaml`)::: schemas listed in the
+manifest will be exported
+
+An standalone EXPRESS file (`.exp`)::: the schema will be exported directly
+
+Options:
+
+`--output=PATH`, `-o PATH`:: (required) Output directory path
+
+`--[no-]annotations`:: Include annotations (remarks/comments) in exported schemas (default: false)
+
+`--[no-]zip`:: Create ZIP archive of exported schemas (default: false)
+
+==== Behavior
+
+The command exports schemas based on the input file types:
+
+**For EXPRESS schema manifest files:**
+
+* Schemas are exported while preserving the directory structure from the manifest file paths
+* Schemas under `resources/` are exported to `OUTPUT/resources/`
+* Schemas under `modules/` are exported to `OUTPUT/modules/`
+* Other categories (`business_object_models/`, `core_model/`) follow the same pattern
+
+**For standalone EXPRESS files:**
+
+* Schemas are exported directly to the output directory root
+* Output filename format: `{schema_id}.exp`
+
+By default, schemas are exported without annotations (plain EXPRESS). Use the
+`--annotations` flag to include remarks and comments.
+
+The `--zip` flag creates a ZIP archive in addition to the directory output,
+named `OUTPUT.zip`.
+
+[example]
+.To export schemas from a manifest file
+[source,sh]
+----
+$ bundle exec suma export -o express-files schemas-srl.yml
+# => generates express-files/ directory with plain EXPRESS schemas
+----
+
+[example]
+.To export a single plain schema
+[source,sh]
+----
+$ bundle exec suma export -o express-files geometry_schema.exp
+# => generates express-files/geometry_schema.exp
+----
+
+[example]
+.To export multiple plain schemas
+[source,sh]
+----
+$ bundle exec suma export -o express-files schema1.exp schema2.exp schema3.exp
+# => generates express-files/{schema1,schema2,schema3}.exp
+----
+
+[example]
+.To export from multiple manifest files
+[source,sh]
+----
+$ bundle exec suma export -o express-files schemas-srl.yml additional-schemas.yml
+# => exports schemas from both manifest files
+----
+
+[example]
+.To export mix of manifest and plain schemas
+[source,sh]
+----
+$ bundle exec suma export -o express-files schemas-srl.yml geometry_schema.exp
+# => exports schemas from manifest with directory structure
+#    plus geometry_schema.exp at the root
+----
+
+[example]
+.To export schemas with annotations
+[source,sh]
+----
+$ bundle exec suma export -o express-files --annotations schemas-srl.yml
+# => generates express-files/ directory with annotated EXPRESS schemas
+----
+
+[example]
+.To export and create ZIP archive
+[source,sh]
+----
+$ bundle exec suma export -o express-files --zip schemas-srl.yml
+# => generates both:
+#    - express-files/ directory
+#    - express-files.zip archive
+----
+
+[example]
+.To export with all options
+[source,sh]
+----
+$ bundle exec suma export -o express-files \
+    --annotations \
+    --zip \
+    schemas-srl.yml geometry_schema.exp
+# => generates annotated schemas in both directory and ZIP format
+----
+
+==== Output structure
+
+The exported directory structure depends on the input file types:
+
+[source]
+----
+express-files/
+├── geometry_schema.exp          # standalone EXPRESS file (at root)
+├── topology_schema.exp          # standalone EXPRESS file (at root)
+├── resources/                   # from manifest files
+│   ├── action_schema/
+│   │   └── action_schema.exp
+│   └── ...
+├── modules/                     # from manifest files
+│   ├── activity/
+│   │   ├── arm.exp
+│   │   └── mim.exp
+│   └── ...
+├── business_object_models/      # from manifest files
+│   └── ...
+└── core_model/                  # from manifest files
+    └── ...
+----
+
+
+=== Compare schemas command
+
+==== General
+
+The `suma compare` command compares two EXPRESS schemas using eengine and
+generates an EXPRESS Changes YAML file tracking the differences.
+
+This command is essential for managing schema evolution across versions,
+particularly when working with multiple git branches of the same repository.
+
+[source,sh]
+----
+$ suma compare TRIAL_SCHEMA REFERENCE_SCHEMA --version VERSION [options]
+----
+
+Parameters:
+
+`TRIAL_SCHEMA`:: Path to the new/trial EXPRESS schema file
+`REFERENCE_SCHEMA`:: Path to the old/reference EXPRESS schema file
+
+Options:
+
+`--version=VERSION`, `-v VERSION`:: (required) Version number for this change version
+`--output=PATH`, `-o PATH`:: Output Change YAML file path (default: `{schema}.changes.yaml` in trial schema directory)
+`--mode=MODE`:: Schema comparison mode: `resource` or `module` (default: `resource`)
+`--trial-stepmod=PATH`:: Override auto-detected trial repository root
+`--reference-stepmod=PATH`:: Override auto-detected reference repository root
+`--verbose`:: Enable verbose output
+
+==== Typical workflow
+
+The compare command is designed for a two-repository workflow where you have
+different branches checked out:
+
+[source,sh]
+----
+# 1. Check out old version at /path/to/repo-old
+# 2. Check out new version at /path/to/repo-new
+# 3. Compare schemas:
+$ suma compare \
+    /path/to/repo-new/schemas/resources/action_schema/action_schema.exp \
+    /path/to/repo-old/schemas/resources/action_schema/action_schema.exp \
+    --version 2
+----
+
+==== Behavior
+
+The command:
+
+* Auto-detects git repository roots from schema file paths
+* Uses detected roots as stepmod paths for eengine
+* Generates or updates `.changes.yaml` file in the trial schema directory
+* **Replaces** existing change version if the version already exists
+* **Adds** new change version if the version is different
+
+==== Requirements
+
+This command requires `eengine` to be installed:
+
+* macOS: https://github.com/expresslang/homebrew-eengine
+* Linux: https://github.com/expresslang/eengine-releases
+
+[example]
+.To compare schemas with auto-detection
+[source,sh]
+----
+$ suma compare \
+    ~/iso-10303-new/schemas/resources/support_resource_schema/support_resource_schema.exp \
+    ~/iso-10303-old/schemas/resources/support_resource_schema/support_resource_schema.exp \
+    --version 2
+# => generates or updates support_resource_schema.changes.yaml
+----
+
+[example]
+.To compare with verbose output
+[source,sh]
+----
+$ suma compare schema_new.exp schema_old.exp --version 2 --verbose
+# Shows: eengine version, detected repo roots, XML generation, etc.
+----
+
+[example]
+.To specify custom output location
+[source,sh]
+----
+$ suma compare schema_new.exp schema_old.exp \
+    --version 2 \
+    --output /path/to/custom.changes.yaml
+----
+
+[example]
+.To override auto-detected repository roots
+[source,sh]
+----
+$ suma compare schema_new.exp schema_old.exp \
+    --version 2 \
+    --trial-stepmod ~/repo-new \
+    --reference-stepmod ~/repo-old
+----
+
+==== Generated Change YAML format
+
+The command generates EXPRESS Changes YAML files in the ISO 10303 format:
+
+[source,yaml]
+----
+---
+schema: support_resource_schema
+versions:
+- version: '2'
+  description: 'TYPE text: Underlying Type changed'
+  modifications:
+  - type: TYPE
+    name: text
+----
+
+For complete format documentation, see the
+https://www.expresslang.org/docs/express-changes[EXPRESS Changes specification].
+
+=== Expressir command
+
+==== General
+
+The `suma expressir` command provides access to all Expressir commands for
+working with EXPRESS schemas. This includes documentation coverage analysis,
+schema formatting, validation, and other EXPRESS-related operations.
+
+Expressir is a comprehensive toolkit for EXPRESS schema processing that Suma
+integrates to provide additional functionality beyond Suma's core features.
+
+[source,sh]
+----
+$ suma expressir SUBCOMMAND ...ARGS [options]
+----
+
+Available subcommands:
+
+`coverage`:: Check documentation coverage of EXPRESS schemas
+`format`:: Pretty print EXPRESS schemas
+`clean`:: Strip remarks and prettify EXPRESS schemas
+`validate`:: Validate EXPRESS schemas
+`benchmark`:: Benchmark schema loading performance
+`version`:: Display expressir version
+
+==== Coverage subcommand
+
+The `coverage` subcommand analyzes EXPRESS schemas to determine documentation
+coverage, reporting how many EXPRESS objects (entities, constants, functions,
+types, etc.) have been documented with Annotated EXPRESS.
+
+This addresses the need to measure and improve documentation quality in EXPRESS
+schema collections.
+
+[source,sh]
+----
+$ suma expressir coverage PATH [PATH...] [options]
+----
+
+Parameters:
+
+`PATH`:: One or more paths to analyze. Each path can be:
++
+--
+* An EXPRESS schema manifest file (`.yml`, `.yaml`)
+* A single EXPRESS file (`.exp`)
+* A directory containing EXPRESS files
+--
+
+Options:
+
+`--format=FORMAT`:: Output format: `text` (default), `json`, or `yaml`
+`--output=FILE`:: Output file path for JSON/YAML formats (defaults to
+`coverage_report.json` or `coverage_report.yaml`)
+`--exclude=TYPES`:: Comma-separated list of EXPRESS entity types to exclude
+from coverage analysis (e.g., `TYPE,CONSTANT,TYPE:SELECT`)
+`--ignore-files=FILE`:: Path to YAML file containing array of file patterns
+to ignore from overall coverage calculation
+
+[example]
+.To analyze documentation coverage of a schema collection
+[source,sh]
+----
+$ suma expressir coverage schemas-srl.yml
+----
+
+.To analyze coverage and export as JSON
+[source,sh]
+----
+$ suma expressir coverage schemas-srl.yml --format=json --output=coverage.json
+----
+
+.To analyze with exclusions
+[source,sh]
+----
+$ suma expressir coverage schemas/ --exclude=TYPE:ENUMERATION,PARAMETER
+----
+
+.To analyze multiple sources
+[source,sh]
+----
+$ suma expressir coverage schemas-srl.yml additional-schemas.yml
+----
+
+The coverage report includes:
+
+* Overall coverage statistics (total entities, documented entities, percentage)
+* Per-file coverage details
+* Per-directory coverage summaries
+* List of undocumented entities by type and name
+
+==== Format subcommand
+
+The `format` subcommand pretty-prints EXPRESS schemas.
+
+[source,sh]
+----
+$ suma expressir format PATH
+----
+
+Parameters:
+
+`PATH`:: Path to the EXPRESS schema file to format
+
+[example]
+.To format an EXPRESS schema
+[source,sh]
+----
+$ suma expressir format schema.exp
+----
+
+==== Clean subcommand
+
+The `clean` subcommand strips remarks and prettifies EXPRESS schemas.
+
+[source,sh]
+----
+$ suma expressir clean PATH [options]
+----
+
+Parameters:
+
+`PATH`:: Path to the EXPRESS schema file to clean
+
+Options:
+
+`--output=FILE`:: Output file path (defaults to stdout)
+
+[example]
+.To clean an EXPRESS schema and save to file
+[source,sh]
+----
+$ suma expressir clean schema.exp --output=cleaned_schema.exp
+----
+
+==== Validate subcommand
+
+The `validate` subcommand validates EXPRESS schemas for syntactic correctness.
+
+[source,sh]
+----
+$ suma expressir validate PATH [PATH...]
+----
+
+Parameters:
+
+`PATH`:: One or more paths to EXPRESS schema files or directories to validate
+
+[example]
+.To validate EXPRESS schemas
+[source,sh]
+----
+$ suma expressir validate schema.exp
+$ suma expressir validate schemas/
+----
+
+==== Additional information
+
+For complete documentation of all Expressir commands and options, see the
+https://github.com/lutaml/expressir[Expressir documentation].
+
+
 == Usage: Ruby
 
 === General
 
-Suma can be used programmatically in your Ruby applications. The following examples demonstrate common usage patterns.
+Suma can be used programmatically in your Ruby applications. The following
+examples demonstrate common usage patterns.
 
 === Building collections
 

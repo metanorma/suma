@@ -1,0 +1,56 @@
+---
+directives:
+- documents-inline
+- flavor: iso
+coverpage: cover-bibdata.html
+bibdata:
+  title:
+    - type: intro
+      language: en
+      content: Industrial automation systems and integration -- Product data representation and exchange
+    - type: intro
+      language: fr
+      content: Systèmes d'automatisation industrielle et intégration -- Représentation et échange de données de produits
+    - type: main
+      language: en
+      content: STEP Resource and Modules Library (SMRL)
+    - type: main
+      language: fr
+      content: Bibliothèque de ressources et modules STEP (SMRL)
+  type: standard
+  edition: 12
+  docid:
+    - type: SMRL
+      id: 2025(E)
+  date:
+    - type: published
+      value: 2025
+  ics:
+    - code: 25.040.40
+  price_code: XL
+  copyright:
+     owner:
+       name: International Organization for Standardization
+       abbreviation: ISO
+       url: www.iso.org
+     from: 2025
+  contributor:
+    - organization:
+        name: International Organization for Standardization
+        url: www.iso.org
+        abbreviation: ISO
+      role:
+        type: publisher
+format:
+  - html
+  - xml
+  - presentation
+manifest:
+  level: collection
+  title: STEP Modules and Resources Library (SMRL)
+  sectionsplit: true
+  docref:
+
+  # RESOURCES
+  - file: spec/fixtures/generate_schemas/test-1/collection.yml
+  - file: spec/fixtures/generate_schemas/test-2/collection.yml

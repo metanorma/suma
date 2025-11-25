@@ -7,19 +7,20 @@ require "expressir"
 
 module Suma
   class ExpressSchema
-    attr_accessor :path, :id, :parsed, :output_path
+    attr_accessor :path, :id, :parsed, :output_path, :is_standalone_file
 
-    def initialize(id:, path:, output_path:)
+    def initialize(id:, path:, output_path:, is_standalone_file: false)
       @path = Pathname.new(path).expand_path
       @id = id
       @output_path = output_path
+      @is_standalone_file = is_standalone_file
     end
 
     def type
-      case @path.to_s
-      when %r{.*/resources/.*}
+      path_str = @path.to_s
+      if path_str.include?("/resources/")
         "resources"
-      when %r{.*/modules/.*}
+      elsif path_str.include?("/modules/")
         "modules"
       else
         "unknown_type"
@@ -48,17 +49,35 @@ module Suma
     end
 
     def filename_plain
-      File.join(@output_path, type, id, File.basename(@path))
+      ensure_id_loaded
+      build_output_filename
     end
 
-    def save_exp
+    def ensure_id_loaded
+      parsed unless @id
+    end
+
+    def build_output_filename
+      if @is_standalone_file
+        # For standalone files, output directly to output_path
+        File.join(@output_path, "#{@id}.exp")
+      else
+        # For manifest schemas, preserve directory structure
+        # Note: @output_path already contains the category (resources/modules)
+        File.join(@output_path, @id, File.basename(@path))
+      end
+    end
+
+    def save_exp(with_annotations: false)
       relative_path = Pathname.new(filename_plain).relative_path_from(Dir.pwd)
-      Utils.log "Save plain schema: #{relative_path}"
+      schema_type = with_annotations ? "annotated" : "plain"
+      Utils.log "Save #{schema_type} schema: #{relative_path}"
 
       # return if File.exist?(filename_plain)
       FileUtils.mkdir_p(File.dirname(filename_plain))
 
-      File.write(filename_plain, to_plain)
+      content = with_annotations ? parsed.to_s(no_remarks: false) : to_plain
+      File.write(filename_plain, content)
     end
   end
 end

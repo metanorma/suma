@@ -2,9 +2,10 @@
 
 require "thor"
 require "yaml"
-require "terminal-table"
+require "paint"
 require "plurimath"
 require "set" # For using Set in unique_character_count
+require "table_tennis"
 require_relative "../thor_ext"
 
 module Suma
@@ -188,12 +189,18 @@ module Suma
 
         # Print each file's violations
         @file_violations.each_value do |file_violation|
-          puts "\n#{file_violation.display_path}:"
+          puts "\n#{Paint[file_violation.display_path, :cyan, :bold]}:"
 
           file_violation.violations.each do |v|
-            puts "  Line #{v[:line_number]}, Column #{v[:column]}:"
+            puts "  #{Paint['Line',
+                            :blue]} #{Paint[v[:line_number],
+                                            :yellow]}, #{Paint['Column',
+                                                               :blue]} #{Paint[v[:column],
+                                                                               :yellow]}:"
             puts "    #{v[:line]}"
-            puts "    #{' ' * v[:column]}#{'^' * v[:match].length} Non-ASCII sequence"
+            puts "    #{' ' * v[:column]}#{Paint['^' * v[:match].length,
+                                                 :red]} #{Paint['Non-ASCII sequence',
+                                                                :red]}"
 
             v[:char_details].each do |cd|
               character = file_violation.unique_characters.find do |c|
@@ -201,29 +208,42 @@ module Suma
               end
               next unless character
 
-              puts "      \"#{cd[:char]}\" - Hex: #{cd[:hex]}, UTF-8 bytes: #{cd[:utf8]}"
-              puts "      Replacement: #{character.replacement_text}"
+              puts "      #{Paint["\"#{cd[:char]}\"",
+                                  :yellow]} - Hex: #{Paint[cd[:hex],
+                                                           :magenta]}, UTF-8 bytes: #{Paint[cd[:utf8],
+                                                                                            :magenta]}"
+              puts "      #{Paint['Replacement:',
+                                  :green]} #{character.replacement_text}"
             end
             puts ""
           end
 
-          puts "  Found #{file_violation.violation_count} non-ASCII sequence(s) in #{file_violation.filename}\n"
+          puts "  #{Paint['Found',
+                          :green]} #{Paint[file_violation.violation_count,
+                                           :red]} #{Paint['non-ASCII sequence(s) in',
+                                                          :green]} #{Paint[file_violation.filename,
+                                                                           :cyan]}\n"
         end
 
         # Print summary
-        puts "\nSummary:"
-        puts "  Scanned #{@total_files} EXPRESS file(s)"
-        puts "  Found #{total_violations} non-ASCII sequence(s) in #{files_with_violations} file(s)"
+        puts "\n#{Paint['Summary:', :blue, :bold]}"
+        puts "  #{Paint['Scanned',
+                        :green]} #{Paint[@total_files,
+                                         :yellow]} #{Paint['EXPRESS file(s)',
+                                                           :green]}"
+        puts "  #{Paint['Found',
+                        :green]} #{Paint[total_violations,
+                                         :red]} #{Paint['non-ASCII sequence(s) in',
+                                                        :green]} #{Paint[files_with_violations,
+                                                                         :red]} #{Paint['file(s)',
+                                                                                        :green]}"
       end
 
       def print_table_output
         return if @file_violations.empty?
 
-        table = ::Terminal::Table.new(
-          title: "Non-ASCII Characters Summary",
-          headings: ["File", "Symbol", "Replacement", "Occurrences"],
-        )
-
+        # Build rows array
+        rows = []
         total_occurrences = 0
 
         @file_violations.each_value do |file_violation|
@@ -231,25 +251,37 @@ module Suma
             occurrence_count = character.occurrence_count
             total_occurrences += occurrence_count
 
-            table.add_row [
-              file_violation.display_path,
-              "\"#{character.char}\" (#{character.hex})",
-              character.replacement_text,
-              occurrence_count,
-            ]
+            rows << {
+              file: file_violation.display_path,
+              symbol: "\"#{character.char}\" (#{character.hex})",
+              replacement: character.replacement_text,
+              occurrences: occurrence_count,
+            }
           end
         end
 
-        # Add a separator and total row
-        table.add_separator
-        table.add_row [
-          "TOTAL",
-          "#{unique_character_count} unique",
-          "",
-          total_occurrences,
-        ]
+        # Add total row
+        rows << {
+          file: "TOTAL",
+          symbol: "#{unique_character_count} unique",
+          replacement: "",
+          occurrences: total_occurrences,
+        }
 
-        puts "\n#{table}\n"
+        # Use TableTennis to render
+        options = {
+          title: "Non-ASCII Characters Summary",
+          columns: %i[file symbol replacement occurrences],
+          headers: {
+            file: "File",
+            symbol: "Symbol",
+            replacement: "Replacement",
+            occurrences: "Occurrences",
+          },
+          mark: ->(row) { row[:file] == "TOTAL" },
+        }
+
+        puts "\n#{TableTennis.new(rows, options)}\n"
       end
 
       private

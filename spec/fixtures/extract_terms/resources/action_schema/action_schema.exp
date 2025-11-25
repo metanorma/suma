@@ -1,0 +1,1098 @@
+(*
+ISO 10303 TC184/SC4/WG12 N10693
+
+EXPRESS Source:
+ISO 10303-41 ed7 Fundamentals of product description and support - Action schema
+
+The following permission notice and disclaimer shall be included in all copies of this EXPRESS schema ("the Schema"),
+and derivations of the Schema:
+
+Copyright ISO 2021  All rights reserved
+Permission is hereby granted, free of charge in perpetuity, to any person obtaining a copy of the Schema,
+to use, copy, modify, merge and distribute free of charge, copies of the Schema for the purposes of developing,
+implementing, installing and using software based on the Schema, and to permit persons to whom the Schema is furnished to do so,
+subject to the following conditions:
+
+THE SCHEMA IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SCHEMA OR THE
+USE OR OTHER DEALINGS IN THE SCHEMA.
+
+In addition, any modified copy of the Schema shall include the following notice:
+
+THIS SCHEMA HAS BEEN MODIFIED FROM THE SCHEMA DEFINED IN
+ISO 10303-41 ed7 Fundamentals of product description and support - Action schema
+AND SHOULD NOT BE INTERPRETED AS COMPLYING WITH THAT STANDARD
+*)
+
+SCHEMA action_schema '{iso standard 10303 part(41) version(9) object(1) action-schema(1)}';
+  REFERENCE FROM basic_attribute_schema (	-- ISO 10303-41
+    description_attribute,
+    description_attribute_select,
+    get_description_value,
+    get_id_value,
+    get_name_value,
+    get_role,
+    id_attribute,
+    id_attribute_select,
+    name_attribute,
+    name_attribute_select,
+    object_role,
+    role_select,
+    role_association);
+
+  REFERENCE FROM support_resource_schema ( -- ISO 10303-41
+    bag_to_set,
+    identifier,
+    label,
+    text);
+
+  TYPE as_description_attribute_select = SELECT BASED_ON description_attribute_select WITH (
+    action_request_solution);
+  END_TYPE;
+  TYPE as_id_attribute_select = SELECT BASED_ON id_attribute_select WITH (
+    action);
+  END_TYPE;
+  TYPE as_name_attribute_select = SELECT BASED_ON name_attribute_select WITH (
+    action_request_solution);
+  END_TYPE;
+  TYPE as_role_select = SELECT BASED_ON role_select WITH (
+    directed_action_assignment);
+  END_TYPE;
+
+  TYPE supported_item = SELECT (action_directive, action, action_method);
+  END_TYPE;
+
+  ENTITY action;
+    name : label;
+    description : OPTIONAL text;
+    chosen_method : action_method;
+  DERIVE
+    id : identifier := get_id_value(SELF);
+  WHERE
+    WR1: SIZEOF(USEDIN(SELF, 'BASIC_ATTRIBUTE_SCHEMA.' + 'ID_ATTRIBUTE.IDENTIFIED_ITEM')) <= 1;
+  END_ENTITY;
+
+  ENTITY action_directive;
+    name : label;
+    description : OPTIONAL text;
+    analysis : text;
+    comment : text;
+    requests : SET [1:?] OF versioned_action_request;
+  END_ENTITY;
+
+  ENTITY action_method;
+    name : label;
+    description : OPTIONAL text;
+    consequence : text;
+    purpose : text;
+  END_ENTITY;
+
+  ENTITY action_method_relationship;
+    name : label;
+    description : OPTIONAL text;
+    relating_method : action_method;
+    related_method : action_method;
+  END_ENTITY;
+
+  ENTITY action_relationship;
+    name : label;
+    description : OPTIONAL text;
+    relating_action : action;
+    related_action : action;
+  END_ENTITY;
+
+  ENTITY action_request_solution;
+    method : action_method;
+    request : versioned_action_request;
+  DERIVE
+    description : text := get_description_value(SELF);
+    name : label := get_name_value(SELF);
+  WHERE
+    WR1: SIZEOF(USEDIN(SELF, 'BASIC_ATTRIBUTE_SCHEMA.' + 'DESCRIPTION_ATTRIBUTE.DESCRIBED_ITEM')) <= 1;
+    WR2: SIZEOF(USEDIN(SELF, 'BASIC_ATTRIBUTE_SCHEMA.' + 'NAME_ATTRIBUTE.NAMED_ITEM')) <= 1;
+  END_ENTITY;
+
+  ENTITY action_request_status;
+    status : label;
+    assigned_request : versioned_action_request;
+  END_ENTITY;
+
+  ENTITY action_resource;
+    name : label;
+    description : OPTIONAL text;
+    usage : SET [1:?] OF supported_item;
+    kind : action_resource_type;
+  END_ENTITY;
+
+  ENTITY action_resource_relationship;
+    name : label;
+    description : OPTIONAL text;
+    relating_resource : action_resource;
+    related_resource : action_resource;
+  END_ENTITY;
+
+  ENTITY action_resource_type;
+    name : label;
+  END_ENTITY;
+
+  ENTITY action_status;
+    status : label;
+    assigned_action : executed_action;
+  END_ENTITY;
+
+  ENTITY directed_action
+    SUBTYPE OF (executed_action);
+    directive : action_directive;
+  END_ENTITY;
+
+  	ENTITY directed_action_assignment
+		ABSTRACT SUPERTYPE ;
+		assigned_directed_action : directed_action;
+	  DERIVE
+		role : object_role := get_role(SELF);
+	  WHERE
+		WR1: SIZEOF(USEDIN(SELF, 'BASIC_ATTRIBUTE_SCHEMA.' + 'ROLE_ASSOCIATION.ITEM_WITH_ROLE')) <= 1;
+	  END_ENTITY;
+
+  ENTITY executed_action
+    SUBTYPE OF (action);
+  END_ENTITY;
+
+  ENTITY versioned_action_request;
+    id : identifier;
+    version : OPTIONAL label;
+    purpose : text;
+    description : OPTIONAL text;
+  END_ENTITY;
+
+  ENTITY versioned_action_request_relationship;
+    id : identifier;
+    name : label;
+    description : OPTIONAL text;
+    relating_versioned_action_request : versioned_action_request;
+    related_versioned_action_request : versioned_action_request;
+  END_ENTITY;
+
+ENTITY action_directive_relationship;
+	name			: label;
+	description 	: OPTIONAL STRING;
+	relating 		: action_directive;
+	related 		: action_directive;
+	relation_type 	: STRING;
+ WHERE
+	WR1 : acyclic_action_directive_relationship(SELF, [related], 'ACTION_SCHEMA.ACTION_DIRECTIVE_RELATIONSHIP');
+END_ENTITY;
+
+  FUNCTION acyclic_action_method_relationship (relation : action_method_relationship; relatives : SET [1:?] OF action_method; specific_relation : STRING):BOOLEAN;
+    LOCAL
+      x : SET OF action_method_relationship;
+    END_LOCAL;
+
+    IF relation.relating_method IN relatives THEN
+      RETURN (FALSE);
+    END_IF;
+    x := QUERY(am <* bag_to_set(USEDIN(relation.relating_method, 'ACTION_SCHEMA.' + 'ACTION_METHOD_RELATIONSHIP.' + 'RELATED_METHOD')) | specific_relation IN TYPEOF(am));
+    REPEAT i := 1 TO HIINDEX(x);
+      IF NOT acyclic_action_method_relationship(x[i], relatives + relation.relating_method, specific_relation) THEN
+        RETURN (FALSE);
+      END_IF;
+    END_REPEAT;
+    RETURN (TRUE);
+  END_FUNCTION;
+
+  FUNCTION acyclic_action_relationship (relation : action_relationship; relatives : SET [1:?] OF action; specific_relation : STRING):BOOLEAN;
+    LOCAL
+      x : SET OF action_relationship;
+    END_LOCAL;
+
+    IF relation.relating_action IN relatives THEN
+      RETURN (FALSE);
+    END_IF;
+    x := QUERY(actn <* bag_to_set(USEDIN(relation.relating_action, 'ACTION_SCHEMA.' + 'ACTION_RELATIONSHIP.' + 'RELATED_ACTION')) | specific_relation IN TYPEOF(actn));
+    REPEAT i := 1 TO HIINDEX(x);
+      IF NOT acyclic_action_relationship(x[i], relatives + relation.relating_action, specific_relation) THEN
+        RETURN (FALSE);
+      END_IF;
+    END_REPEAT;
+    RETURN (TRUE);
+  END_FUNCTION;
+
+  FUNCTION acyclic_action_resource_relationship (relation : action_resource_relationship; relatives : SET [1:?] OF action_resource; specific_relation : STRING):BOOLEAN;
+    LOCAL
+      x : SET OF action_resource_relationship;
+    END_LOCAL;
+
+    IF relation.relating_resource IN relatives THEN
+      RETURN (FALSE);
+    END_IF;
+    x := QUERY(ar <* bag_to_set(USEDIN(relation.relating_resource, 'ACTION_SCHEMA.' + 'ACTION_RESOURCE_RELATIONSHIP.' + 'RELATED_RESOURCE')) | specific_relation IN TYPEOF(ar));
+    REPEAT i := 1 TO HIINDEX(x);
+      IF NOT acyclic_action_resource_relationship(x[i], relatives + relation.relating_resource, specific_relation) THEN
+        RETURN (FALSE);
+      END_IF;
+    END_REPEAT;
+    RETURN (TRUE);
+  END_FUNCTION;
+
+  FUNCTION acyclic_versioned_action_request_relationship (relation : versioned_action_request_relationship; relatives : SET OF versioned_action_request; specific_relation : STRING):BOOLEAN;
+    LOCAL
+      x : SET OF versioned_action_request_relationship;
+    END_LOCAL;
+
+    IF relation.relating_versioned_action_request IN relatives THEN
+      RETURN (FALSE);
+    END_IF;
+    x := QUERY(varr <* bag_to_set(USEDIN(relation.relating_versioned_action_request, 'ACTION_SCHEMA.' + 'VERSIONED_ACTION_REQUEST_RELATIONSHIP.' + 'RELATED_VERSIONED_ACTION_REQUEST')) | specific_relation IN TYPEOF(varr));
+    REPEAT i := 1 TO HIINDEX(x);
+      IF NOT acyclic_versioned_action_request_relationship(x[i], relatives + relation.relating_versioned_action_request, specific_relation) THEN
+        RETURN (FALSE);
+      END_IF;
+    END_REPEAT;
+    RETURN (TRUE);
+  END_FUNCTION;
+
+FUNCTION acyclic_action_directive_relationship (relation : action_directive_relationship; relatives : SET [1:?] of action_directive; specific_relation : STRING):BOOLEAN;
+	LOCAL
+		x : SET of action_directive_relationship;
+	END_LOCAL;
+	IF relation.relating IN relatives THEN
+		RETURN (FALSE);
+	END_IF;
+	x := QUERY(adr <* bag_to_set(USEDIN(relation.relating, 'ACTION_SCHEMA.' + 'ACTION_DIRECTIVE_RELATIONSHIP.' + 'RELATED')) | specific_relation IN TYPEOF(adr));
+	REPEAT i := 1 TO HIINDEX(x);
+		IF NOT acyclic_action_directive_relationship(x[i], relatives + relation.relating, specific_relation) THEN
+	 		RETURN (FALSE);
+		END_IF;
+	END_REPEAT;
+	RETURN (TRUE);
+END_FUNCTION;
+
+END_SCHEMA;
+
+(*"action_schema.__published_in"
+ISO 10303-41:2025 ED8
+*)
+
+(*"action_schema.__identifier"
+ISO/TC 184/SC 4/WG 12 N10693
+*)
+
+(*"action_schema.__supersedes"
+ISO/TC 184/SC 4/WG 12 N10230
+*)
+
+(*"action_schema.__status"
+IS
+*)
+
+(*"action_schema.__title"
+fundamentals_of_product_description_and_support
+*)
+
+
+(*"action_schema"
+The subject of the *action_schema* is the description of actions, the reasons for these actions, and the status of these actions.
+
+[example]
+====
+Reasons for action include evolving user requirements, manufacturing problems and difficulties that arise when a product is in use.
+====
+
+*)
+(*"action_schema.__fund_cons"
+
+Action information can be attached to any aspect of product data.
+
+*)
+(*"action_schema.__expressg"
+[[action_schemaexpg1]]
+[.svgmap]
+====
+image::action_schemaexpg1.svg[]
+
+* <<express:basic_attribute_schema>>; 1
+* <<express:action_schema>>; 2
+* <<express:support_resource_schema>>; 3
+====
+
+*)
+(*"action_schema.__expressg"
+[[action_schemaexpg2]]
+[.svgmap]
+====
+image::action_schemaexpg2.svg[]
+
+* <<express:action_schema.as_name_attribute_select>>; 1
+* <<express:action_schema.as_description_attribute_select>>; 2
+* <<express:action_schema.as_id_attribute_select>>; 3
+* <<express:action_schema.as_role_select>>; 4
+* <<express:action_schema.supported_item>>; 5
+* <<express:support_resource_schema.identifier>>; 6
+* <<express:support_resource_schema.label>>; 7
+* <<express:support_resource_schema.label>>; 8
+* <<express:support_resource_schema.label>>; 9
+* <<express:support_resource_schema.identifier>>; 10
+* <<express:support_resource_schema.text>>; 11
+* <<express:support_resource_schema.text>>; 12
+* <<express:basic_attribute_schema.id_attribute_select>>; 13
+* <<express:support_resource_schema.label>>; 14
+* <<express:support_resource_schema.text>>; 15
+* <<express:support_resource_schema.label>>; 16
+* <<express:support_resource_schema.text>>; 17
+* <<express:basic_attribute_schema.description_attribute_select>>; 18
+* <<express:support_resource_schema.label>>; 19
+* <<express:basic_attribute_schema.object_role>>; 20
+* <<express:support_resource_schema.text>>; 21
+* <<express:basic_attribute_schema.name_attribute_select>>; 22
+* <<express:basic_attribute_schema.role_select>>; 23
+* <<express:support_resource_schema.label>>; 24
+* <<express:support_resource_schema.identifier>>; 25
+* <<express:support_resource_schema.label>>; 26
+* <<express:support_resource_schema.text>>; 27
+* <<express:support_resource_schema.label>>; 28
+* <<express:support_resource_schema.label>>; 29
+* <<express:support_resource_schema.text>>; 30
+* <<express:support_resource_schema.text>>; 31
+* <<express:support_resource_schema.label>>; 32
+* <<express:support_resource_schema.label>>; 33
+* <<express:support_resource_schema.label>>; 34
+* <<express:support_resource_schema.text>>; 35
+* <<express:support_resource_schema.text>>; 36
+* <<express:support_resource_schema.label>>; 37
+* <<express:action_schema.action_resource_relationship>>; 38
+* <<express:action_schema.action_directive_relationship>>; 39
+* <<express:action_schema.action_resource_type>>; 40
+* <<express:action_schema.action_method_relationship>>; 41
+* <<express:action_schema.action_status>>; 42
+* <<express:action_schema.action_directive>>; 43
+* <<express:action_schema.directed_action>>; 44
+* <<express:action_schema.directed_action_assignment>>; 45
+* <<express:action_schema.action>>; 46
+* <<express:action_schema.action_request_solution>>; 47
+* <<express:action_schema.action_request_status>>; 48
+* <<express:action_schema.action_resource>>; 49
+* <<express:action_schema.action_relationship>>; 50
+* <<express:action_schema.versioned_action_request>>; 51
+* <<express:action_schema.versioned_action_request_relationship>>; 52
+* <<express:action_schema.action_method>>; 53
+* <<express:action_schema.executed_action>>; 54
+====
+*)
+
+(*"action_schema.supported_item"
+The **supported_item** allows for the designation of an <<express:action_schema.action_directive,action_directive>>, an <<express:action_schema.action,action>>, or an <<express:action_schema.action_method,action_method>>.
+*)
+
+
+(*"action_schema.supported_item.__note"
+This specifies the use of an <<express:action_schema.action_resource,action_resource>>.
+*)
+
+(*"action_schema.action"
+An **action** is the identification of the occurrence of an activity and a description of its result.
+
+An **action** identifies an activity that has taken place, is taking place, or is expected to take place in the future.
+
+An action has a definition that is specified by an <<express:action_schema.action_method,action_method>>.
+*)
+
+(*"action_schema.action.__example"
+Change, distilling, design, a process to drill a hole, and a task such as training someone are examples of actions.
+*)
+
+(*"action_schema.action.__note"
+In particular application domains, terms such as task, process, activity, operation, and event may be synonyms for *action*.
+*)
+
+(*"action_schema.action.name"
+the <<express:support_resource_schema.label,label>> by which the **action** is known.
+*)
+
+
+(*"action_schema.action.description"
+the <<express:support_resource_schema.text,text>> that characterizes the **action**. The value of the attribute need not be specified.
+*)
+
+
+(*"action_schema.action.chosen_method"
+the <<express:action_schema.action_method,action_method>> that specifies the procedure selected to carry out the **action** and a description of the results of that **action**.
+*)
+
+
+(*"action_schema.action.id"
+the <<express:support_resource_schema.identifier,identifier>> that distinguishes the **action**.
+*)
+
+
+(*"action_schema.action.id.__note"
+This attribute is an enhancement to the definition of *action* using a method that is upwardly compatible with ISO 10303-41:1994.
+*)
+
+(*"action_schema.action.id.__note"
+The meaning of this attribute can be defined in the annotated EXPRESS schemas that use or specialize this entity, or in an agreement of common understanding between the partners sharing this information.
+*)
+
+(*"action_schema.action.id.__note"
+The context in which id is used as a discriminating characteristic can be identified in an annotated Express schema that uses or specializes this entity, or by default, in an agreement of common understanding between partners sharing this information.
+*)
+
+(*"action_schema.action.wr:WR1"
+Each **action** shall be the <<express:basic_attribute_schema.id_attribute.identified_item,identified_item>> in at most one <<express:basic_attribute_schema.id_attribute,id_attribute>>.
+*)
+
+
+(*"action_schema.action.wr:WR1.__note"
+The <<express:basic_attribute_schema.id_attribute,id_attribute>> data type is defined in <<express:basic_attribute_schema,basic_attribute_schema>> of this document.
+*)
+
+(*"action_schema.action.wr:WR1.__note"
+A template for constraining the population of the entity data types defined in the <<express:basic_attribute_schema,basic_attribute_schema>> is described in annex E.
+*)
+
+(*"action_schema.action_directive"
+An **action_directive** is an authoritative instrument that provides directions to achieve the specified results.
+*)
+
+(*"action_schema.action_directive.__example"
+ISO Directives Part 3 provides guidance for the development of standards documents within ISO.
+*)
+
+(*"action_schema.action_directive.analysis"
+an informal description of the results of the analysis that was carried out on the elements of the requests set. The request sets are the <<express:action_schema.versioned_action_request,versioned_action_request>>s referenced in the requests attribute.
+*)
+
+
+(*"action_schema.action_directive.analysis.__note"
+The reason that different requests are satisfied by the *action_directive* could be recorded in this attribute.
+*)
+
+(*"action_schema.action_directive.comment"
+an informal description of any other pertinent information.
+*)
+
+
+(*"action_schema.action_directive.description"
+the <<express:support_resource_schema.text,text>> that characterizes the **action_directive**. The value of the attribute need not be specified.
+*)
+
+
+(*"action_schema.action_directive.name"
+the <<express:support_resource_schema.label,label>> by which the **action_directive** is known.
+*)
+
+
+(*"action_schema.action_directive.requests"
+a set of <<express:action_schema.versioned_action_request,versioned_action_request>> entity data types that defines the expected results.
+*)
+
+
+(*"action_schema.action_method"
+An **action_method** is the definition of an activity. This definition includes the activity's objectives and effects.
+*)
+
+(*"action_schema.action_method.__example"
+For the <<express:action_schema.action,action>> whose name attribute is 'serve dinner', the name attribute of related instance of *action_method* could be 'cook by recipe' or 'purchase takeout food'.
+*)
+
+(*"action_schema.action_method.__note"
+This definition may be the basis for actions or the solution for action requests.
+*)
+
+(*"action_schema.action_method.name"
+the <<express:support_resource_schema.label,label>> by which the **action_method** is known.
+*)
+
+
+(*"action_schema.action_method.description"
+the <<express:support_resource_schema.text,text>> that characterizes the **action_method**. The value of the attribute need not be specified.
+*)
+
+
+(*"action_schema.action_method.consequence"
+an informal description of the effects of the **action_method**.
+*)
+
+
+(*"action_schema.action_method.purpose"
+an informal description of the objectives of the **action_method**.
+*)
+
+
+(*"action_schema.action_method_relationship"
+An **action_method_relationship** is a relationship between two instances of the entity data type <<express:action_schema.action_method,action_method>> and provides an identification and description of this relationship.
+*)
+
+
+(*"action_schema.action_method_relationship.__note"
+The role of *action_method_relationship* can be defined in the annotated EXPRESS schemas that use or specialize this entity, or by default, in an agreement of common understanding between the partners sharing this information.
+*)
+
+(*"action_schema.action_method_relationship.__note"
+This entity, together with the <<express:action_schema.action_method,action_method>> entity, is based on the relationship template that is described in annex E.3.
+*)
+
+(*"action_schema.action_method_relationship.__note"
+This entity may be used to define a procedural relationship among constituent activities.
+*)
+
+(*"action_schema.action_method_relationship.name"
+the <<express:support_resource_schema.label,label>> by which the **action_method_relationship** is known.
+*)
+
+
+(*"action_schema.action_method_relationship.description"
+the <<express:support_resource_schema.text,text>> that characterizes the **action_method_relationship**. The value of the attribute need not be specified.
+*)
+
+
+(*"action_schema.action_method_relationship.relating_method"
+one of the instances of <<express:action_schema.action_method,action_method>> that is a part of the relationship.
+*)
+
+
+(*"action_schema.action_method_relationship.relating_method.__note"
+The meaning of this attribute can be defined in the annotated EXPRESS schemas that use or specialize this entity, or in an agreement of common understanding between the partners sharing this information.
+*)
+
+(*"action_schema.action_method_relationship.related_method"
+the other instance of <<express:action_schema.action_method,action_method>> that is a part of the relationship. If one element of the relationship is dependent upon the other this attribute shall be the dependent one.
+*)
+
+
+(*"action_schema.action_method_relationship.related_method.__note"
+The meaning of this attribute can be defined in the annotated EXPRESS schemas that use or specialize this entity, or in an agreement of common understanding between the partners sharing this information.
+*)
+
+(*"action_schema.action_relationship"
+An **action_relationship** is a relationship between two instances of the entity data type <<express:action_schema.action,action>> and provides an identification and description of this relationship.
+*)
+
+
+(*"action_schema.action_relationship.__note"
+The role of *action_relationship* can be defined in the annotated EXPRESS schemas that use or specialize this entity, or by default, in an agreement of common understanding between the partners sharing this information.
+*)
+
+(*"action_schema.action_relationship.name"
+the <<express:support_resource_schema.label,label>> by which the **action_relationship** is known.
+*)
+
+
+(*"action_schema.action_relationship.description"
+the <<express:support_resource_schema.text,text>> that characterizes the **action_relationship**. The value of the attribute need not be specified.
+*)
+
+
+(*"action_schema.action_relationship.relating_action"
+one of the instances of <<express:action_schema.action,action>> that is a part of the relationship.
+*)
+
+
+(*"action_schema.action_relationship.relating_action.__note"
+The meaning of this attribute can be defined in the annotated EXPRESS schemas that use or specialize this entity, or in an agreement of common understanding between the partners sharing this information.
+*)
+
+(*"action_schema.action_relationship.related_action"
+the other instance of <<express:action_schema.action,action>> that is a part of the relationship. If one element of the relationship is dependent upon the other this attribute shall be the dependent one.
+*)
+
+
+(*"action_schema.action_relationship.related_action.__note"
+The meaning of this attribute can be defined in the annotated EXPRESS schemas that use or specialize this entity, or in an agreement of common understanding between the partners sharing this information.
+*)
+
+(*"action_schema.action_request_solution"
+An **action_request_solution** is an association between a <<express:action_schema.versioned_action_request,versioned_action_request>> and an <<express:action_schema.action_method,action_method>> that is a potential solution for the request.
+*)
+
+
+(*"action_schema.action_request_solution.method"
+the <<express:action_schema.action_method,action_method>> that is a potential solution.
+*)
+
+
+(*"action_schema.action_request_solution.request"
+the <<express:action_schema.versioned_action_request,versioned_action_request>> for which a solution is specified.
+*)
+
+
+(*"action_schema.action_request_solution.description"
+the <<express:support_resource_schema.text,text>> that characterizes the **action_request_solution**.
+*)
+
+
+(*"action_schema.action_request_solution.description.__note"
+This attribute is an upwardly compatible addition to *action_request_solution* as specified in ISO 10303-41:1994.
+*)
+
+(*"action_schema.action_request_solution.name"
+the <<express:support_resource_schema.label,label>> by which the **action_request_solution** is known.
+*)
+
+
+(*"action_schema.action_request_solution.name.__note"
+This attribute is an upwardly compatible addition to *action_request_solution* as specified in ISO 10303-41:1994.
+*)
+
+(*"action_schema.action_request_solution.wr:WR1"
+Each **action_request_solution** shall be the <<express:basic_attribute_schema.description_attribute.described_item,described_item>> in at most one <<express:basic_attribute_schema.description_attribute,description_attribute>>.
+*)
+
+
+(*"action_schema.action_request_solution.wr:WR1.__note"
+The <<express:basic_attribute_schema.description_attribute,description_attribute>> data type is defined in <<express:basic_attribute_schema,basic_attribute_schema>> of this document.
+*)
+
+(*"action_schema.action_request_solution.wr:WR2"
+Each **action_request_solution** shall be the <<express:basic_attribute_schema.name_attribute.named_item,named_item>> in at most one <<express:basic_attribute_schema.name_attribute,name_attribute>>.
+*)
+
+
+(*"action_schema.action_request_solution.wr:WR2.__note"
+The <<express:basic_attribute_schema.name_attribute,name_attribute>> data type is defined in <<express:basic_attribute_schema,basic_attribute_schema>> of this document.
+*)
+
+(*"action_schema.action_request_solution.wr:WR2.__note"
+A template for constraining the population of the entity data types defined in the <<express:basic_attribute_schema,basic_attribute_schema>> is described in annex E.
+*)
+
+(*"action_schema.action_request_status"
+An **action_request_status** is the association of a status with a <<express:action_schema.versioned_action_request,versioned_action_request>>.
+*)
+
+
+(*"action_schema.action_request_status.assigned_request"
+the <<express:action_schema.versioned_action_request,versioned_action_request>> to which the **status** applies.
+*)
+
+
+(*"action_schema.action_request_status.status"
+the <<express:support_resource_schema.label,label>> that provides a user interpretable designation for the level of completion of the action.
+*)
+
+
+(*"action_schema.action_request_status.status.__note"
+The meaning of this attribute can be defined in the annotated EXPRESS schemas that use or specialize this entity, or in an agreement of common understanding between the partners sharing this information.
+*)
+
+(*"action_schema.action_resource"
+An **action_resource** is a thing that is identified as being needed to carry out an action.
+*)
+
+
+(*"action_schema.action_resource.description"
+the <<express:support_resource_schema.text,text>> that characterizes the **action_resource**. The value of the attribute need not be specified.
+*)
+
+
+(*"action_schema.action_resource.kind"
+the <<express:action_schema.action_resource_type,action_resource_type>> that specifies the sort of **action_resource** that is being used.
+*)
+
+
+(*"action_schema.action_resource.name"
+the <<express:support_resource_schema.label,label>> by which the **action_resource** is known.
+*)
+
+
+(*"action_schema.action_resource.usage"
+a set of <<express:action_schema.supported_item,supported_item>>s for which the **action_resource** is used.
+*)
+
+
+(*"action_schema.action_resource_relationship"
+An **action_resource_relationship** is a relationship between two instances of the entity data type <<express:action_schema.action_resource,action_resource>> and provides an identification and description of this relationship.
+*)
+
+
+(*"action_schema.action_resource_relationship.__note"
+The role of *action_resource_relationship* can be defined in the annotated EXPRESS schemas that use or specialize this entity, or by default, in an agreement of common understanding between the partners sharing this information.
+*)
+
+(*"action_schema.action_resource_relationship.__note"
+This entity, together with the <<express:action_schema.action_resource,action_resource>> entity, is based on the relationship template that is described in annex E.3.
+*)
+
+(*"action_schema.action_resource_relationship.description"
+the <<express:support_resource_schema.text,text>> that characterizes the **action_resource_relationship**. The value of the attribute need not be specified.
+*)
+
+
+(*"action_schema.action_resource_relationship.name"
+the <<express:support_resource_schema.label,label>> by which the **action_resource_relationship** is known.
+*)
+
+
+(*"action_schema.action_resource_relationship.related_resource"
+the other instance of <<express:action_schema.action_resource,action_resource>> that is a part of the relationship. If one element of the relationship is dependent upon the other this attribute shall be the dependent one.
+*)
+
+
+(*"action_schema.action_resource_relationship.related_resource.__note"
+The meaning of this attribute can be defined in the annotated EXPRESS schemas that use or specialize this entity, or in an agreement of common understanding between the partners sharing this information.
+*)
+
+(*"action_schema.action_resource_relationship.relating_resource"
+one of the instances of <<express:action_schema.action_resource,action_resource>> that is a part of the relationship.
+*)
+
+
+(*"action_schema.action_resource_relationship.relating_resource.__note"
+The meaning of this attribute can be defined in the annotated EXPRESS schemas that use or specialize this entity, or in an agreement of common understanding between the partners sharing this information.
+*)
+
+(*"action_schema.action_resource_type"
+An **action_resource_type** is the identification of the kind of <<express:action_schema.action_resource,action_resource>> needed to carry out an action.
+*)
+
+(*"action_schema.action_resource_type.__example"
+This entity may be used to specify the kind of tool needed to perform a process operation.
+*)
+
+(*"action_schema.action_resource_type.name"
+the <<express:support_resource_schema.label,label>> by which the **action_resource_type** is known.
+*)
+
+
+(*"action_schema.action_status"
+An **action_status** is the association of a status with an <<express:action_schema.executed_action,executed_action>>.
+*)
+
+
+(*"action_schema.action_status.__note"
+Information about the date and time may be associated with the *action_status* through the use of <<express:management_resources_schema.date_assignment,date_assignment>>, <<express:management_resources_schema.date_and_time_assignment,date_and_time_assignment>>, or <<express:management_resources_schema.time_assignment,time_assignment>>.
+*)
+
+(*"action_schema.action_status.assigned_action"
+the <<express:action_schema.executed_action,executed_action>> to which the status applies.
+*)
+
+
+(*"action_schema.action_status.status"
+the <<express:support_resource_schema.label,label>> that provides a user interpretable designation for the level of completion of the action.
+*)
+
+(*"action_schema.action_status.status.__example"
+Terms such as 'pending', 'completed', or 'scheduled' are examples of status.
+*)
+
+(*"action_schema.action_status.status.__note"
+The meaning of this attribute can be defined in the annotated EXPRESS schemas that use or specialize this entity, or in an agreement of common understanding between the partners sharing this information.
+*)
+
+(*"action_schema.directed_action"
+A **directed_action** is a type of <<express:action_schema.executed_action,executed_action>> that is governed by an <<express:action_schema.action_directive,action_directive>>.
+*)
+
+(*"action_schema.directed_action.__example"
+A *directed_action* could be the inspection of a building as directed by city officials according to the city building codes for earthquake safety. The action is the inspection of the building. The directive is issued by city officials guided by the city building codes. In an application protocol, the building authority may be associated with an <<express:management_resources_schema.organization_assignment,organization_assignment>>. The building codes may be associated with a <<express:management_resources_schema.document_reference,document_reference>>.
+*)
+
+(*"action_schema.directed_action.directive"
+the <<express:action_schema.action_directive,action_directive>> that governs the **directed_action**.
+*)
+
+
+(*"action_schema.directed_action_assignment"
+A **directed_action_assignment** is an association of a <<express:action_schema.directed_action,directed_action>> with product data.
+*)
+
+
+(*"action_schema.directed_action_assignment.assigned_directed_action"
+the instance of the **directed_action** entity data that is to be associated with product data.
+*)
+
+
+(*"action_schema.directed_action_assignment.role"
+the **object_role** that specifies the purpose of the association of the **directed_action_assignment** with product data.
+*)
+
+
+(*"action_schema.directed_action_assignment.wr:WR1"
+Each **directed_action_assignment** shall be **item_with_role** in at most one <<express:basic_attribute_schema.role_association,role_association>>.
+*)
+
+
+(*"action_schema.executed_action"
+An **executed_action** is a type of <<express:action_schema.action,action>> that is completed, partially completed, or just identified. It may but need not have status information associated with it.
+*)
+
+(*"action_schema.executed_action.__example"
+An *executed_action* could be to 'paint the office' with a status of 'scheduled'. The action is 'paint the office'. The status further qualifies the action as 'planned', 'scheduled', or 'completed'.
+*)
+
+(*"action_schema.executed_action.__note"
+The role of *executed_action* can be defined in the annotated EXPRESS schemas that use or specialize this entity, or by default, in an agreement of common understanding between the partners sharing this information.
+*)
+
+(*"action_schema.executed_action.__note"
+Status information is associated to *executed_action* through <<express:action_schema.action_status,action_status>>.
+*)
+
+(*"action_schema.versioned_action_request"
+A **versioned_action_request** is a specification of a desired result.
+*)
+
+
+(*"action_schema.versioned_action_request.__note"
+The desired result being identified and described may be obtained through one of more <<express:action_schema.action_method,action_method>>s.
+*)
+
+(*"action_schema.versioned_action_request.id"
+the <<express:support_resource_schema.identifier,identifier>> that distinguishes the **versioned_action_request**.
+*)
+
+
+(*"action_schema.versioned_action_request.id.__note"
+The meaning of this attribute can be defined in the annotated EXPRESS schemas that use or specialize this entity, or in an agreement of common understanding between the partners sharing this information.
+*)
+
+(*"action_schema.versioned_action_request.id.__note"
+The context in which id is used as a discriminating characteristic can be identified in an annotated Express schema that uses or specializes this entity, or by default, in an agreement of common understanding between partners sharing this information.
+*)
+
+(*"action_schema.versioned_action_request.version"
+the identification of the version of the **versioned_action_request**. The value of the attribute need not be specified.
+*)
+
+
+(*"action_schema.versioned_action_request.purpose"
+an informal description of the reason for the **versioned_action_request**.
+*)
+
+
+(*"action_schema.versioned_action_request.description"
+the <<express:support_resource_schema.text,text>> that characterizes the **versioned_action_request**. The value of the attribute need not be specified.
+*)
+
+
+(*"action_schema.versioned_action_request_relationship"
+A **versioned_action_request_relationship** is a relationship between two <<express:action_schema.versioned_action_request,versioned_action_request>> objects.
+*)
+
+(*"action_schema.versioned_action_request_relationship.__example"
+Two <<express:action_schema.versioned_action_request,versioned_action_request>> objects may be related if they address similar problems.
+*)
+(*"action_schema.versioned_action_request_relationship.__example"
+A <<express:action_schema.versioned_action_request,versioned_action_request>> may be a version of a work request. It might be related to a different version of the work request using a *versioned_action_request_relationship*.
+*)
+
+(*"action_schema.versioned_action_request_relationship.id"
+the <<express:support_resource_schema.identifier,identifier>> that distinguishes the **versioned_action_request_relationship**.
+*)
+
+
+(*"action_schema.versioned_action_request_relationship.name"
+the <<express:support_resource_schema.label,label>> by which the **versioned_action_request_relationship** is known.
+*)
+
+
+(*"action_schema.versioned_action_request_relationship.description"
+the <<express:support_resource_schema.text,text>> that characterizes the **versioned_action_request_relationship**. The value of this attribute need not be specified.
+*)
+
+
+(*"action_schema.versioned_action_request_relationship.relating_versioned_action_request"
+one of the instances of <<express:action_schema.versioned_action_request,versioned_action_request>> that is a part of the relationship.
+*)
+
+
+(*"action_schema.versioned_action_request_relationship.relating_versioned_action_request.__note"
+The meaning of this attribute can be defined in the annotated EXPRESS schemas that use or specialize this entity, or in an agreement of common understanding between the partners sharing this information.
+*)
+
+(*"action_schema.versioned_action_request_relationship.related_versioned_action_request"
+the other instance of <<express:action_schema.versioned_action_request,versioned_action_request>> that is a part of the relationship. If one element of the relationship is dependent upon the other, this attribute shall be the dependent one.
+*)
+
+
+(*"action_schema.versioned_action_request_relationship.related_versioned_action_request.__note"
+The meaning of this attribute can be defined in the annotated EXPRESS schemas that use or specialize this entity, or in an agreement of common understanding between the partners sharing this information.
+*)
+
+(*"action_schema.action_directive_relationship"
+An **action_directive_relationship** is a relationship between two <<express:action_schema.action_directive,action_directive>> objects.
+*)
+
+
+(*"action_schema.action_directive_relationship.name"
+shall be unique within a population of **action_directive_relationship**.
+*)
+
+
+(*"action_schema.action_directive_relationship.description"
+the text or the set of texts that provide further information about the **action_directive_relationship**. The value of this attribute need not be specified.
+*)
+
+
+(*"action_schema.action_directive_relationship.related"
+the other object of <<express:action_schema.action_directive,action_directive>> that is part of the relationship.
+*)
+
+
+(*"action_schema.action_directive_relationship.relating"
+one object of <<express:action_schema.action_directive,action_directive>> that is part of the relationship.
+*)
+
+
+(*"action_schema.action_directive_relationship.relation_type"
+the meaning of the relationship.
+*)
+
+
+(*"action_schema.action_directive_relationship.wr:WR1"
+A **action_directive_relationship** shall not participate in its own definition.
+*)
+
+
+(*"action_schema.acyclic_action_method_relationship"
+The **acyclic_action_method_relationship** function determines whether the graph of instances of the entity data type <<express:action_schema.action_method,action_method>> that contains relation as one of its links contains a cycle. This function may be used to evaluate either an <<express:action_schema.action_method_relationship,action_method_relationship>> or any of its subtypes.
+
+The function returns TRUE if no cycle has been detected. Otherwise it returns FALSE.
+*)
+
+
+(*"action_schema.acyclic_action_method_relationship.__note"
+The algorithm of the function is explained in annex E.2.
+*)
+
+(*"action_schema.acyclic_action_method_relationship.__note"
+This function is not used in this schema. It is defined here because other ISO 10303 integrated resources and application protocols that use the <<express:action_schema.action_method_relationship,action_method_relationship>> entity include rules that use this function.
+*)
+
+(*"action_schema.acyclic_action_method_relationship.relation"
+(input) the candidate <<express:action_schema.action_method_relationship,action_method_relationship>> to be checked.
+*)
+
+
+(*"action_schema.acyclic_action_method_relationship.relatives"
+(input) the set of instances of the entity data type <<express:action_schema.action_method,action_method>> that the function is searching for in the <<express:action_schema.action_method_relationship.relating_method,relating_method>> parameter of the relation argument.
+*)
+
+
+(*"action_schema.acyclic_action_method_relationship.specific_relation"
+(input) the fully qualified name of a subtype of the <<express:action_schema.action_method_relationship,action_method_relationship>> entity.
+*)
+
+
+(*"action_schema.acyclic_action_relationship"
+The **acyclic_action_relationship** function determines whether the graph of instances of the entity data type <<express:action_schema.action,action>> that contains relation as one of its links contains a cycle. This function may be used to evaluate either an <<express:action_schema.action_relationship,action_relationship>> or any of its subtypes.
+
+The function returns TRUE if no cycle has been detected. Otherwise it returns FALSE.
+*)
+
+
+(*"action_schema.acyclic_action_relationship.__note"
+The algorithm of the function is explained in annex E.2.
+*)
+
+(*"action_schema.acyclic_action_relationship.__note"
+This function is not used in this schema. It is defined here because other ISO 10303 integrated resources and application protocols that use the <<express:action_schema.action_relationship,action_relationship>> entity include rules that use this function.
+*)
+
+(*"action_schema.acyclic_action_relationship.relation"
+(input) the candidate <<express:action_schema.action_relationship,action_relationship>> to be checked.
+*)
+
+
+(*"action_schema.acyclic_action_relationship.relatives"
+(input) the set of instances of the entity data type <<express:action_schema.action,action>> for which the function is searching in the <<express:action_schema.action_relationship.relating_action,relating_action>> parameter of the relation argument.
+*)
+
+
+(*"action_schema.acyclic_action_relationship.specific_relation"
+(input) the fully qualified name of a subtype of the <<express:action_schema.action_relationship,action_relationship>> entity.
+*)
+
+
+(*"action_schema.acyclic_action_resource_relationship"
+The **acyclic_action_resource_relationship** function determines whether the graph of instances of the entity data type <<express:action_schema.action_resource,action_resource>> that contains relation as one of its links contains a cycle. This function may be used to evaluate either an <<express:action_schema.action_resource_relationship,action_resource_relationship>> or any of its subtypes.
+
+The function returns TRUE if no cycle has been detected. Otherwise it returns FALSE.
+*)
+
+
+(*"action_schema.acyclic_action_resource_relationship.__note"
+The algorithm of the function is explained in annex E.2.
+*)
+
+(*"action_schema.acyclic_action_resource_relationship.__note"
+This function is not used in this schema. It is defined here because other ISO 10303 integrated resources and application protocols that use the <<express:action_schema.action_resource_relationship,action_resource_relationship>> entity include rules that use this function.
+*)
+
+(*"action_schema.acyclic_action_resource_relationship.relation"
+(input) the candidate <<express:action_schema.action_resource_relationship,action_resource_relationship>> to be checked.
+*)
+
+
+(*"action_schema.acyclic_action_resource_relationship.relatives"
+(input) the set of instances of the entity data type <<express:action_schema.action_resource,action_resource>> that the function is searching for in the <<express:action_schema.action_resource_relationship.relating_resource,relating_resource>> parameter of the relation argument.
+*)
+
+
+(*"action_schema.acyclic_action_resource_relationship.specific_relation"
+(input) the fully qualified name of a subtype of the <<express:action_schema.action_resource_relationship,action_resource_relationship>> entity.
+*)
+
+
+(*"action_schema.acyclic_versioned_action_request_relationship"
+The **acyclic_versioned_action_request_relationship** function determines whether the graph of instances of the entity data type <<express:action_schema.versioned_action_request,versioned_action_request>> that contains relation as one of its links contains a cycle. This function may be used to evaluate either an <<express:action_schema.action_resource_relationship,action_resource_relationship>> or any of its subtypes.
+
+The function returns TRUE if no cycle has been detected. Otherwise it returns FALSE.
+*)
+
+
+(*"action_schema.acyclic_versioned_action_request_relationship.__note"
+The algorithm of the function is explained in annex E.2.
+*)
+
+(*"action_schema.acyclic_versioned_action_request_relationship.__note"
+This function is not used in this schema. It is defined here because other ISO 10303 integrated resources and application protocols that use the <<express:action_schema.versioned_action_request_relationship,versioned_action_request_relationship>> entity include rules that use this function.
+*)
+
+(*"action_schema.acyclic_versioned_action_request_relationship.relation"
+(input) the candidate <<express:action_schema.versioned_action_request_relationship,versioned_action_request_relationship>> to be checked.
+*)
+
+
+(*"action_schema.acyclic_versioned_action_request_relationship.relatives"
+(input) the set of instances of the entity data type <<express:action_schema.versioned_action_request,versioned_action_request>> that the function is searching for in the <<express:action_schema.versioned_action_request_relationship.relating_versioned_action_request,relating_versioned_action_request>> parameter of the relation argument.
+*)
+
+
+(*"action_schema.acyclic_versioned_action_request_relationship.specific_relation"
+(input) the fully qualified name of a subtype of the <<express:action_schema.versioned_action_request_relationship,versioned_action_request_relationship>> entity.
+*)
+
+
+(*"action_schema.acyclic_action_directive_relationship"
+The **acyclic_action_directive_relationship** function determines whether the graph of instance of the entity data type <<express:action_schema.action_directive,action_directive>> that contains relation as one of its links contains a cycle. This function may be used to evaluate either a <<express:action_schema.action_directive_relationship,action_directive_relationship>> or any of its subtypes.
+
+The function returns TRUE if no cycle has been detected. Otherwise it returns FALSE.
+*)
+
+
+(*"action_schema.acyclic_action_directive_relationship.__note"
+The algorithm of the function is explained in annex E.2.
+*)
+
+(*"action_schema.acyclic_action_directive_relationship.relation"
+(input) the candidate <<express:action_schema.action_directive_relationship,action_directive_relationship>> to be checked.
+*)
+
+
+(*"action_schema.acyclic_action_directive_relationship.relatives"
+(input) the set of instances of the entity data type <<express:action_schema.action_directive,action_directive>> for which the function is searching in the <<express:action_schema.action_directive_relationship.relating,relating>> parameter of the relation argument.
+*)
+
+
+(*"action_schema.acyclic_action_directive_relationship.specific_relation"
+(input) the fully qualified name of a subtype of the <<express:action_schema.action_directive_relationship,action_directive_relationship>> entity.
+*)
+
+
+(*"action_schema.__schema_file"
+data/resource_docs/fundamentals_of_product_description_and_support/resource.xml
+*)

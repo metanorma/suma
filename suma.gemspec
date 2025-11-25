@@ -33,12 +33,15 @@ Gem::Specification.new do |spec| # rubocop:disable Metrics/BlockLength
   spec.executables = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "expressir", "~> 2.1"
+  spec.add_dependency "expressir", ">= 2.1.29", "~> 2.1"
+  spec.add_dependency "glossarist", "~> 2.3.7"
   spec.add_dependency "lutaml-model", "~> 0.7"
-  spec.add_dependency "metanorma-cli"
+  spec.add_dependency "metanorma"
   spec.add_dependency "plurimath"
   spec.add_dependency "ruby-progressbar"
-  spec.add_dependency "terminal-table", "~> 3.0"
+  spec.add_dependency "rubyzip", "~> 2.3"
+  spec.add_dependency "table_tennis"
   spec.add_dependency "thor", ">= 0.20"
+
   spec.metadata["rubygems_mfa_required"] = "true"
 end

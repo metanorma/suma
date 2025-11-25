@@ -2,11 +2,12 @@
 
 require "thor"
 require_relative "../utils"
+require "expressir"
 
 module Suma
   module Cli
-    # Links command for managing EXPRESS links
-    class Links < Thor
+    # ValidateLinks command for managing EXPRESS links
+    class ValidateLinks < Thor
       desc "extract_and_validate SCHEMAS_FILE DOCUMENTS_PATH [OUTPUT_FILE]",
            "Extract and validate express links without creating intermediate file"
       def extract_and_validate(schemas_file = "schemas-srl.yml",
@@ -43,7 +44,6 @@ module Suma
         # Lazy-load dependencies only when this command is actually used
         require "expressir"
         require "ruby-progressbar"
-        require_relative "../schema_config"
         require "pathname"
       end
 
@@ -74,7 +74,7 @@ module Suma
 
       # Load and initialize the schemas configuration
       def load_schemas_config(schemas_file_path)
-        schemas_config = Suma::SchemaConfig::Config.from_yaml(File.read(schemas_file_path))
+        schemas_config = Expressir::SchemaManifest.from_yaml(File.read(schemas_file_path))
         # Ensure the config is initialized with the correct path to resolve relative paths
         schemas_config.set_initial_path(schemas_file_path.to_s)
         schemas_config

@@ -29,6 +29,22 @@ RSpec.describe Suma::Cli do
       expect(File.exist?("collection-output.yaml")).to be true
     end
 
+    it "exports schemas during build successfully" do
+      require "suma/cli/build"
+      require "suma/schema_exporter"
+      require "suma/export_standalone_schema"
+
+      # This test verifies that SchemaExporter can correctly reference
+      # ExportStandaloneSchema during the build process.
+      expect do
+        Suma::Cli::Build.start(["build", "metanorma.yml"])
+      end.not_to raise_error
+
+      # Verify that the build completed successfully
+      expect(File.exist?("schemas.yml")).to be true
+      expect(File.exist?("collection-output.yaml")).to be true
+    end
+
     it "raises ENOENT for missing manifest" do
       require "suma/cli/build"
       build = Suma::Cli::Build.new

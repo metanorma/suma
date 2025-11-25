@@ -3,13 +3,14 @@
 require_relative "express_schema"
 require_relative "schema_attachment"
 require_relative "schema_document"
-require_relative "schema_config"
+require_relative "schema_exporter"
+require "expressir"
 require_relative "utils"
 
 module Suma
   class SchemaCollection
-    attr_accessor :config, :schemas, :docs, :output_path_docs, :output_path_schemas,
-                  :manifest
+    attr_accessor :config, :schemas, :docs, :output_path_docs,
+                  :output_path_schemas, :manifest
 
     def initialize(config: nil, config_yaml: nil, output_path_docs: nil,
                    output_path_schemas: nil, manifest: nil)
@@ -17,9 +18,11 @@ module Suma
       @docs = {}
       @schema_name_to_docs = {}
       @output_path_docs = Pathname.new(output_path_docs || Dir.pwd).expand_path
-      @output_path_schemas = Pathname.new(output_path_schemas || Dir.pwd).expand_path
+      @output_path_schemas = Pathname.new(
+        output_path_schemas || Dir.pwd,
+      ).expand_path
       @config = config
-      @config ||= config_yaml && SchemaConfig::Config.from_file(config_yaml)
+      @config ||= config_yaml && Expressir::SchemaManifest.from_file(config_yaml)
       @manifest = manifest
     end
 
@@ -62,11 +65,17 @@ module Suma
       end
     end
 
+    # rubocop:disable Metrics/MethodLength
     def compile
       finalize
-      schemas.each_pair do |_schema_id, entry|
-        entry.save_exp
-      end
+
+      # Use SchemaExporter for schema export
+      exporter = SchemaExporter.new(
+        schemas: @config.schemas,
+        output_path: @output_path_schemas,
+        options: { annotations: false },
+      )
+      exporter.export
 
       docs.each_pair do |_schema_id, entry|
         entry.compile
@@ -98,5 +107,6 @@ module Suma
       # end
       # pp results
     end
+    # rubocop:enable Metrics/MethodLength
   end
 end
