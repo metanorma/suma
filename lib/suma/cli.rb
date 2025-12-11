@@ -3,6 +3,7 @@
 require "thor"
 require_relative "thor_ext"
 require_relative "cli/validate"
+require "expressir"
 require "expressir/cli"
 
 module Suma
