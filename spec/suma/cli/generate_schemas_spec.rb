@@ -63,123 +63,127 @@ RSpec.describe Suma::Cli::GenerateSchemas do
   end
 
   context "when input is valid" do
-    result_without_options = <<~RESULT
-      ---
-      schemas:
-        Ap210_electronic_assembly_interconnect_and_packaging_design_arm:
-          path: spec/fixtures/schemas/modules/ap210_electronic_assembly_interconnect_and_packaging_design/arm.exp
-        Ap210_electronic_assembly_interconnect_and_packaging_design_arm_lf:
-          path: spec/fixtures/schemas/modules/ap210_electronic_assembly_interconnect_and_packaging_design/arm_lf.exp
-        Ap210_electronic_assembly_interconnect_and_packaging_design_mim:
-          path: spec/fixtures/schemas/modules/ap210_electronic_assembly_interconnect_and_packaging_design/mim.exp
-        Ap210_electronic_assembly_interconnect_and_packaging_design_mim_lf:
-          path: spec/fixtures/schemas/modules/ap210_electronic_assembly_interconnect_and_packaging_design/mim_lf.exp
-        action_schema:
-          path: spec/fixtures/schemas/resources/action_schema/action_schema.exp
-        application_context_schema:
-          path: spec/fixtures/schemas/resources/application_context_schema/application_context_schema.exp
-        approval_schema:
-          path: spec/fixtures/schemas/resources/approval_schema/approval_schema.exp
-        basic_attribute_schema:
-          path: spec/fixtures/schemas/resources/basic_attribute_schema/basic_attribute_schema.exp
-        certification_schema:
-          path: spec/fixtures/schemas/resources/certification_schema/certification_schema.exp
-        contract_schema:
-          path: spec/fixtures/schemas/resources/contract_schema/contract_schema.exp
-        date_time_schema:
-          path: spec/fixtures/schemas/resources/date_time_schema/date_time_schema.exp
-        document_schema:
-          path: spec/fixtures/schemas/resources/document_schema/document_schema.exp
-        effectivity_schema:
-          path: spec/fixtures/schemas/resources/effectivity_schema/effectivity_schema.exp
-        experience_schema:
-          path: spec/fixtures/schemas/resources/experience_schema/experience_schema.exp
-        external_reference_schema:
-          path: spec/fixtures/schemas/resources/external_reference_schema/external_reference_schema.exp
-        group_schema:
-          path: spec/fixtures/schemas/resources/group_schema/group_schema.exp
-        language_schema:
-          path: spec/fixtures/schemas/resources/language_schema/language_schema.exp
-        location_schema:
-          path: spec/fixtures/schemas/resources/location_schema/location_schema.exp
-        management_resources_schema:
-          path: spec/fixtures/schemas/resources/management_resources_schema/management_resources_schema.exp
-        measure_schema:
-          path: spec/fixtures/schemas/resources/measure_schema/measure_schema.exp
-        person_organization_schema:
-          path: spec/fixtures/schemas/resources/person_organization_schema/person_organization_schema.exp
-        product_definition_schema:
-          path: spec/fixtures/schemas/resources/product_definition_schema/product_definition_schema.exp
-        product_property_definition_schema:
-          path: spec/fixtures/schemas/resources/product_property_definition_schema/product_property_definition_schema.exp
-        product_property_representation_schema:
-          path: spec/fixtures/schemas/resources/product_property_representation_schema/product_property_representation_schema.exp
-        qualifications_schema:
-          path: spec/fixtures/schemas/resources/qualifications_schema/qualifications_schema.exp
-        security_classification_schema:
-          path: spec/fixtures/schemas/resources/security_classification_schema/security_classification_schema.exp
-        support_resource_schema:
-          path: spec/fixtures/schemas/resources/support_resource_schema/support_resource_schema.exp
-        uuid_attribute_schema:
-          path: spec/fixtures/schemas/resources/uuid_attribute_schema/uuid_attribute_schema.exp
-    RESULT
+    let(:result_without_options) do
+      <<~RESULT
+        ---
+        schemas:
+          Ap210_electronic_assembly_interconnect_and_packaging_design_arm:
+            path: spec/fixtures/schemas/modules/ap210_electronic_assembly_interconnect_and_packaging_design/arm.exp
+          Ap210_electronic_assembly_interconnect_and_packaging_design_arm_lf:
+            path: spec/fixtures/schemas/modules/ap210_electronic_assembly_interconnect_and_packaging_design/arm_lf.exp
+          Ap210_electronic_assembly_interconnect_and_packaging_design_mim:
+            path: spec/fixtures/schemas/modules/ap210_electronic_assembly_interconnect_and_packaging_design/mim.exp
+          Ap210_electronic_assembly_interconnect_and_packaging_design_mim_lf:
+            path: spec/fixtures/schemas/modules/ap210_electronic_assembly_interconnect_and_packaging_design/mim_lf.exp
+          action_schema:
+            path: spec/fixtures/schemas/resources/action_schema/action_schema.exp
+          application_context_schema:
+            path: spec/fixtures/schemas/resources/application_context_schema/application_context_schema.exp
+          approval_schema:
+            path: spec/fixtures/schemas/resources/approval_schema/approval_schema.exp
+          basic_attribute_schema:
+            path: spec/fixtures/schemas/resources/basic_attribute_schema/basic_attribute_schema.exp
+          certification_schema:
+            path: spec/fixtures/schemas/resources/certification_schema/certification_schema.exp
+          contract_schema:
+            path: spec/fixtures/schemas/resources/contract_schema/contract_schema.exp
+          date_time_schema:
+            path: spec/fixtures/schemas/resources/date_time_schema/date_time_schema.exp
+          document_schema:
+            path: spec/fixtures/schemas/resources/document_schema/document_schema.exp
+          effectivity_schema:
+            path: spec/fixtures/schemas/resources/effectivity_schema/effectivity_schema.exp
+          experience_schema:
+            path: spec/fixtures/schemas/resources/experience_schema/experience_schema.exp
+          external_reference_schema:
+            path: spec/fixtures/schemas/resources/external_reference_schema/external_reference_schema.exp
+          group_schema:
+            path: spec/fixtures/schemas/resources/group_schema/group_schema.exp
+          language_schema:
+            path: spec/fixtures/schemas/resources/language_schema/language_schema.exp
+          location_schema:
+            path: spec/fixtures/schemas/resources/location_schema/location_schema.exp
+          management_resources_schema:
+            path: spec/fixtures/schemas/resources/management_resources_schema/management_resources_schema.exp
+          measure_schema:
+            path: spec/fixtures/schemas/resources/measure_schema/measure_schema.exp
+          person_organization_schema:
+            path: spec/fixtures/schemas/resources/person_organization_schema/person_organization_schema.exp
+          product_definition_schema:
+            path: spec/fixtures/schemas/resources/product_definition_schema/product_definition_schema.exp
+          product_property_definition_schema:
+            path: spec/fixtures/schemas/resources/product_property_definition_schema/product_property_definition_schema.exp
+          product_property_representation_schema:
+            path: spec/fixtures/schemas/resources/product_property_representation_schema/product_property_representation_schema.exp
+          qualifications_schema:
+            path: spec/fixtures/schemas/resources/qualifications_schema/qualifications_schema.exp
+          security_classification_schema:
+            path: spec/fixtures/schemas/resources/security_classification_schema/security_classification_schema.exp
+          support_resource_schema:
+            path: spec/fixtures/schemas/resources/support_resource_schema/support_resource_schema.exp
+          uuid_attribute_schema:
+            path: spec/fixtures/schemas/resources/uuid_attribute_schema/uuid_attribute_schema.exp
+      RESULT
+    end
 
-    result_with_options = <<~RESULT
-      ---
-      schemas:
-        Ap210_electronic_assembly_interconnect_and_packaging_design_arm:
-          path: spec/fixtures/schemas/modules/ap210_electronic_assembly_interconnect_and_packaging_design/arm.exp
-        Ap210_electronic_assembly_interconnect_and_packaging_design_mim:
-          path: spec/fixtures/schemas/modules/ap210_electronic_assembly_interconnect_and_packaging_design/mim.exp
-        action_schema:
-          path: spec/fixtures/schemas/resources/action_schema/action_schema.exp
-        application_context_schema:
-          path: spec/fixtures/schemas/resources/application_context_schema/application_context_schema.exp
-        approval_schema:
-          path: spec/fixtures/schemas/resources/approval_schema/approval_schema.exp
-        basic_attribute_schema:
-          path: spec/fixtures/schemas/resources/basic_attribute_schema/basic_attribute_schema.exp
-        certification_schema:
-          path: spec/fixtures/schemas/resources/certification_schema/certification_schema.exp
-        contract_schema:
-          path: spec/fixtures/schemas/resources/contract_schema/contract_schema.exp
-        date_time_schema:
-          path: spec/fixtures/schemas/resources/date_time_schema/date_time_schema.exp
-        document_schema:
-          path: spec/fixtures/schemas/resources/document_schema/document_schema.exp
-        effectivity_schema:
-          path: spec/fixtures/schemas/resources/effectivity_schema/effectivity_schema.exp
-        experience_schema:
-          path: spec/fixtures/schemas/resources/experience_schema/experience_schema.exp
-        external_reference_schema:
-          path: spec/fixtures/schemas/resources/external_reference_schema/external_reference_schema.exp
-        group_schema:
-          path: spec/fixtures/schemas/resources/group_schema/group_schema.exp
-        language_schema:
-          path: spec/fixtures/schemas/resources/language_schema/language_schema.exp
-        location_schema:
-          path: spec/fixtures/schemas/resources/location_schema/location_schema.exp
-        management_resources_schema:
-          path: spec/fixtures/schemas/resources/management_resources_schema/management_resources_schema.exp
-        measure_schema:
-          path: spec/fixtures/schemas/resources/measure_schema/measure_schema.exp
-        person_organization_schema:
-          path: spec/fixtures/schemas/resources/person_organization_schema/person_organization_schema.exp
-        product_definition_schema:
-          path: spec/fixtures/schemas/resources/product_definition_schema/product_definition_schema.exp
-        product_property_definition_schema:
-          path: spec/fixtures/schemas/resources/product_property_definition_schema/product_property_definition_schema.exp
-        product_property_representation_schema:
-          path: spec/fixtures/schemas/resources/product_property_representation_schema/product_property_representation_schema.exp
-        qualifications_schema:
-          path: spec/fixtures/schemas/resources/qualifications_schema/qualifications_schema.exp
-        security_classification_schema:
-          path: spec/fixtures/schemas/resources/security_classification_schema/security_classification_schema.exp
-        support_resource_schema:
-          path: spec/fixtures/schemas/resources/support_resource_schema/support_resource_schema.exp
-        uuid_attribute_schema:
-          path: spec/fixtures/schemas/resources/uuid_attribute_schema/uuid_attribute_schema.exp
-    RESULT
+    let(:result_with_options) do
+      <<~RESULT
+        ---
+        schemas:
+          Ap210_electronic_assembly_interconnect_and_packaging_design_arm:
+            path: spec/fixtures/schemas/modules/ap210_electronic_assembly_interconnect_and_packaging_design/arm.exp
+          Ap210_electronic_assembly_interconnect_and_packaging_design_mim:
+            path: spec/fixtures/schemas/modules/ap210_electronic_assembly_interconnect_and_packaging_design/mim.exp
+          action_schema:
+            path: spec/fixtures/schemas/resources/action_schema/action_schema.exp
+          application_context_schema:
+            path: spec/fixtures/schemas/resources/application_context_schema/application_context_schema.exp
+          approval_schema:
+            path: spec/fixtures/schemas/resources/approval_schema/approval_schema.exp
+          basic_attribute_schema:
+            path: spec/fixtures/schemas/resources/basic_attribute_schema/basic_attribute_schema.exp
+          certification_schema:
+            path: spec/fixtures/schemas/resources/certification_schema/certification_schema.exp
+          contract_schema:
+            path: spec/fixtures/schemas/resources/contract_schema/contract_schema.exp
+          date_time_schema:
+            path: spec/fixtures/schemas/resources/date_time_schema/date_time_schema.exp
+          document_schema:
+            path: spec/fixtures/schemas/resources/document_schema/document_schema.exp
+          effectivity_schema:
+            path: spec/fixtures/schemas/resources/effectivity_schema/effectivity_schema.exp
+          experience_schema:
+            path: spec/fixtures/schemas/resources/experience_schema/experience_schema.exp
+          external_reference_schema:
+            path: spec/fixtures/schemas/resources/external_reference_schema/external_reference_schema.exp
+          group_schema:
+            path: spec/fixtures/schemas/resources/group_schema/group_schema.exp
+          language_schema:
+            path: spec/fixtures/schemas/resources/language_schema/language_schema.exp
+          location_schema:
+            path: spec/fixtures/schemas/resources/location_schema/location_schema.exp
+          management_resources_schema:
+            path: spec/fixtures/schemas/resources/management_resources_schema/management_resources_schema.exp
+          measure_schema:
+            path: spec/fixtures/schemas/resources/measure_schema/measure_schema.exp
+          person_organization_schema:
+            path: spec/fixtures/schemas/resources/person_organization_schema/person_organization_schema.exp
+          product_definition_schema:
+            path: spec/fixtures/schemas/resources/product_definition_schema/product_definition_schema.exp
+          product_property_definition_schema:
+            path: spec/fixtures/schemas/resources/product_property_definition_schema/product_property_definition_schema.exp
+          product_property_representation_schema:
+            path: spec/fixtures/schemas/resources/product_property_representation_schema/product_property_representation_schema.exp
+          qualifications_schema:
+            path: spec/fixtures/schemas/resources/qualifications_schema/qualifications_schema.exp
+          security_classification_schema:
+            path: spec/fixtures/schemas/resources/security_classification_schema/security_classification_schema.exp
+          support_resource_schema:
+            path: spec/fixtures/schemas/resources/support_resource_schema/support_resource_schema.exp
+          uuid_attribute_schema:
+            path: spec/fixtures/schemas/resources/uuid_attribute_schema/uuid_attribute_schema.exp
+      RESULT
+    end
 
     it "generates SCHEMA_MANIFEST_FILE without options" do
       test_subject.invoke(
