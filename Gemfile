@@ -8,6 +8,7 @@ gemspec
 gem "canon"
 gem "metanorma-standoc"
 gem "nokogiri"
+gem "openssl", "~> 3.0"
 gem "rake"
 gem "rspec"
 gem "rubocop"
