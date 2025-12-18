@@ -55,7 +55,8 @@ module Suma
       else
         # For manifest schemas, preserve directory structure
         # Note: @output_path already contains the category (resources/modules)
-        File.join(@output_path, @id, File.basename(@path))
+        parent_dir = File.basename(File.dirname(@path))
+        File.join(@output_path, parent_dir, File.basename(@path))
       end
     end
 
