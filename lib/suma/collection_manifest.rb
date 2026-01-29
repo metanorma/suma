@@ -88,7 +88,7 @@ module Suma
       # have it showing up in output.
       self.index = false
 
-      [self, added_collection_manifest]
+      [self, added_collection_manifest(schema_output_path)]
     end
 
     def remove_schemas_only_sources
@@ -111,7 +111,7 @@ module Suma
       end
     end
 
-    def added_collection_manifest
+    def added_collection_manifest(schema_output_path)
       doc = CollectionConfig.from_file(file)
       doc_id = doc.bibdata.id
 
@@ -126,7 +126,7 @@ module Suma
         CollectionManifest.new(
           title: doc_id,
           type: "document",
-          entry: entries,
+          entry: entries(schema_output_path),
         ),
       ]
 
