@@ -102,18 +102,21 @@ module Suma
       "xml"
     end
 
-    # #.gsub(/[\n\r]{2,}/, '')
+    # can't use
+    # :lutaml-express-index: schemas; #{path_to_schema_yaml};
+    # because that kills any possibility of this file hyperlinking to other schemas
     def to_adoc(path_to_schema_yaml)
       <<~HEREDOC
         = #{@schema.id}
-        :lutaml-express-index: schemas; #{path_to_schema_yaml};
+        :lutaml-express-index: schemas; ../../schemas-srl.yml
         :bare: true
         :mn-document-class: iso
         :mn-output-extensions: xml,html
 
         [lutaml_express_liquid,schemas,context]
         ----
-        {% for schema in context.schemas %}
+        {% assign array = context.schemas | where: "id", "#{@id}" %}
+        {% for schema in array %}
 
         [[#{@id}]]
         [%unnumbered,type=express]
@@ -121,7 +124,7 @@ module Suma
 
         [source%unnumbered]
         --
-        {{ schema.formatted }}
+        {{ schema.formatted_hyperlinked }}
         --
         {% endfor %}
         ----
