@@ -35,7 +35,7 @@ Gem::Specification.new do |spec| # rubocop:disable Metrics/BlockLength
 
   spec.add_dependency "expressir", ">= 2.1.29", "~> 2.1"
   spec.add_dependency "glossarist", "~> 2.3.7"
-  spec.add_dependency "lutaml-model", "~> 0.7"
+  spec.add_dependency "lutaml-model", "~> 0.8.0"
   spec.add_dependency "metanorma", "~> 2.3"
   spec.add_dependency "plurimath"
   spec.add_dependency "ruby-progressbar"

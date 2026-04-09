@@ -11,10 +11,11 @@ module Suma
       attribute :href, :string
 
       xml do
-        root "img.area"
-        map_attribute "shape", to: :shape
-        map_attribute "coords", to: :coords
-        map_attribute "href", to: :href
+        element "img.area"
+        ordered
+        map_attribute "shape", to: :shape, render_empty: true
+        map_attribute "coords", to: :coords, render_empty: true
+        map_attribute "href", to: :href, render_empty: true
       end
     end
 
@@ -24,8 +25,9 @@ module Suma
       attribute :areas, FigureXmlImageArea, collection: true
 
       xml do
-        root "img"
-        map_attribute "src", to: :src
+        element "img"
+        ordered
+        map_attribute "src", to: :src, render_empty: true
         map_element "img.area", to: :areas
       end
     end
@@ -37,9 +39,10 @@ module Suma
       attribute :img, FigureXmlImage
 
       xml do
-        root "imgfile.content"
-        map_attribute "module", to: :module
-        map_attribute "file", to: :file
+        element "imgfile.content"
+        ordered
+        map_attribute "module", to: :module, render_empty: true
+        map_attribute "file", to: :file, render_empty: true
         map_element "img", to: :img
       end
     end
