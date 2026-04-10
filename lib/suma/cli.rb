@@ -3,6 +3,7 @@
 require "thor"
 require_relative "thor_ext"
 require_relative "cli/validate"
+require_relative "cli/check_svg_quality"
 require "expressir"
 require "expressir/cli"
 
@@ -96,6 +97,44 @@ module Suma
 
       desc "validate SUBCOMMAND ...ARGS", "Validate express documents"
       subcommand "validate", Cli::Validate
+
+      desc "check_svg_quality [PATH]",
+           "Check SVG quality and sort by severity (critical files first)"
+      option :pattern, type: :string, default: Cli::CheckSvgQuality::DEFAULT_PATTERN,
+                       desc: "Glob pattern for finding SVG files"
+      option :profile, type: :string,
+                       default: Cli::CheckSvgQuality::DEFAULT_PROFILE,
+                       desc: "Validation profile to use (metanorma, svg_1_2_rfc, etc.)"
+      option :format, type: :string, default: "terminal",
+                      desc: "Output format: terminal, yaml, json"
+      option :output, type: :string, aliases: "-o",
+                      desc: "Output file path"
+      option :min_errors, type: :numeric,
+                          desc: "Minimum error count threshold"
+      option :limit, type: :numeric, default: nil,
+                     desc: "Maximum number of files to show (default: unlimited)"
+      option :sort, type: :string, default: "errors",
+                    desc: "Sort by: errors (most errors first) or quality (lowest scores first)"
+      option :progress, type: :boolean, default: false,
+                        desc: "Show progress during processing"
+      option :summary_only, type: :boolean, default: false,
+                            desc: "Show only summary"
+      def check_svg_quality(path = Cli::CheckSvgQuality::DATA_PATH)
+        require_relative "cli/check_svg_quality"
+
+        analyzer = Cli::CheckSvgQuality.new(
+          pattern: options[:pattern],
+          profile: options[:profile],
+          format: options[:format],
+          output: options[:output],
+          min_errors: options[:min_errors],
+          summary_only: options[:summary_only],
+          progress: options[:progress],
+          limit: options[:limit],
+          sort: options[:sort],
+        )
+        analyzer.run(path)
+      end
 
       desc "expressir SUBCOMMAND ...ARGS", "Expressir commands"
       subcommand "expressir", Expressir::Cli

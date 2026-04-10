@@ -864,6 +864,137 @@ For complete documentation of all Expressir commands and options, see the
 https://github.com/lutaml/expressir[Expressir documentation].
 
 
+=== Check SVG quality command
+
+==== General
+
+The `check_svg_quality` command validates SVG files for conformance and quality
+using the https://github.com/claricle/svg_conform[svg_conform] library. It supports
+both batch directory scanning and single file analysis.
+
+By default, it uses the `metanorma` profile which allows raster images
+(PNG, JPEG) and other features specific to Metanorma documentation.
+
+[source,sh]
+----
+$ suma check_svg_quality [PATH] [options]
+----
+
+Parameters:
+
+`PATH`:: Path to directory containing SVG files or a single SVG file.
+Defaults to `schemas` directory.
+
+==== Batch directory scanning
+
+When given a directory, it scans all SVG files and produces a quality report
+sorted by error count (most problematic files first).
+
+[example]
+.Check all SVG files in schemas directory
+[source,sh]
+----
+$ suma check_svg_quality ../iso-10303/schemas
+----
+
+.Output
+----
+🔍 Scanning 3878 SVG files...
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  🔍 SVG Quality Report    Sorted by error count (most first)             ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+  📊 OVERVIEW
+
+    ● Total Files   : 3878
+    ● Valid         : 3845 ✅
+    ● Invalid      : 33 ❌
+    ...
+
+  💥 CRITICAL QUALITY (2 files)
+
+    ✗   0/100    813 errors  schemas/resources/action_schema/action_schemaexpg2.svg
+    ✗  25/100    156 errors  schemas/modules/activity/mimexpg1.svg
+----
+
+==== Single file analysis
+
+When given a path to a single SVG file, it shows detailed error breakdown
+grouped by requirement type.
+
+[example]
+.Analyze a single SVG file
+[source,sh]
+----
+$ suma check_svg_quality schemas/resources/action_schema/action_schemaexpg2.svg
+----
+
+.Output
+----
+📄 SVG Quality Report: schemas/resources/action_schema/action_schemaexpg2.svg
+
+  Valid: NO ❌
+  Errors: 813
+
+  📋 Error Details
+
+  style (56 occurrences)
+    - Style property 'enable-background' removed
+    - Style property 'overflow' removed
+    ...
+
+  allowed_elements (109 occurrences)
+    - The element 'image' is not allowed as a child of 'svg'
+    ...
+
+  color_restrictions (108 occurrences)
+    - Color 'rgb(33, 128, 255)' in style property 'fill' is not allowed
+    ...
+----
+
+Options:
+
+`--profile=PROFILE`:: Validation profile to use (default: `metanorma`).
+Other options: `svg_1_2_rfc`, `svg_1_2_rfc_with_rdf`, `base`, `lucid_fix`
+
+`--sort=MODE`:: Sort order: `errors` (most errors first, default) or
+`quality` (lowest quality scores first)
+
+`--format=FORMAT`:: Output format: `terminal` (default), `json`, or `yaml`
+
+`--output=PATH`, `-o PATH`:: Write output to file instead of stdout
+
+`--min_errors=N`:: Filter to show only files with at least N errors
+
+`--limit=N`:: Limit output to top N files
+
+`--progress`:: Show progress during batch scanning
+
+`--summary-only`:: Show only summary, not individual file details
+
+[example]
+.Check with custom profile
+[source,sh]
+----
+$ suma check_svg_quality schemas/ --profile svg_1_2_rfc
+----
+
+[example]
+.Output as JSON
+[source,sh]
+----
+$ suma check_svg_quality schemas/ --format json --output quality_report.json
+----
+
+[example]
+.Show only files with 100+ errors
+[source,sh]
+----
+$ suma check_svg_quality schemas/ --min_errors 100
+----
+
+
 == Usage: Ruby
 
 === General
