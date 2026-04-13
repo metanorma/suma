@@ -5,26 +5,30 @@ directives:
   - documents-external 
   # keeps them outside
 bibdata:
-  title:
-    type: title-main
-    language: en
-    content: ISO Collection 1
   type: collection
-  docid:
-    type: iso
-    id: ISO 12345
-  edition: 
-    content: 1
+  title:
+    - type: title-main
+      language: en
+      content: ISO Collection 1
+  docidentifier:
+    - content: ISO 12345
+      type: iso
+      primary: true
   date:
     - type: created
-      value: "2020"
+      at: "2020"
     - type: issued
-      value: "2020"
+      at: "2020"
+  edition:
+    content: "1"
   copyright:
-    owner:
-      name: International Organization for Standardization
-      abbreviation: ISO
-    from: "2020"
+    - from: "2020"
+      owner:
+        - organization:
+            name:
+              - content: International Organization for Standardization
+            abbreviation:
+              content: ISO
 manifest:
   level: collection
   title: ISO Collection 

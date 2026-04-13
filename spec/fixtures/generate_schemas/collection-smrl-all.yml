@@ -4,43 +4,52 @@ directives:
 - flavor: iso
 coverpage: cover-bibdata.html
 bibdata:
+  type: standard
   title:
     - type: intro
       language: en
       content: Industrial automation systems and integration -- Product data representation and exchange
     - type: intro
       language: fr
-      content: Systèmes d'automatisation industrielle et intégration -- Représentation et échange de données de produits
+      content: "Syst\xE8mes d'automatisation industrielle et int\xE9gration -- Repr\xE9sentation et \xE9change de donn\xE9es de produits"
     - type: main
       language: en
       content: STEP Resource and Modules Library (SMRL)
     - type: main
       language: fr
-      content: Bibliothèque de ressources et modules STEP (SMRL)
-  type: standard
-  edition: 12
-  docid:
-    - type: SMRL
-      id: 2025(E)
+      content: "Biblioth\xE8que de ressources et modules STEP (SMRL)"
+  docidentifier:
+    - content: 2025(E)
+      type: SMRL
+      primary: true
   date:
     - type: published
-      value: 2025
-  ics:
-    - code: 25.040.40
-  price_code: XL
+      at: "2025"
+  edition:
+    content: "12"
   copyright:
-     owner:
-       name: International Organization for Standardization
-       abbreviation: ISO
-       url: www.iso.org
-     from: 2025
+    - from: "2025"
+      owner:
+        - organization:
+            name:
+              - content: International Organization for Standardization
+            abbreviation:
+              content: ISO
+            uri:
+              - content: www.iso.org
   contributor:
-    - organization:
-        name: International Organization for Standardization
-        url: www.iso.org
-        abbreviation: ISO
-      role:
-        type: publisher
+    - role:
+        - type: publisher
+      organization:
+        name:
+          - content: International Organization for Standardization
+        abbreviation:
+          content: ISO
+        uri:
+          - content: www.iso.org
+  ext:
+    ics:
+      - code: "25.040.40"
 format:
   - html
   - xml
