@@ -47,12 +47,12 @@ module Suma
         # Validate schema files exist
         unless File.exist?(trial_schema)
           say "Error: Trial schema not found: #{trial_schema}", :red
-          exit 1
+          abort
         end
 
         unless File.exist?(reference_schema)
           say "Error: Reference schema not found: #{reference_schema}", :red
-          exit 1
+          abort
         end
 
         # Check eengine availability
@@ -61,7 +61,7 @@ module Suma
           say "Install eengine following instructions at:"
           say "  macOS: https://github.com/expresslang/homebrew-eengine"
           say "  Linux: https://github.com/expresslang/eengine-releases"
-          exit 1
+          abort
         end
 
         # Auto-detect repo roots
@@ -100,7 +100,7 @@ module Suma
 
         unless result[:xml_path]
           say "Error: XML output not found", :red
-          exit 1
+          abort
         end
 
         if options[:verbose]
@@ -114,7 +114,7 @@ module Suma
         FileUtils.rm_rf(out_dir) if out_dir && File.directory?(out_dir)
         say "Error: #{e.message}", :red
         say e.stderr if e.respond_to?(:stderr) && options[:verbose]
-        exit 1
+        abort
       end
 
       private

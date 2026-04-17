@@ -5,6 +5,8 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in suma.gemspec
 gemspec
 
+eval_gemfile("Gemfile.devel") rescue nil
+
 gem "canon"
 gem "metanorma-standoc"
 gem "nokogiri"

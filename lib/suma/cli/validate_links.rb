@@ -80,7 +80,7 @@ module Suma
         schemas_config
       rescue StandardError => e
         puts "Error loading schemas file: #{e.message}"
-        exit(1)
+        abort
       end
 
       # Collect paths to all schema files from the config
@@ -170,7 +170,7 @@ module Suma
           repo
         rescue StandardError => e
           puts "Error loading schemas: #{e.message}"
-          exit(1)
+          abort
         end
       end
 
