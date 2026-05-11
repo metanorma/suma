@@ -8,6 +8,7 @@ require_relative "suma/processor"
 
 module Suma
   class Error < StandardError; end
-
-  # Your code goes here...
+  class SchemaNotFoundError < Error; end
+  class CompilationError < Error; end
+  class EengineNotAvailableError < Error; end
 end

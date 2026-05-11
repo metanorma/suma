@@ -85,24 +85,10 @@ module Suma
       HEREDOC
     end
 
-    #  ////
-    #   TODO:
-    #   % render "templates/entities", schema: schema, schema_id: schema.id, things: schema.entities, thing_prefix: root_thing_prefix, depth: 2 %
-    #
-    #   % render "templates/subtype_constraints", schema_id: schema.id, things: schema.subtype_constraints, thing_prefix: root_thing_prefix, depth: 2 %
-    #
-    #   % render "templates/functions", schema_id: schema.id, things: schema.functions, thing_prefix: root_thing_prefix, depth: 2 %
-    #
-    #   % render "templates/procedures", schema_id: schema.id, things: schema.procedures, thing_prefix: root_thing_prefix, depth: 2 %
-    #
-    #   % render "templates/rules", schema_id: schema.id, things: schema.rules, thing_prefix: root_thing_prefix, depth: 2 %
-    #   ////
-
     def output_extensions
       "xml"
     end
 
-    # #.gsub(/[\n\r]{2,}/, '')
     def to_adoc(path_to_schema_yaml)
       <<~HEREDOC
         = #{@schema.id}

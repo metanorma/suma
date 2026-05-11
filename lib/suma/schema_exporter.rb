@@ -2,13 +2,21 @@
 
 require_relative "express_schema"
 require_relative "utils"
-require_relative "export_standalone_schema"
 require "fileutils"
 
 module Suma
   # SchemaExporter exports EXPRESS schemas from a manifest
   # with configurable options for annotations and ZIP packaging
   class SchemaExporter
+    CATEGORY_MAP = {
+      ExpressSchema::Type::RESOURCE => "resources",
+      ExpressSchema::Type::MODULE_ARM => "modules",
+      ExpressSchema::Type::MODULE_MIM => "modules",
+      ExpressSchema::Type::BUSINESS_OBJECT_MODEL => "business_object_models",
+      ExpressSchema::Type::CORE_MODEL => "core_model",
+      ExpressSchema::Type::STANDALONE => ".",
+    }.freeze
+
     attr_reader :schemas, :output_path, :options
 
     def initialize(schemas:, output_path:, options: {})
@@ -43,52 +51,32 @@ module Suma
     end
 
     def export_single_schema(schema)
-      # Check if this is a standalone EXPRESS file
-      # (not from a manifest structure)
-      is_standalone_file = schema.is_a?(ExportStandaloneSchema)
-      schema_output_path = determine_output_path(schema, is_standalone_file)
+      is_standalone = !schema.is_a?(Expressir::SchemaManifestEntry)
+      schema_output_path = determine_output_path(schema, is_standalone)
 
       express_schema = ExpressSchema.new(
         id: schema.id,
         path: schema.path.to_s,
         output_path: schema_output_path,
-        is_standalone_file: is_standalone_file,
+        is_standalone_file: is_standalone,
       )
 
       express_schema.save_exp(with_annotations: options[:annotations])
     end
 
-    def determine_output_path(schema, is_standalone_file)
-      if is_standalone_file
-        # For standalone files, output directly to the root
+    def determine_output_path(schema, is_standalone)
+      if is_standalone
         output_path.to_s
       else
-        # For manifest schemas, preserve directory structure
         category = categorize_schema(schema)
         output_path.join(category).to_s
       end
     end
 
-    # rubocop:disable Metrics/MethodLength
     def categorize_schema(schema)
-      path = schema.path.to_s
-
-      # Check if this is from a manifest structure or a standalone EXPRESS file
-      case path
-      when %r{/resources/}
-        "resources"
-      when %r{/modules/}
-        "modules"
-      when %r{/business_object_models/}
-        "business_object_models"
-      when %r{/core_model/}
-        "core_model"
-      else
-        # standalone EXPRESS file not from a manifest structure
-        "standalone"
-      end
+      type = ExpressSchema::Type.classify(id: schema.id, path: schema.path)
+      CATEGORY_MAP.fetch(type, "standalone")
     end
-    # rubocop:enable Metrics/MethodLength
 
     # rubocop:disable Metrics/MethodLength
     def create_zip_archive

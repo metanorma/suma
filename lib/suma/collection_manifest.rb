@@ -8,7 +8,6 @@ module Suma
     attribute :schemas_only, Lutaml::Model::Type::Boolean
     attribute :entry, CollectionManifest, collection: true,
                                           initialize_empty: true
-    # attribute :schema_source, Lutaml::Model::Type::String
     attr_accessor :schema_config
 
     yaml do
@@ -59,9 +58,9 @@ module Suma
       export_config
     end
 
-    def lookup(attr_sym, match)
-      results = entry.select { |e| e.send(attr_sym) == match }
-      results << self if send(attr_sym) == match
+    def lookup_schemas_only
+      results = entry.select { |e| e.schemas_only }
+      results << self if schemas_only
       results
     end
 

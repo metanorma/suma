@@ -31,16 +31,15 @@ module Suma
       private
 
       def run(manifest, options)
-        # Set schemas_all_path to match metanorma_yaml_path
         schemas_all_path = options[:schemas_all_path] ||
           manifest.gsub("metanorma", "schemas")
 
-        Processor.run(
+        Processor.new(
           metanorma_yaml_path: manifest,
           schemas_all_path: schemas_all_path,
           compile: options[:compile],
           output_directory: "_site",
-        )
+        ).run
       end
 
       def log_error(error)

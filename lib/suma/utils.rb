@@ -3,8 +3,16 @@
 module Suma
   module Utils
     class << self
-      def log(message)
-        puts "[suma] #{message}"
+      attr_writer :output
+
+      def output
+        @output ||= $stderr
+      end
+
+      def log(message, level: :info)
+        return if level == :debug && !ENV["SUMA_DEBUG"]
+
+        output.puts "[suma] #{message}"
       end
     end
   end
