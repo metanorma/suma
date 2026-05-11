@@ -59,7 +59,7 @@ module Suma
     end
 
     def lookup_schemas_only
-      results = entry.select { |e| e.schemas_only }
+      results = entry.select(&:schemas_only)
       results << self if schemas_only
       results
     end

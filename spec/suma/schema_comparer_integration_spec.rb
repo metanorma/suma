@@ -7,7 +7,7 @@ require "tmpdir"
 require "yaml"
 
 RSpec.describe Suma::SchemaComparer do
-  let(:fixtures_dir) { File.expand_path("../../fixtures/compare", __dir__) }
+  let(:fixtures_dir) { File.expand_path("../fixtures/compare", __dir__) }
   let(:schema_v1) { File.join(fixtures_dir, "schema_v1.exp") }
   let(:schema_v2) { File.join(fixtures_dir, "schema_v2.exp") }
   let(:expected_xml) { File.join(fixtures_dir, "expected_comparison.xml") }

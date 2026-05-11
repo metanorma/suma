@@ -14,7 +14,7 @@ RSpec.describe Suma::Processor do
 
       expect(processor.metanorma_yaml_path).to eq("metanorma.yml")
       expect(processor.schemas_all_path).to eq("schemas.yml")
-      expect(processor.compile_flag).to eq(false)
+      expect(processor.compile_flag).to be(false)
       expect(processor.output_directory).to eq("_site")
     end
 
@@ -24,7 +24,7 @@ RSpec.describe Suma::Processor do
         schemas_all_path: "schemas.yml",
       )
 
-      expect(processor.compile_flag).to eq(true)
+      expect(processor.compile_flag).to be(true)
     end
 
     it "defaults output_directory to _site" do

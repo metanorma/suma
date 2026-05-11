@@ -22,7 +22,7 @@ module Suma
 
       PATH_SEGMENTS = {
         "/resources/" => :RESOURCE,
-        "/modules/"   => :MODULE_ARM,
+        "/modules/" => :MODULE_ARM,
         "/core_model/" => :CORE_MODEL,
       }.freeze
 
