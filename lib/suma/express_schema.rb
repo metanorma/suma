@@ -6,6 +6,42 @@ require "expressir"
 
 module Suma
   class ExpressSchema
+    module Type
+      RESOURCE              = :resource
+      MODULE_ARM            = :module_arm
+      MODULE_MIM            = :module_mim
+      BUSINESS_OBJECT_MODEL = :business_object_model
+      CORE_MODEL            = :core_model
+      STANDALONE            = :standalone
+
+      ID_SUFFIXES = {
+        "_arm" => :MODULE_ARM,
+        "_mim" => :MODULE_MIM,
+        "_bom" => :BUSINESS_OBJECT_MODEL,
+      }.freeze
+
+      PATH_SEGMENTS = {
+        "/resources/" => :RESOURCE,
+        "/modules/"   => :MODULE_ARM,
+        "/core_model/" => :CORE_MODEL,
+      }.freeze
+
+      def self.classify(id:, path:)
+        name = id&.downcase || ""
+
+        ID_SUFFIXES.each do |suffix, type|
+          return const_get(type) if name.end_with?(suffix)
+        end
+
+        path_str = path.to_s
+        PATH_SEGMENTS.each do |segment, type|
+          return const_get(type) if path_str.include?(segment)
+        end
+
+        STANDALONE
+      end
+    end
+
     attr_accessor :path, :id, :parsed, :output_path, :is_standalone_file
 
     def initialize(id:, path:, output_path:, is_standalone_file: false)
@@ -16,14 +52,7 @@ module Suma
     end
 
     def type
-      path_str = @path.to_s
-      if path_str.include?("/resources/")
-        "resources"
-      elsif path_str.include?("/modules/")
-        "modules"
-      else
-        "unknown_type"
-      end
+      @type ||= classify
     end
 
     def parsed
@@ -50,11 +79,8 @@ module Suma
 
     def build_output_filename
       if @is_standalone_file
-        # For standalone files, output directly to output_path
         File.join(@output_path, "#{@id}.exp")
       else
-        # For manifest schemas, preserve directory structure
-        # Note: @output_path already contains the category (resources/modules)
         parent_dir = File.basename(File.dirname(@path))
         File.join(@output_path, parent_dir, File.basename(@path))
       end
@@ -65,29 +91,16 @@ module Suma
       schema_type = with_annotations ? "annotated" : "plain"
       Utils.log "Save #{schema_type} schema: #{relative_path}"
 
-      # return if File.exist?(filename_plain)
       FileUtils.mkdir_p(File.dirname(filename_plain))
 
       content = with_annotations ? parsed.to_s(no_remarks: false) : to_plain
       File.write(filename_plain, content)
     end
+
+    private
+
+    def classify
+      Type.classify(id: @id, path: @path)
+    end
   end
 end
-
-# col = Suma::SchemaCollection.new(
-#         config_yaml: 'suma-schemas.yaml',
-#         output_path_docs: 'schema_docs',
-#         output_path_schemas: 'plain_schemas'
-#       )
-
-# docs = col.compile
-
-# paths = col.schemas.map do |schema|
-#   {
-#     plain_schema_path: schema.filename_plain,
-#     schema_doc_path: col.doc_from_schema_name(schema.id).output_xml_path
-#   }
-# end
-
-# Utils.log "COMPILED FILES ARE AT:"
-# pp paths

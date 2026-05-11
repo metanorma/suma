@@ -155,27 +155,57 @@ RSpec.describe Suma::ExpressSchema do
         output_path: output_path,
       )
 
-      expect(schema.type).to eq("resources")
+      expect(schema.type).to eq(:resource)
     end
 
-    it "identifies module schemas" do
+    it "identifies module schemas by path" do
       schema = described_class.new(
-        id: "Activity_arm",
+        id: "Activity",
         path: "schemas/modules/activity/arm.exp",
         output_path: output_path,
       )
 
-      expect(schema.type).to eq("modules")
+      expect(schema.type).to eq(:module_arm)
     end
 
-    it "returns unknown_type for unrecognized paths" do
+    it "identifies module_arm by id suffix" do
+      schema = described_class.new(
+        id: "Activity_arm",
+        path: "some/path/schema.exp",
+        output_path: output_path,
+      )
+
+      expect(schema.type).to eq(:module_arm)
+    end
+
+    it "identifies module_mim by id suffix" do
+      schema = described_class.new(
+        id: "Activity_mim",
+        path: "some/path/schema.exp",
+        output_path: output_path,
+      )
+
+      expect(schema.type).to eq(:module_mim)
+    end
+
+    it "identifies business_object_model by id suffix" do
+      schema = described_class.new(
+        id: "Activity_bom",
+        path: "some/path/schema.exp",
+        output_path: output_path,
+      )
+
+      expect(schema.type).to eq(:business_object_model)
+    end
+
+    it "returns standalone for unrecognized paths" do
       schema = described_class.new(
         id: "custom",
         path: "some/custom/path/schema.exp",
         output_path: output_path,
       )
 
-      expect(schema.type).to eq("unknown_type")
+      expect(schema.type).to eq(:standalone)
     end
   end
 

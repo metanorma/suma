@@ -52,24 +52,20 @@ module Suma
     end
 
     def finalize
-      # Process each schema in @config.schemas
       process_schemas(@config.schemas, SchemaAttachment)
 
-      manifest_entry = @manifest.lookup(:schemas_only, true)
+      manifest_entry = @manifest.lookup_schemas_only
 
       manifest_entry.each do |entry|
         next unless entry.schema_config
 
-        # Process each schema in entry.schema_config.schemas
         process_schemas(entry.schema_config.schemas, SchemaDocument)
       end
     end
 
-    # rubocop:disable Metrics/MethodLength
     def compile
       finalize
 
-      # Use SchemaExporter for schema export
       exporter = SchemaExporter.new(
         schemas: @config.schemas,
         output_path: @output_path_schemas,
@@ -80,33 +76,6 @@ module Suma
       docs.each_pair do |_schema_id, entry|
         entry.compile
       end
-
-      # TODO: make this parallel
-      # Utils.log"Starting Ractor processing"
-      # pool = Ractor.new do
-      #   loop do
-      #     Ractor.yield(Ractor.receive)
-      #   end
-      # end
-      # workers = (1..4).map do |i|
-      #   Ractor.new(pool, name: "r#{i}") do |p|
-      #     loop do
-      #       input = p.take
-      #       Utils.log"compiling in ractor for #{input.filename_adoc}"
-      #       output_value = input.compile
-      #       Ractor.yield(output_value)
-      #     end
-      #   end
-      # end
-      # docs.each do |doc|
-      #   pool.send(doc)
-      # end
-      # results = []
-      # docs.size.times do
-      #   results << Ractor.select(*workers)
-      # end
-      # pp results
     end
-    # rubocop:enable Metrics/MethodLength
   end
 end

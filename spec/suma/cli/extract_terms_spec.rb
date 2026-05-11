@@ -38,7 +38,7 @@ RSpec.describe Suma::Cli::ExtractTerms do
       end.to raise_error(Errno::ENOENT)
     end
 
-    it "raises InvalidSchemaManifestError when file is not valid YAML" do
+    it "raises ManifestValidationError when file is not valid YAML" do
       expect do
         test_subject.invoke(
           :extract_terms,
@@ -47,7 +47,7 @@ RSpec.describe Suma::Cli::ExtractTerms do
             test_output_path,
           ],
         )
-      end.to raise_error(Expressir::InvalidSchemaManifestError)
+      end.to raise_error(Expressir::ManifestValidationError)
     end
 
     it "raises ENOENT error when no files found" do
