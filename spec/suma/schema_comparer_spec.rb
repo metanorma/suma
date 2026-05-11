@@ -7,26 +7,26 @@ require "tmpdir"
 
 RSpec.describe Suma::SchemaComparer do
   let(:fixtures_dir) { File.expand_path("../fixtures/compare", __dir__) }
-  let(:schema_v1) { File.join(fixtures_dir, "schema_v1.exp") }
-  let(:schema_v2) { File.join(fixtures_dir, "schema_v2.exp") }
+  let(:trial_schema) { File.join(fixtures_dir, "schema_v2.exp") }
+  let(:reference_schema) { File.join(fixtures_dir, "schema_v1.exp") }
 
   describe "#compare" do
-    context "input validation" do
+    context "when validating inputs" do
       it "raises SchemaNotFoundError for missing trial schema" do
         allow(Suma::Eengine::Wrapper).to receive(:available?).and_return(true)
-        comparer = described_class.new("nonexistent.exp", schema_v1)
+        comparer = described_class.new("nonexistent.exp", reference_schema)
         expect { comparer.compare }.to raise_error(Suma::SchemaNotFoundError)
       end
 
       it "raises SchemaNotFoundError for missing reference schema" do
         allow(Suma::Eengine::Wrapper).to receive(:available?).and_return(true)
-        comparer = described_class.new(schema_v2, "nonexistent.exp")
+        comparer = described_class.new(trial_schema, "nonexistent.exp")
         expect { comparer.compare }.to raise_error(Suma::SchemaNotFoundError)
       end
 
       it "raises EengineNotAvailableError when eengine is missing" do
         allow(Suma::Eengine::Wrapper).to receive(:available?).and_return(false)
-        comparer = described_class.new(schema_v2, schema_v1)
+        comparer = described_class.new(trial_schema, reference_schema)
         expect { comparer.compare }.to raise_error(Suma::EengineNotAvailableError)
       end
     end
@@ -45,25 +45,22 @@ RSpec.describe Suma::SchemaComparer do
   end
 
   describe "#detect_repo_root" do
-    around do |ex|
-      Dir.mktmpdir do |tmpdir|
-        @tmpdir = tmpdir
-        ex.run
-      end
-    end
+    let(:tmpdir) { Dir.mktmpdir }
+
+    after { FileUtils.rm_rf(tmpdir) }
 
     it "finds .git directory" do
-      FileUtils.mkdir_p(File.join(@tmpdir, ".git"))
-      schema = File.join(@tmpdir, "schemas", "schema.exp")
+      FileUtils.mkdir_p(File.join(tmpdir, ".git"))
+      schema = File.join(tmpdir, "schemas", "schema.exp")
       FileUtils.mkdir_p(File.dirname(schema))
       FileUtils.touch(schema)
 
       comparer = described_class.new(schema, schema)
-      expect(comparer.send(:detect_repo_root, schema)).to eq(@tmpdir)
+      expect(comparer.send(:detect_repo_root, schema)).to eq(tmpdir)
     end
 
     it "falls back to schema directory without .git" do
-      schemas_dir = File.join(@tmpdir, "schemas")
+      schemas_dir = File.join(tmpdir, "schemas")
       FileUtils.mkdir_p(schemas_dir)
       schema = File.join(schemas_dir, "schema.exp")
       FileUtils.touch(schema)

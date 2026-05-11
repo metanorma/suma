@@ -6,7 +6,9 @@ source "https://rubygems.org"
 gemspec
 
 gem "canon"
-gem "metanorma-standoc"
+gem "metanorma", github: "metanorma/metanorma", branch: "main"
+gem "metanorma-plugin-lutaml", path: "../metanorma-plugin-lutaml"
+gem "metanorma-standoc", github: "metanorma/metanorma-standoc", branch: "main"
 gem "nokogiri"
 gem "openssl", "~> 3.0"
 gem "rake"

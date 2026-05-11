@@ -99,6 +99,5 @@ module Suma
     def output_xml_path
       filename_adoc("xml")
     end
-
   end
 end

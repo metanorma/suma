@@ -59,9 +59,9 @@ module Suma
 
       unless Eengine::Wrapper.available?
         raise Suma::EengineNotAvailableError,
-              "eengine not found in PATH. Install from:\n" \
-              "  macOS: https://github.com/expresslang/homebrew-eengine\n" \
-              "  Linux: https://github.com/expresslang/eengine-releases"
+              "eengine not found in PATH. Install from:\n  " \
+              "macOS: https://github.com/expresslang/homebrew-eengine\n  " \
+              "Linux: https://github.com/expresslang/eengine-releases"
       end
     end
 

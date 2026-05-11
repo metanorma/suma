@@ -260,7 +260,7 @@ module Suma
     def starts_with_list?(content)
       return false if content.nil? || content.empty?
 
-      content.match?(/^\s*[\*\-\+]\s+/) || content.match?(/^\s*\d+\.\s+/)
+      content.match?(/^\s*[*\-+]\s+/) || content.match?(/^\s*\d+\.\s+/)
     end
 
     def trim_definition(definition)
