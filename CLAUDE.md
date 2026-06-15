@@ -27,7 +27,8 @@ exe/suma export -o OUTPUT_DIR schema1.yml schema2.exp  # Export schemas (YAML ma
 exe/suma compare TRIAL_SCHEMA REFERENCE_SCHEMA -v VER  # Compare schemas, generate .changes.yaml
 exe/suma reformat PATH                                  # Reformat EXP files (use -r for recursive)
 exe/suma generate-schemas METANORMA_YAML SCHEMAS_YAML  # Generate schema manifest from site manifest
-exe/suma extract-terms SCHEMA_YAML GLOSSARIST_DIR      # Extract terms to Glossarist v2 format
+exe/suma extract-terms SCHEMA_YAML GLOSSARIST_DIR -u URN   # Extract EXPRESS entity concepts to Glossarist v3 format
+exe/suma generate-register SCHEMA_YAML OUT_DIR -u URN --id ID --ref REF  # Generate hierarchical register.yaml from schema manifest
 exe/suma validate links SCHEMAS_FILE DOCS_PATH          # Validate EXPRESS cross-reference links
 ```
 
@@ -43,7 +44,10 @@ exe/suma validate links SCHEMAS_FILE DOCS_PATH          # Validate EXPRESS cross
 
 ### Key classes
 
-- **`ExpressSchema`** — wraps a single EXPRESS schema file; parses via `Expressir::Express::Parser`, can output plain or annotated `.exp`
+- **`ExpressSchema`** — wraps a single EXPRESS schema file; parses via `Expressir::Express::Parser`, can output plain or annotated `.exp`. Includes nested `Type` module for schema classification (resource/module_arm/module_mim/business_object_model/core_model/standalone) based on ID suffixes and path segments
+- **`TermExtractor`** — extracts EXPRESS entity concepts from a schema manifest into Glossarist v3 YAML format. Generates definitions with URN cross-references, processes remarks into notes, and resolves EXPRESS xrefs to URN mentions
+- **`RegisterGenerator`** — generates a Glossarist v3 `register.yaml` with hierarchical sections from a schema manifest. Classifies schemas via `ExpressSchema::Type` (DRY), delegates naming to `SchemaNaming` (OCP), orders resources before modules. Uses the Section model's `children` field for hierarchy
+- **`SchemaNaming`** — pure module that converts EXPRESS schema IDs to human-readable display names. Strips type suffixes (`_schema`/`_arm`/`_mim`/`_bom`), title-cases with acronym preservation (AIC, AEC, BREP, 2D, 3D…), lowercases function words, appends type labels (ARM/MIM)
 - **`SchemaAttachment`** — compiles one schema into a Metanorma `.adoc` document and renders it via `Metanorma::Compile`
 - **`SchemaDocument`** (extends `SchemaAttachment`) — adds cross-reference bookmarks and uses XML-only output
 - **`SchemaCollection`** — orchestrates processing of all schemas from a config
@@ -53,8 +57,21 @@ exe/suma validate links SCHEMAS_FILE DOCS_PATH          # Validate EXPRESS cross
 ### CLI structure
 
 - `Suma::Cli::Core` (Thor subclass) — top-level CLI entrypoint
-- Subcommands delegate to `Cli::Build`, `Cli::Export`, `Cli::Compare`, `Cli::Validate`, `Cli::Reformat`, `Cli::GenerateSchemas`, `Cli::ExtractTerms`, `Cli::ConvertJsdai`
+- Subcommands delegate to `Cli::Build`, `Cli::Export`, `Cli::Compare`, `Cli::Validate`, `Cli::Reformat`, `Cli::GenerateSchemas`, `Cli::ExtractTerms`, `Cli::GenerateRegister`, `Cli::ConvertJsdai`
 - Thor extension (`ThorExt::Start`) adds `-h`/`--help` support and error formatting
+
+### Terminology extraction (extract-terms / generate-register)
+
+The `extract-terms` command reads an EXPRESS schema manifest, parses each `.exp` file via `Expressir`, and emits Glossarist v3 concept YAML with:
+- Entity definitions using URN cross-references (`{{urn:...term,entity data type}}`, `{{urn:...term,entity}}`)
+- Entity remarks processed into notes (first-sentence extraction, redundant note removal, invalid reference filtering)
+- Domain classification via `ExpressSchema::Type` (resource vs application module)
+- Section references for hierarchical grouping
+
+The `generate-register` command reads the same schema manifest and emits `register.yaml` with hierarchical sections:
+- Top-level groups: Resources (133) before Application Modules (1123)
+- Child sections use human-readable names from `SchemaNaming` (e.g. "Resource: Topology", "Module: Activity (ARM)")
+- Parent group IDs are included in concept metadata so the concept-browser can filter by group
 
 ### External dependencies
 
