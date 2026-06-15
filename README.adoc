@@ -39,7 +39,8 @@ $ suma
  Commands:
   suma build METANORMA_SITE_MANIFEST                                  # Build collection specified in site manifest (`metanorma*.yml`)
   suma convert-jsdai XML_FILE IMAGE_FILE OUTPUT_DIR                   # Convert JSDAI XML and image files to SVG and EXP files
-  suma extract-terms SCHEMA_MANIFEST_FILE GLOSSARIST_OUTPUT_PATH      # Extract terms from SCHEMA_MANIFEST_FILE into Glossarist v2 format
+  suma extract-terms SCHEMA_MANIFEST_FILE GLOSSARIST_OUTPUT_PATH      # Extract EXPRESS entity concepts into Glossarist v3 format
+  suma generate-register SCHEMA_MANIFEST_FILE OUTPUT_PATH            # Generate hierarchical register.yaml from schema manifest
   suma generate-schemas METANORMA_MANIFEST_FILE SCHEMA_MANIFEST_FILE  # Generate EXPRESS schema manifest file from Metanorma site manifest
   suma help [COMMAND]                                                 # Describe available commands or one specific command
   suma reformat EXPRESS_FILE_PATH                                     # Reformat EXPRESS files
@@ -299,6 +300,45 @@ $ bundle exec suma extract-terms schemas-activity-modules.yml terms_output
 # => processes only schemas listed in the manifest file
 ----
 ====
+
+
+=== Generate register command
+
+The `suma generate-register` command reads an EXPRESS schema manifest and
+emits a Glossarist v3 `register.yaml` with hierarchical sections. The
+output is used by the concept browser to render a navigable sidebar of
+sections and to resolve concept cross-references.
+
+[source,sh]
+----
+$ suma generate-register SCHEMA_MANIFEST_FILE OUTPUT_PATH -u URN --id ID --ref REF
+----
+
+Parameters:
+
+`SCHEMA_MANIFEST_FILE`:: Path to the schema manifest (e.g., "schemas-smrl-part-2.yml")
+
+`OUTPUT_PATH`:: Directory where `register.yaml` will be written
+
+Options:
+
+`--urn`, `-u`:: Base URN prefix for the dataset (e.g. `urn:iso:std:iso:10303:-2:ed-1:en:tech:*`).
+The wildcard is stripped for the base URN and kept in `urnAliases`.
+*Required*.
+
+`--id`:: Dataset identifier (e.g. `iso10303-2-express`). *Required*.
+
+`--ref`:: Human-readable dataset reference label (e.g. `ISO 10303-2 EXPRESS Concepts`). *Required*.
+
+`--language_code`, `-l`:: Language code for section names (default: "eng")
+
+The generated register contains two top-level groups:
+
+* **Resources** — integrated resource schemas (path contains `schemas/resources/`)
+* **Application Modules** — ARM and MIM schemas (path contains `schemas/modules/`)
+
+Each schema gets a human-readable name via the `SchemaNaming` module
+(e.g. `topology_schema` → "Resource: Topology", `Activity_method_assignment_mim` → "Module: Activity Method Assignment (MIM)"). Acronyms (AIC, AEC, BREP, 2D, 3D) are preserved; function words (as, of, the) are lowercased per ISO title-case convention.
 
 
 === Convert JSDAI image outputs to SVG and Annotated EXPRESS
