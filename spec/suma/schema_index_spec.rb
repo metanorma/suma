@@ -5,7 +5,9 @@ require "expressir"
 
 RSpec.describe Suma::SchemaIndex do
   let(:schema_path) do
-    File.expand_path("../fixtures/extract_terms/resources/action_schema/action_schema.exp", __dir__)
+    File.expand_path(
+      "../fixtures/extract_terms/resources/action_schema/action_schema.exp", __dir__
+    )
   end
 
   let(:repo) do
