@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 require "thor"
-require_relative "../thor_ext"
-require_relative "../register_generator"
 
 module Suma
   module Cli
@@ -17,20 +15,18 @@ module Suma
                   desc: "Dataset identifier (e.g. iso10303-2-express)"
       option :ref, type: :string, required: true,
                    desc: "Human-readable reference label"
+      option :owner, type: :string, default: Suma::RegisterManifestGenerator::DEFAULT_OWNER,
+                     desc: "Owner of the dataset (e.g. 'ISO/TC 184/SC 4')"
 
       def generate_register(schema_manifest_file, output_path)
-        unless File.exist?(File.expand_path(schema_manifest_file))
-          raise Errno::ENOENT, "Specified SCHEMA_MANIFEST_FILE " \
-                               "`#{schema_manifest_file}` not found."
-        end
-
-        RegisterGenerator.new(
+        RegisterManifestGenerator.new(
           schema_manifest_file,
           output_path,
           urn: options[:urn],
           id: options[:id],
           ref: options[:ref],
           language_code: options[:language_code],
+          owner: options[:owner],
         ).generate
       end
     end
