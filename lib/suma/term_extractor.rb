@@ -405,11 +405,11 @@ module Suma
 
     def express_reference_to_mention(description)
       description
-        .gsub(/<<express:([^,]+)>>/) do |_match|
+        .gsub(/<<express:([\w.]+)>>/) do |_match|
           full_ref = Regexp.last_match[1]
           entity_id = full_ref.split(".").last
           urn_mention(express_entity_urn(full_ref), entity_id)
-        end.gsub(/<<express:([^,]+),([^>]+)>>/) do |_match|
+        end.gsub(/<<express:([\w.]+),([^>]+)>>/) do |_match|
           full_ref = Regexp.last_match[1]
           display = Regexp.last_match(2)
           urn_mention(express_entity_urn(full_ref), display)
@@ -456,7 +456,7 @@ module Suma
     end
 
     def convert_express_xref(content, _schema_domain)
-      content.gsub(/<<express:(.*),(.*)>>/) do
+      content.gsub(/<<express:([\w.]+),([^>]+)>>/) do
         full_ref = Regexp.last_match(1)
         display = Regexp.last_match(2)
         urn_mention(express_entity_urn(full_ref), display)
