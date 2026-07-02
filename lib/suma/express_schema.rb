@@ -44,11 +44,13 @@ module Suma
 
     attr_accessor :path, :id, :parsed, :output_path, :is_standalone_file
 
-    def initialize(id:, path:, output_path:, is_standalone_file: false)
+    def initialize(id:, path:, output_path:, is_standalone_file: false,
+                   cache: NullCache.new)
       @path = Pathname.new(path).expand_path
       @id = id
       @output_path = output_path
       @is_standalone_file = is_standalone_file
+      @cache = cache
     end
 
     def type
@@ -87,17 +89,34 @@ module Suma
     end
 
     def save_exp(with_annotations: false)
-      relative_path = Pathname.new(filename_plain).relative_path_from(Dir.pwd)
-      schema_type = with_annotations ? "annotated" : "plain"
-      Utils.log "Save #{schema_type} schema: #{relative_path}"
-
       FileUtils.mkdir_p(File.dirname(filename_plain))
-
-      content = with_annotations ? parsed.to_s(no_remarks: false) : to_plain
-      File.write(filename_plain, content)
+      File.write(filename_plain, rendered(with_annotations))
     end
 
     private
+
+    # Plain/annotated output for this schema: reused from the cache when the
+    # source is unchanged, otherwise generated afresh and cached. The Expressir
+    # parse (the cost) happens only on a cache miss.
+    def rendered(with_annotations)
+      source = File.read(@path.to_s, encoding: "UTF-8")
+      relative_path = Pathname.new(filename_plain).relative_path_from(Dir.pwd)
+      schema_type = with_annotations ? "annotated" : "plain"
+
+      if (cached = @cache.fetch(source, annotations: with_annotations))
+        Utils.log "Save #{schema_type} schema (cached): #{relative_path}"
+        return cached
+      end
+
+      Utils.log "Save #{schema_type} schema: #{relative_path}"
+      generate(with_annotations).tap do |content|
+        @cache.store(source, annotations: with_annotations, content: content)
+      end
+    end
+
+    def generate(with_annotations)
+      with_annotations ? parsed.to_s(no_remarks: false) : to_plain
+    end
 
     def classify
       Type.classify(id: @id, path: @path)
