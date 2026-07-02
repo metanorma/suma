@@ -12,3 +12,12 @@
 .rubocop-https---*-yml
 .ruby-version
 Gemfile.lock
+
+# local planning scratch directories (not for commit)
+/TODO.clean/
+/TODO.cleanup/
+/TODO.refactor/
+/TODO.remaining/
+
+# vendored gems (use Gemfile / Gemfile.lock elsewhere)
+/*.gem
