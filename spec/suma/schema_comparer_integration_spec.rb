@@ -314,19 +314,22 @@ RSpec.describe Suma::SchemaComparer do
 
     describe "schema name extraction" do
       it "extracts schema name without version suffix" do
-        comparer = described_class.new("/path/to/schema_1.exp", "/path/to/ref.exp")
+        comparer = described_class.new("/path/to/schema_1.exp",
+                                       "/path/to/ref.exp")
         name = comparer.send(:extract_schema_name, "/path/to/schema_1.exp")
         expect(name).to eq("schema")
       end
 
       it "extracts schema name without version suffix for _2" do
-        comparer = described_class.new("/path/to/schema_2.exp", "/path/to/ref.exp")
+        comparer = described_class.new("/path/to/schema_2.exp",
+                                       "/path/to/ref.exp")
         name = comparer.send(:extract_schema_name, "/path/to/schema_2.exp")
         expect(name).to eq("schema")
       end
 
       it "keeps schema name without version" do
-        comparer = described_class.new("/path/to/my_schema.exp", "/path/to/ref.exp")
+        comparer = described_class.new("/path/to/my_schema.exp",
+                                       "/path/to/ref.exp")
         name = comparer.send(:extract_schema_name, "/path/to/my_schema.exp")
         expect(name).to eq("my_schema")
       end

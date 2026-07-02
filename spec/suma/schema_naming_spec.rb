@@ -60,6 +60,59 @@ RSpec.describe Suma::SchemaNaming do
     end
   end
 
+  describe ".display_name edge cases" do
+    {
+      "" => "",
+      "a" => "A",
+      "X" => "X",
+      "_foo" => "Foo",
+      "foo_" => "Foo",
+      "foo__bar" => "Foo Bar",
+      "AIC" => "AIC",
+      "aic" => "AIC",
+      "camel_Case" => "Camel Case",
+      "ISO_10303" => "Iso 10303",
+    }.each do |input, expected|
+      it "converts #{input.inspect} → #{expected.inspect}" do
+        expect(described_class.display_name(input)).to eq(expected)
+      end
+    end
+  end
+
+  describe "suffix decomposition" do
+    it "strips _schema silently" do
+      expect(described_class.display_name("foo_schema")).to eq("Foo")
+    end
+
+    it "labels _arm" do
+      expect(described_class.display_name("foo_arm")).to eq("Foo (ARM)")
+    end
+
+    it "labels _mim" do
+      expect(described_class.display_name("foo_mim")).to eq("Foo (MIM)")
+    end
+
+    it "labels _bom" do
+      expect(described_class.display_name("foo_bom")).to eq("Foo (BOM)")
+    end
+
+    it "leaves unknown suffixes intact" do
+      expect(described_class.display_name("foo_xyz")).to eq("Foo Xyz")
+    end
+  end
+
+  describe ".prefixed_name edge cases" do
+    it "uses the standalone prefix when path is nil" do
+      expect(described_class.prefixed_name("custom_id", path: nil))
+        .to eq("Schema: Custom ID")
+    end
+
+    it "classifies by id alone when path is nil" do
+      expect(described_class.prefixed_name("topology_schema", path: nil))
+        .to eq("Schema: Topology")
+    end
+  end
+
   describe ".category_prefix" do
     {
       resource: "Resource",

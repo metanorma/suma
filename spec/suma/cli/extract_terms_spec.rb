@@ -34,7 +34,8 @@ RSpec.describe Suma::Cli::ExtractTerms do
   context "when input is invalid" do
     it "raises ENOENT error when file not found" do
       expect do
-        test_subject.invoke(:extract_terms, ["not-found.yml", test_output_path])
+        test_subject.invoke(:extract_terms, ["not-found.yml", test_output_path],
+                            { urn: "urn:iso:std:iso:10303:-2:ed-2:en" })
       end.to raise_error(Errno::ENOENT)
     end
 
@@ -46,6 +47,7 @@ RSpec.describe Suma::Cli::ExtractTerms do
             File.expand_path("extract_terms_spec.rb", __dir__),
             test_output_path,
           ],
+          { urn: "urn:iso:std:iso:10303:-2:ed-2:en" },
         )
       end.to raise_error(Expressir::ManifestValidationError)
     end
@@ -55,6 +57,7 @@ RSpec.describe Suma::Cli::ExtractTerms do
         test_subject.invoke(
           :extract_terms,
           [schema_manifest_file_no_files, test_output_path],
+          { urn: "urn:iso:std:iso:10303:-2:ed-2:en" },
         )
       end.to raise_error(Errno::ENOENT)
     end
@@ -63,7 +66,8 @@ RSpec.describe Suma::Cli::ExtractTerms do
   context "when input is valid `schema_manifest_file`" do
     it "creates one concept per entity with correct identifiers" do
       result_collections = test_subject.invoke(
-        :extract_terms, [schema_manifest_file, test_output_path]
+        :extract_terms, [schema_manifest_file, test_output_path],
+        { urn: "urn:iso:std:iso:10303:-2:ed-2:en" }
       )
 
       # Verify we have 3 collections (one per schema)
@@ -119,7 +123,10 @@ RSpec.describe Suma::Cli::ExtractTerms do
       activity_arm_collection.managed_concepts.each do |concept|
         localized_concept = concept.data.localizations["eng"]
         expect(localized_concept.data.sources.length).to eq(1)
-        expect(localized_concept.data.sources.first.origin.text).to eq("ISO 10303")
+        source = localized_concept.data.sources.first
+        expect(source.origin.ref.source).to eq("urn:iso:std:iso:10303:-2:ed-2:en:tech:Activity_arm")
+        expect(source.origin.ref.version).to eq("3")
+        expect(source.type).to eq("authoritative")
       end
     end
   end

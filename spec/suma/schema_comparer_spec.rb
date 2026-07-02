@@ -35,12 +35,14 @@ RSpec.describe Suma::SchemaComparer do
   describe "#extract_schema_name" do
     it "strips numeric suffixes" do
       comparer = described_class.new("/path/schema_1.exp", "/path/ref.exp")
-      expect(comparer.send(:extract_schema_name, "/path/schema_1.exp")).to eq("schema")
+      expect(comparer.send(:extract_schema_name,
+                           "/path/schema_1.exp")).to eq("schema")
     end
 
     it "preserves names without suffixes" do
       comparer = described_class.new("/path/my_schema.exp", "/path/ref.exp")
-      expect(comparer.send(:extract_schema_name, "/path/my_schema.exp")).to eq("my_schema")
+      expect(comparer.send(:extract_schema_name,
+                           "/path/my_schema.exp")).to eq("my_schema")
     end
   end
 
