@@ -47,7 +47,7 @@ RSpec.describe Suma::TermExtractor do
       all_concepts = results.flat_map(&:managed_concepts)
       all_concepts.each do |concept|
         expect(concept.uuid).to match(/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/)
-        expect(concept.uuid).not_to eq(concept.id)
+        expect(concept.uuid).not_to eq(concept.data.id)
       end
     end
 
