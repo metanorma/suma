@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "thor"
-require_relative "../thor_ext"
 
 module Suma
   module Cli
@@ -15,10 +14,6 @@ module Suma
                                 desc: "Generate file that contains all schemas in the collection."
 
       def build(metanorma_site_manifest)
-        # Lazy-load dependencies only when this command is actually used
-        require_relative "../processor"
-        require_relative "../utils"
-
         unless File.exist?(metanorma_site_manifest)
           raise Errno::ENOENT, "Specified Metanorma site manifest file " \
                                "`#{metanorma_site_manifest}` not found."

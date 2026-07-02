@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "thor"
-require_relative "../thor_ext"
 
 module Suma
   module Cli
@@ -18,8 +17,6 @@ module Suma
                    desc: "Create ZIP archive of exported schemas"
 
       def export(*files)
-        require_relative "../schema_exporter"
-        require_relative "../utils"
         require "expressir"
 
         validate_files(files)

@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "figure_xml"
-require_relative "figure_image"
-
 module Suma
   module Jsdai
     # Main class for JSDAI figure conversion

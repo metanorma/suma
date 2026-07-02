@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "thor"
-require_relative "../schema_comparer"
 
 module Suma
   module Cli
