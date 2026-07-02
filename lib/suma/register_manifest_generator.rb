@@ -2,9 +2,8 @@
 
 require "yaml"
 require "pathname"
-require_relative "utils"
-require_relative "express_schema"
-require_relative "schema_naming"
+require "expressir"
+require "glossarist"
 
 module Suma
   # Generates a Glossarist v3 register.yaml from an EXPRESS schema manifest.
@@ -18,26 +17,23 @@ module Suma
   #   - Classification: delegates to ExpressSchema::Type (DRY)
   #   - Naming: delegates to SchemaNaming (OCP — extend naming without
   #     touching this class)
-  #   - Section hierarchy: Resource schemas before Module schemas, using
-  #     the Section model's +children+ field
+  #   - Sections: built from Glossarist::Section models (model-driven)
+  #   - URN semantics: delegates to Suma::Urn (OCP)
   #
   # @example
-  #   generator = RegisterGenerator.new(
+  #   generator = RegisterManifestGenerator.new(
   #     "schemas-smrl-part-2.yml",
-  #     urn: "urn:iso:std:iso:10303:-2:ed-1:en:tech:*",
+  #     urn: "urn:iso:std:iso:10303:-2:ed-2:en:tech:*",
   #     id: "iso10303-2-express",
   #     ref: "ISO 10303-2 EXPRESS Concepts",
   #   )
   #   generator.generate  # writes register.yaml
-  class RegisterGenerator
-    # Ordered category definitions. Order determines display order in the
-    # generated register (Resources before Modules).
-    # Each entry: [type_predicate, group_id, group_label]
-    CATEGORY_ORDER = [
-      [:resource?, "resources", "Resources"],
-      [:module?, "modules", "Application Modules"],
-      [:other?, "other", "Other Schemas"],
-    ].freeze
+  class RegisterManifestGenerator
+    DEFAULT_OWNER = "ISO/TC 184/SC 4"
+    DEFAULT_STATUS = "current"
+    DEFAULT_ORDERING = "systematic"
+    DEFAULT_SCHEMA_TYPE = "glossarist"
+    DEFAULT_SCHEMA_VERSION = "3"
 
     # @param schema_manifest_file [String] path to schemas-smrl-part-2.yml
     # @param output_path [String] directory to write register.yaml
@@ -45,131 +41,123 @@ module Suma
     # @param id [String] dataset identifier
     # @param ref [String] human-readable reference label
     # @param language_code [String] language for section names
+    # @param owner [String] dataset owner organisation
     def initialize(schema_manifest_file, output_path, urn:, id:, ref:,
-                   language_code: "eng")
+                   language_code: "eng", owner: DEFAULT_OWNER)
       @schema_manifest_file = File.expand_path(schema_manifest_file)
       @output_path = output_path
-      @urn = urn
+      @urn = Suma::Urn.new(urn)
       @id = id
       @ref = ref
       @language_code = language_code
+      @owner = owner
     end
 
     # Generate and write register.yaml.
     #
-    # @return [Hash] the generated register data
+    # @return [Glossarist::DatasetRegister] the generated register
     def generate
+      validate_inputs
       schemas = load_schemas
-      sections = build_hierarchical_sections(schemas)
-      register = build_register(sections)
+      register = build_register(schemas)
 
       FileUtils.mkdir_p(@output_path)
       output_file = File.join(@output_path, "register.yaml")
       File.write(output_file, register.to_yaml)
       Utils.log "Generated register.yaml: #{output_file}"
-      Utils.log "  #{schemas.length} schemas in #{sections.length} categories"
+      Utils.log "  #{schemas.length} schemas in #{register.sections.length} categories"
 
       register
     end
 
     private
 
-    # Load all schemas from the manifest file.
+    # Verify that the manifest path exists, is a regular file, and contains
+    # at least one schema entry. Called from {#generate} so both the CLI
+    # shell and direct construction get the same validation behavior.
     #
-    # @return [Array<Hash>] each entry: {id:, path:, type:}
-    def load_schemas
-      manifest = YAML.load_file(@schema_manifest_file)
-      manifest.fetch("schemas", []).map do |id, info|
-        path = info.fetch("path", "")
-        {
-          id: id,
-          path: path,
-          type: ExpressSchema::Type.classify(id: id, path: path),
-        }
-      end.sort_by { |s| s[:id].downcase }
+    # @raise [Errno::ENOENT] when the manifest path is missing or not a file
+    # @raise [ArgumentError] when the manifest is empty
+    def validate_inputs
+      unless File.exist?(@schema_manifest_file)
+        raise Errno::ENOENT, "Specified SCHEMA_MANIFEST_FILE " \
+                             "`#{@schema_manifest_file}` not found."
+      end
+      unless File.file?(@schema_manifest_file)
+        raise Errno::ENOENT, "Specified SCHEMA_MANIFEST_FILE " \
+                             "`#{@schema_manifest_file}` is not a file."
+      end
     end
 
-    # Build hierarchical sections grouped by category.
+    # Load all schemas from the manifest file as SchemaManifestEntry models.
     #
-    # @param schemas [Array<Hash>]
-    # @return [Array<Hash>] top-level section nodes with children
-    def build_hierarchical_sections(schemas)
-      groups = categorise(schemas)
+    # @return [Array<Expressir::SchemaManifestEntry>]
+    def load_schemas
+      manifest = Expressir::SchemaManifest.from_file(@schema_manifest_file)
+      schemas = manifest.schemas.sort_by { |s| s.id.downcase }
+      if schemas.empty?
+        raise ArgumentError, "No schemas found in manifest " \
+                             "`#{@schema_manifest_file}`."
+      end
+      schemas
+    end
 
-      CATEGORY_ORDER.filter_map do |predicate, group_id, group_label|
-        children = groups[predicate] || []
+    # Build a fully-populated DatasetRegister model.
+    #
+    # @param schemas [Array<Expressir::SchemaManifestEntry>]
+    # @return [Glossarist::DatasetRegister]
+    def build_register(schemas)
+      Glossarist::DatasetRegister.new(
+        schema_type: DEFAULT_SCHEMA_TYPE,
+        schema_version: DEFAULT_SCHEMA_VERSION,
+        id: @id,
+        ref: @ref,
+        urn: @urn.to_s,
+        urn_aliases: @urn.aliases,
+        status: DEFAULT_STATUS,
+        owner: @owner,
+        languages: [@language_code],
+        ordering: DEFAULT_ORDERING,
+        sections: build_sections(schemas),
+      )
+    end
+
+    # Build a list of top-level sections, one per category, in
+    # SchemaCategory::ALL declaration order. Categories with no
+    # schemas are omitted.
+    #
+    # @param schemas [Array<Expressir::SchemaManifestEntry>]
+    # @return [Array<Glossarist::Section>]
+    def build_sections(schemas)
+      groups = schemas.group_by do |s|
+        SchemaCategory.for_schema(id: s.id, path: s.path)
+      end
+
+      SchemaCategory::ALL.filter_map do |category|
+        children = groups[category] || []
         next if children.empty?
 
-        {
-          "id" => group_id,
-          "names" => { @language_code => group_label },
-          "children" => children.map { |s| build_section(s) },
-        }
+        Glossarist::Section.new(
+          id: category.id,
+          names: { @language_code => category.label },
+          children: children.map { |s| build_section(s) },
+        )
       end
     end
 
-    # Partition schemas into category buckets.
+    # Build a single leaf section from a schema descriptor.
     #
-    # @param schemas [Array<Hash>]
-    # @return [Hash<Symbol, Array<Hash>>] keyed by predicate symbol
-    def categorise(schemas)
-      {
-        resource?: [],
-        module?: [],
-        other?: [],
-      }.tap do |groups|
-        schemas.each do |schema|
-          key = category_key(schema[:type])
-          groups[key] << schema
-        end
-      end
-    end
-
-    # Map an ExpressSchema::Type to a category predicate.
-    #
-    # @param type [Symbol]
-    # @return [Symbol]
-    def category_key(type)
-      case type
-      when :resource then :resource?
-      when :module_arm, :module_mim then :module?
-      else :other?
-      end
-    end
-
-    # Build a single section entry from a schema descriptor.
-    #
-    # @param schema [Hash{id:, path:, type:}]
-    # @return [Hash]
+    # @param schema [Expressir::SchemaManifestEntry]
+    # @return [Glossarist::Section]
     def build_section(schema)
-      {
-        "id" => schema[:id],
-        "names" => {
+      Glossarist::Section.new(
+        id: schema.id,
+        names: {
           @language_code => SchemaNaming.prefixed_name(
-            schema[:id], path: schema[:path],
+            schema.id, path: schema.path
           ),
         },
-      }
-    end
-
-    # Build the complete register data structure.
-    #
-    # @param sections [Array<Hash>]
-    # @return [Hash]
-    def build_register(sections)
-      {
-        "schema_type" => "glossarist",
-        "schema_version" => "3",
-        "id" => @id,
-        "ref" => @ref,
-        "urn" => @urn.sub(/:\*$/, ""),
-        "urnAliases" => [@urn],
-        "status" => "current",
-        "owner" => "ISO/TC 184/SC 4",
-        "languages" => [@language_code],
-        "ordering" => "systematic",
-        "sections" => sections,
-      }
+      )
     end
   end
 end
