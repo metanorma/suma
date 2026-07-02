@@ -322,9 +322,25 @@ Parameters:
 
 Options:
 
-`--urn`, `-u`:: Base URN prefix for the dataset (e.g. `urn:iso:std:iso:10303:-2:ed-1:en:tech:*`).
+`--urn`, `-u`:: Base URN prefix for the dataset (e.g. `urn:iso:std:iso:10303:-2:ed-2:en:tech:*`).
 The wildcard is stripped for the base URN and kept in `urnAliases`.
 *Required*.
+
+The URN is fully configurable — every component can be changed to match the
+dataset being exported. The general structure is:
+
+----
+urn:iso:std:iso:<part>:ed-<edition>:<lang>:tech:*
+----
+
+For example, to export edition 3 in French:
+
+----
+--urn urn:iso:std:iso:10303:-2:ed-3:fr:tech:*
+----
+
+The current ISO 10303-2 SMRL data is edition 2; use `ed-2` unless you are
+re-publishing an earlier edition.
 
 `--id`:: Dataset identifier (e.g. `iso10303-2-express`). *Required*.
 
