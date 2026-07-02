@@ -2,8 +2,6 @@
 
 require "fileutils"
 require "tmpdir"
-require_relative "eengine/wrapper"
-require_relative "eengine_converter"
 
 module Suma
   class SchemaComparer
@@ -37,7 +35,10 @@ module Suma
         return nil
       end
 
-      raise Suma::CompilationError, "XML output not found" unless result[:xml_path]
+      unless result[:xml_path]
+        raise Suma::CompilationError,
+              "XML output not found"
+      end
 
       convert_to_change_yaml(result[:xml_path], out_dir)
     ensure

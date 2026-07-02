@@ -2,13 +2,13 @@
 
 require "yaml"
 require "pathname"
-require_relative "utils"
 
 module Suma
   class SchemaManifestGenerator
     YAML_FILE_EXTENSIONS = [".yaml", ".yml"].freeze
 
-    def initialize(metanorma_manifest_file, schema_manifest_file, exclude_paths: nil)
+    def initialize(metanorma_manifest_file, schema_manifest_file,
+exclude_paths: nil)
       @metanorma_manifest_file = File.expand_path(metanorma_manifest_file)
       @schema_manifest_file = schema_manifest_file
       @exclude_paths = exclude_paths
@@ -27,9 +27,15 @@ module Suma
     private
 
     def validate_inputs
-      raise Errno::ENOENT, "Specified file `#{@metanorma_manifest_file}` not found." unless File.exist?(@metanorma_manifest_file)
+      unless File.exist?(@metanorma_manifest_file)
+        raise Errno::ENOENT,
+              "Specified file `#{@metanorma_manifest_file}` not found."
+      end
 
-      raise ArgumentError, "Specified path `#{@metanorma_manifest_file}` is not a file." unless File.file?(@metanorma_manifest_file)
+      unless File.file?(@metanorma_manifest_file)
+        raise ArgumentError,
+              "Specified path `#{@metanorma_manifest_file}` is not a file."
+      end
 
       [@metanorma_manifest_file, @schema_manifest_file].each do |file|
         unless YAML_FILE_EXTENSIONS.include?(File.extname(file))
@@ -53,7 +59,8 @@ module Suma
       all_schemas = { "schemas" => {} }
 
       manifest_files.each do |file|
-        schemas_file_path = File.expand_path(file.gsub("collection.yml", "schemas.yaml"))
+        schemas_file_path = File.expand_path(file.gsub("collection.yml",
+                                                       "schemas.yaml"))
 
         unless File.exist?(schemas_file_path)
           Utils.log "Schemas file not found: #{schemas_file_path}"
@@ -83,7 +90,8 @@ module Suma
       schema_manifest_path = File.expand_path(@schema_manifest_file, Dir.pwd)
 
       schemas_data["schemas"].each do |key, value|
-        path_in_schema = File.expand_path(value["path"], File.dirname(schemas_file_path))
+        path_in_schema = File.expand_path(value["path"],
+                                          File.dirname(schemas_file_path))
 
         fixed_path = Pathname.new(path_in_schema).relative_path_from(
           Pathname.new(File.dirname(schema_manifest_path)),

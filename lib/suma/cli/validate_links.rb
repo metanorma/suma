@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 require "thor"
-require_relative "../utils"
-require_relative "../link_validator"
 require "expressir"
 
 module Suma

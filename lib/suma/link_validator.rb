@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require_relative "schema_index"
 require "expressir"
 
 module Suma
-  LinkValidationResult = Struct.new(:file, :line, :link, :reason, keyword_init: true)
+  LinkValidationResult = Struct.new(:file, :line, :link, :reason,
+                                    keyword_init: true)
 
   class LinkValidator
     def initialize(index)
@@ -93,18 +93,22 @@ module Suma
 
       return unless parts.size > 2
 
-      error = validate_deep_path(schema, element, parts[2..], file, line_idx, link)
+      error = validate_deep_path(schema, element, parts[2..], file, line_idx,
+                                 link)
       unresolved << error if error
     end
 
-    def validate_deep_path(schema, element, path_parts, file, line_idx, full_link)
+    def validate_deep_path(schema, element, path_parts, file, line_idx,
+full_link)
       current = element
       current_path = "#{schema.id}.#{element.id}"
 
       path_parts.each do |part|
         case current
         when Expressir::Model::Declarations::Entity
-          attribute = current.attributes&.find { |a| a.id.downcase == part.downcase }
+          attribute = current.attributes&.find do |a|
+            a.id.downcase == part.downcase
+          end
 
           unless attribute
             return LinkValidationResult.new(
@@ -122,7 +126,9 @@ module Suma
           underlying = current.underlying_type
 
           if underlying.is_a?(Expressir::Model::DataTypes::Enumeration)
-            enum_value = underlying.items.find { |e| e.id.downcase == part.downcase }
+            enum_value = underlying.items.find do |e|
+              e.id.downcase == part.downcase
+            end
 
             unless enum_value
               return LinkValidationResult.new(
@@ -193,7 +199,9 @@ module Suma
         schema.procedures,
         schema.subtype_constraints,
       ].each do |collection|
-        element = collection&.find { |e| e.id.downcase == element_name.downcase }
+        element = collection&.find do |e|
+          e.id.downcase == element_name.downcase
+        end
         return element if element
       end
 

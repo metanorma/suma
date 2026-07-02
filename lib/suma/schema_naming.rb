@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "express_schema"
-
 module Suma
   # Converts EXPRESS schema identifiers into human-readable display names.
   #
@@ -28,15 +26,14 @@ module Suma
     LOWERCASE_WORDS = %w[a an and as for in of on or the to].freeze
 
     # Suffixes stripped from the schema name before title-casing,
-    # paired with the parenthesised label appended to the display name.
-    SUFFIX_LABELS = {
+    # mapped to the parenthesised label appended to the display name.
+    # A +nil+ label means the suffix is stripped silently.
+    SUFFIXES = {
       "_arm" => "ARM",
       "_mim" => "MIM",
       "_bom" => "BOM",
+      "_schema" => nil,
     }.freeze
-
-    # Suffixes stripped with no label appended.
-    SUFFIX_SILENT = %w[_schema].freeze
 
     class << self
       # Produce a human-readable display name from a schema identifier.
@@ -65,42 +62,33 @@ module Suma
       # @param type [Symbol] one of ExpressSchema::Type constants
       # @return [String]
       def category_prefix(type)
-        case type
-        when :resource then "Resource"
-        when :module_arm, :module_mim then "Module"
-        when :business_object_model then "Business Object Model"
-        when :core_model then "Core Model"
-        else "Schema"
-        end
+        SchemaCategory.for_type(type).prefix
       end
 
       private
 
       # Split a schema ID into (base_without_suffix, suffix_label_or_nil).
       #
-      # @return [Array(String, String, nil)]
+      # @return [(String, String, nil)]
       def decompose(schema_id)
-        SUFFIX_LABELS.each do |suffix, label|
+        SUFFIXES.each do |suffix, label|
           if schema_id.end_with?(suffix)
-            return [schema_id.sub(/#{suffix}$/, ""), label]
+            return [schema_id.delete_suffix(suffix),
+                    label]
           end
         end
-
-        SUFFIX_SILENT.each do |suffix|
-          if schema_id.end_with?(suffix)
-            return [schema_id.sub(/#{suffix}$/, ""), nil]
-          end
-        end
-
         [schema_id, nil]
       end
 
       # Title-case a snake_case identifier, preserving acronyms.
+      # The +tr+ collapses runs of underscores (leading, trailing, and
+      # consecutive) into spaces, which +split+ then treats as a single
+      # separator.
       #
       # @param name [String] snake_case identifier
       # @return [String] title-cased name
       def title_case(name)
-        words = name.gsub(/_/, " ").split
+        words = name.tr("_", " ").split
         words.each_with_index.map do |word, i|
           capitalize_word(word, first: i.zero?)
         end.join(" ")
@@ -115,6 +103,7 @@ module Suma
       def capitalize_word(word, first: false)
         return word.upcase if ACRONYMS.include?(word.downcase)
         return word.downcase if LOWERCASE_WORDS.include?(word.downcase) && !first
+
         word.capitalize
       end
     end
