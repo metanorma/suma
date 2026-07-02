@@ -1,22 +1,11 @@
 # frozen_string_literal: true
 
-require_relative "express_schema"
-require_relative "utils"
 require "fileutils"
 
 module Suma
   # SchemaExporter exports EXPRESS schemas from a manifest
   # with configurable options for annotations and ZIP packaging
   class SchemaExporter
-    CATEGORY_MAP = {
-      ExpressSchema::Type::RESOURCE => "resources",
-      ExpressSchema::Type::MODULE_ARM => "modules",
-      ExpressSchema::Type::MODULE_MIM => "modules",
-      ExpressSchema::Type::BUSINESS_OBJECT_MODEL => "business_object_models",
-      ExpressSchema::Type::CORE_MODEL => "core_model",
-      ExpressSchema::Type::STANDALONE => ".",
-    }.freeze
-
     attr_reader :schemas, :output_path, :options
 
     def initialize(schemas:, output_path:, options: {})
@@ -68,14 +57,9 @@ module Suma
       if is_standalone
         output_path.to_s
       else
-        category = categorize_schema(schema)
-        output_path.join(category).to_s
+        category = SchemaCategory.for_schema(id: schema.id, path: schema.path)
+        output_path.join(category.directory).to_s
       end
-    end
-
-    def categorize_schema(schema)
-      type = ExpressSchema::Type.classify(id: schema.id, path: schema.path)
-      CATEGORY_MAP.fetch(type, "standalone")
     end
 
     # rubocop:disable Metrics/MethodLength

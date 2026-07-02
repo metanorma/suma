@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "fileutils"
-require_relative "utils"
 require "expressir"
 require "glossarist"
 
@@ -16,13 +15,16 @@ module Suma
         \s*?\.?$               # Optional whitespace and period at the end
       }x
 
-    def initialize(schema_manifest_file, output_path, language_code: "eng")
+    def initialize(schema_manifest_file, output_path, urn:,
+                   language_code: "eng")
       @schema_manifest_file = File.expand_path(schema_manifest_file)
       @output_path = output_path
       @language_code = language_code
+      @urn = Suma::Urn.new(urn)
     end
 
     def call
+      validate_inputs
       get_exp_files.map do |exp_file|
         extract(exp_file)
       end
@@ -30,12 +32,24 @@ module Suma
 
     private
 
+    def validate_inputs
+      unless File.exist?(@schema_manifest_file)
+        raise Errno::ENOENT, "Specified SCHEMA_MANIFEST_FILE " \
+                             "`#{@schema_manifest_file}` not found."
+      end
+      unless File.file?(@schema_manifest_file)
+        raise Errno::ENOENT, "Specified SCHEMA_MANIFEST_FILE " \
+                             "`#{@schema_manifest_file}` is not a file."
+      end
+    end
+
     def get_exp_files
       config = Expressir::SchemaManifest.from_file(@schema_manifest_file)
       paths = config.schemas.map(&:path)
 
       if paths.empty?
-        raise Errno::ENOENT, "No EXPRESS files found in `#{@schema_manifest_file}`."
+        raise Errno::ENOENT,
+              "No EXPRESS files found in `#{@schema_manifest_file}`."
       end
 
       paths
@@ -56,33 +70,55 @@ module Suma
     end
 
     def output_data(collection)
-      FileUtils.mkdir_p(File.expand_path(@output_path)) unless File.exist?(@output_path)
+      output_dir = File.expand_path(@output_path)
+      FileUtils.mkdir_p(output_dir)
       Utils.log "Saving collection to files in: #{@output_path}"
-      collection.save_to_files(File.expand_path(@output_path))
+
+      collection.each do |concept|
+        doc = Glossarist::V3::ConceptDocument.from_managed_concept(concept)
+        doc.localizations = concept.data.localizations.keys.map do |lang|
+          concept.localization(lang)
+        end
+
+        filename = "#{concept.uuid.gsub(/[^\w.-]/, '_')}.yaml"
+        File.write(File.join(output_dir, filename), doc.to_yamls,
+                   encoding: "utf-8")
+      end
     end
 
     def build_managed_concept_collection(schema)
       source_ref = get_source_ref(schema)
+      section_ref = get_section_ref(schema)
 
       Glossarist::ManagedConceptCollection.new.tap do |collection|
         schema.entities.each do |entity|
+          localized_concept_id = Glossarist::Utilities::UUID.uuid_v5(
+            Glossarist::Utilities::UUID::OID_NAMESPACE,
+            "#{schema.id}.#{entity.id}-#{@language_code}",
+          )
+
           localized_concept = build_localized_concept(
             schema: schema,
             entity: entity,
             source_ref: source_ref,
+            uuid: localized_concept_id,
           )
-          localized_concept_id = get_localized_concept_identifier(schema, entity)
 
-          managed_data = Glossarist::ManagedConceptData.new.tap do |data|
-            data.id = get_entity_identifier(schema, entity)
-            data.localizations[@language_code] = localized_concept
+          managed_data = Glossarist::V3::ManagedConceptData.new.tap do |data|
+            data.id = "#{schema.id}.#{entity.id}"
+            data.localizations.store(@language_code, localized_concept)
             data.localized_concepts = { @language_code => localized_concept_id }
+            data.domains = [section_ref] if section_ref
           end
 
-          managed_concept = Glossarist::ManagedConcept.new.tap do |concept|
-            concept.id = get_entity_identifier(schema, entity)
-            concept.uuid = concept.id
+          managed_concept = Glossarist::V3::ManagedConcept.new.tap do |concept|
+            concept.id = managed_data.id
+            concept.uuid = Glossarist::Utilities::UUID.uuid_v5(
+              Glossarist::Utilities::UUID::OID_NAMESPACE,
+              managed_data.id,
+            )
             concept.data = managed_data
+            concept.schema_version = "v3"
           end
 
           collection.store(managed_concept)
@@ -90,10 +126,10 @@ module Suma
       end
     end
 
-    def build_localized_concept(schema:, entity:, source_ref:)
+    def build_localized_concept(schema:, entity:, source_ref:, uuid:)
       schema_domain = get_domain(schema)
 
-      localized_concept_data = Glossarist::ConceptData.new.tap do |data|
+      localized_concept_data = Glossarist::V3::ConceptData.new.tap do |data|
         data.terms = get_entity_terms(entity)
         data.definition = get_entity_definitions(entity, schema)
         data.language_code = @language_code
@@ -105,34 +141,60 @@ module Suma
         data.examples = []
       end
 
-      Glossarist::LocalizedConcept.new.tap { |c| c.data = localized_concept_data }
+      Glossarist::V3::LocalizedConcept.new(
+        data: localized_concept_data, uuid: uuid,
+      )
     end
 
-    def get_entity_identifier(schema, entity)
-      "#{schema.id}.#{entity.id}"
+    def schema_urn(schema)
+      @urn.for_schema(schema.id)
     end
 
-    def get_localized_concept_identifier(schema, entity)
-      "#{schema.id}.#{entity.id}-#{@language_code}"
+    def term_urn(concept_identifier)
+      @urn.for_term(concept_identifier)
+    end
+
+    def express_entity_urn(full_ref)
+      @urn.for_entity(full_ref)
+    end
+
+    def urn_mention(urn, display)
+      "{{#{urn},#{display}}}"
+    end
+
+    def get_section_ref(schema)
+      return nil unless @urn
+
+      Glossarist::ConceptReference.new(
+        concept_id: "section-#{schema.id}",
+        source: schema_urn(schema),
+        ref_type: "section",
+      )
     end
 
     def get_source_ref(schema)
-      origin = Glossarist::Citation.new.tap do |citation|
-        citation.ref = "ISO 10303"
-        custom_locality = build_custom_locality(schema)
-        citation.custom_locality = custom_locality unless custom_locality.empty?
+      ref = Glossarist::Citation::Ref.new
+      ref.source = schema_urn(schema)
+
+      build_custom_locality(schema).each do |cl|
+        case cl.name
+        when "version" then ref.version = cl.value
+        end
       end
 
-      Glossarist::ConceptSource.new(type: "authoritative", origin: origin)
+      origin = Glossarist::V3::Citation.new
+      origin.ref = ref
+      Glossarist::V3::ConceptSource.new(id: schema.id, type: "authoritative",
+                                        origin: origin)
     end
 
     def build_custom_locality(schema)
       localities = []
-      localities << Glossarist::CustomLocality.new(name: "schema", value: schema.id)
 
       version_item = schema.version.items.detect { |i| i.name == "version" }
       if version_item
-        localities << Glossarist::CustomLocality.new(name: "version", value: version_item.value)
+        localities << Glossarist::CustomLocality.new(name: "version",
+                                                     value: version_item.value)
       end
 
       localities
@@ -160,10 +222,10 @@ module Suma
 
     def get_entity_definitions(entity, schema)
       schema_type = extract_file_type(schema.file)
-      schema_domain = get_domain(schema)
+      get_domain(schema)
 
-      definition = generate_entity_definition(entity, schema_domain, schema_type)
-      [Glossarist::DetailedDefinition.new(content: definition)]
+      definition = generate_entity_definition(entity, schema, schema_type)
+      [Glossarist::V3::DetailedDefinition.new(content: definition)]
     end
 
     def get_entity_notes(entity, schema_domain, definitions)
@@ -172,7 +234,7 @@ module Suma
       if entity.remarks && !entity.remarks.empty?
         trimmed_def = trim_definition(entity.remarks)
         if trimmed_def && !trimmed_def.empty?
-          notes << Glossarist::DetailedDefinition.new(
+          notes << Glossarist::V3::DetailedDefinition.new(
             content: convert_express_xref(trimmed_def, schema_domain),
           )
         end
@@ -344,10 +406,13 @@ module Suma
     def express_reference_to_mention(description)
       description
         .gsub(/<<express:([^,]+)>>/) do |_match|
-          "{{#{Regexp.last_match[1].split('.').last}}}"
+          full_ref = Regexp.last_match[1]
+          entity_id = full_ref.split(".").last
+          urn_mention(express_entity_urn(full_ref), entity_id)
         end.gsub(/<<express:([^,]+),([^>]+)>>/) do |_match|
-          "{{#{Regexp.last_match[1].split('.').last}," \
-            "#{Regexp.last_match[2]}}}"
+          full_ref = Regexp.last_match[1]
+          display = Regexp.last_match(2)
+          urn_mention(express_entity_urn(full_ref), display)
         end
     end
 
@@ -355,38 +420,46 @@ module Suma
       entity_id.downcase.gsub("_", " ")
     end
 
-    def generate_entity_definition(entity, _domain, schema_type)
+    def generate_entity_definition(entity, schema, schema_type)
       return "" if entity.nil?
 
       entity_type = case schema_type
                     when "module_arm"
-                      "{{application object}}"
+                      urn_mention(term_urn("general.application_object"),
+                                  "application object")
                     when "module_mim"
-                      "{{entity data type}}"
+                      urn_mention(term_urn("express-language.entity_data_type"),
+                                  "entity data type")
                     when "resource", "business_object_model"
-                      "{{entity data type}}"
+                      urn_mention(term_urn("express-language.entity_data_type"),
+                                  "entity data type")
                     else
                       raise Error, "[suma] encountered unsupported schema_type"
                     end
 
+      entity_ref = urn_mention(term_urn("express-language.entity"), "entity")
+
       if entity.subtype_of.empty?
         "#{entity_type} " \
           "that represents the " \
-          "#{entity_name_to_text(entity.id)} {{entity}}"
+          "#{entity_name_to_text(entity.id)} #{entity_ref}"
       else
-        entity_subtypes = entity.subtype_of.map { |e| "{{#{e.id}}}" }
+        entity_subtypes = entity.subtype_of.map do |e|
+          urn_mention(express_entity_urn("#{schema.id}.#{e.id}"), e.id)
+        end
 
         "#{entity_type} that is a type of " \
           "#{entity_subtypes.join(' and ')} " \
           "that represents the " \
-          "#{entity_name_to_text(entity.id)} {{entity}}"
+          "#{entity_name_to_text(entity.id)} #{entity_ref}"
       end
     end
 
-    def convert_express_xref(content, schema_domain)
+    def convert_express_xref(content, _schema_domain)
       content.gsub(/<<express:(.*),(.*)>>/) do
-        "{{<#{schema_domain}>" \
-          "#{Regexp.last_match(1).split('.').last},#{Regexp.last_match(2)}}}"
+        full_ref = Regexp.last_match(1)
+        display = Regexp.last_match(2)
+        urn_mention(express_entity_urn(full_ref), display)
       end
     end
   end
