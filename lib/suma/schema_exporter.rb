@@ -23,6 +23,7 @@ module Suma
       @schemas = schemas
       @output_path = Pathname.new(output_path).expand_path
       @options = default_options.merge(options)
+      @cache = build_cache
     end
 
     def export
@@ -44,6 +45,16 @@ module Suma
       }
     end
 
+    # A shared, content-addressed schema cache when a cache directory is
+    # configured (via the +:cache_dir+ option or the SUMA_SCHEMA_CACHE_DIR
+    # environment variable), otherwise a null cache (caching disabled).
+    def build_cache
+      directory = options[:cache_dir] || ENV.fetch("SUMA_SCHEMA_CACHE_DIR", nil)
+      return NullCache.new if directory.nil? || directory.empty?
+
+      SchemaCache.new(directory)
+    end
+
     def export_to_directory(schemas)
       schemas.each do |schema|
         export_single_schema(schema)
@@ -59,6 +70,7 @@ module Suma
         path: schema.path.to_s,
         output_path: schema_output_path,
         is_standalone_file: is_standalone,
+        cache: @cache,
       )
 
       express_schema.save_exp(with_annotations: options[:annotations])
