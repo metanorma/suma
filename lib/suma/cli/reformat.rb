@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "thor"
-require_relative "../thor_ext"
 
 module Suma
   module Cli

@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "utils"
 require "lutaml/model"
-require_relative "collection_manifest"
 require "metanorma"
 
 module Suma

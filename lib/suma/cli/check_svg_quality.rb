@@ -1,12 +1,6 @@
 # frozen_string_literal: true
 
 require "pathname"
-require_relative "../svg_quality"
-require_relative "../svg_quality/report"
-require_relative "../svg_quality/batch_report"
-require_relative "../svg_quality/formatters/terminal_formatter"
-require_relative "../svg_quality/formatters/json_formatter"
-require_relative "../svg_quality/formatters/yaml_formatter"
 
 module Suma
   module Cli

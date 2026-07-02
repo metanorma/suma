@@ -4,7 +4,9 @@ require "svg_conform"
 
 module Suma
   module SvgQuality
-    # Quality levels computed from error count
+    autoload :Report,      "suma/svg_quality/report"
+    autoload :BatchReport, "suma/svg_quality/batch_report"
+
     module QualityTiers
       CRITICAL = { name: :critical, min_errors: 200, emoji: "💥" }.freeze
       HIGH = { name: :high, min_errors: 100, emoji: "🔴" }.freeze

@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 require "thor"
-require_relative "../thor_ext"
-require_relative "../jsdai"
 require "fileutils"
 
 module Suma

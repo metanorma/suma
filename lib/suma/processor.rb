@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "schema_collection"
-require_relative "utils"
-require_relative "collection_config"
-require_relative "site_config"
 require "metanorma"
 
 module Suma
@@ -41,11 +37,12 @@ module Suma
       collection_config_path = site_config.metanorma.source.files.first
       collection_config = Suma::CollectionConfig.from_file(collection_config_path)
       collection_config.path = collection_config_path
-      collection_config.manifest.expand_schemas_only("schema_docs")
 
-      exported_schema_config = collection_config.manifest.export_schema_config(schemas_all_path)
+      traverser = ManifestTraverser.new(collection_config.manifest)
+      traverser.expand_schemas_only("schema_docs")
+
+      exported_schema_config = traverser.export_schema_config(schemas_all_path)
       exported_schema_config.path = schemas_all_path
-
       exported_schema_config.to_file
 
       collection_config
@@ -72,7 +69,7 @@ module Suma
 
     def build_collection(collection_config, output_directory)
       new_collection_config_path = "collection-output.yaml"
-      collection_config.manifest.remove_schemas_only_sources
+      ManifestTraverser.new(collection_config.manifest).remove_schemas_only_sources
       collection_config.to_file(new_collection_config_path)
 
       collection = Metanorma::Collection.parse(new_collection_config_path)

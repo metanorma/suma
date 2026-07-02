@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "report"
-
 module Suma
   module SvgQuality
     # Batch report wrapping multiple SVG quality reports
