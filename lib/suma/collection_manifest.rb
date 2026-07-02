@@ -4,6 +4,13 @@ require "metanorma"
 require "expressir"
 
 module Suma
+  # Pure data model for one node of a Metanorma collection manifest.
+  #
+  # CollectionManifest extends the Metanorma config manifest to add the
+  # `schemas_only` flag and an `entry` sub-collection. It owns only state:
+  # attributes, YAML mappings, and the `schema_config` slot populated by
+  # SchemaDiscovery. Tree-walking logic lives in ManifestTraverser; schema
+  # I/O lives in SchemaDiscovery.
   class CollectionManifest < Metanorma::Collection::Config::Manifest
     attribute :schemas_only, Lutaml::Model::Type::Boolean
     attribute :entry, CollectionManifest, collection: true,
@@ -31,116 +38,6 @@ module Suma
 
     def docref_from_yaml(model, value)
       model.entry = CollectionManifest.from_yaml(value.to_yaml)
-    end
-
-    # Recursively exports schema configuration by traversing collection manifests.
-    #
-    # This method builds an EXPRESS Schema Manifest (Expressir::SchemaManifest) by:
-    # 1. Starting with an empty or existing Expressir::SchemaManifest
-    # 2. Recursively traversing child entries to collect schemas
-    # 3. Using Expressir::SchemaManifest#concat to combine manifests
-    #
-    # The actual schema manifest operations (creation, concatenation, serialization)
-    # are handled by Expressir's SchemaManifest class, keeping the logic DRY.
-    #
-    # @param path [String] Base path for resolving relative schema paths
-    # @return [Expressir::SchemaManifest] Combined schema manifest
-    def export_schema_config(path)
-      export_config = @schema_config || Expressir::SchemaManifest.new
-      return export_config unless entry
-
-      entry.each do |x|
-        child_config = x.export_schema_config(path)
-        # Use Expressir's concat method to combine schema manifests
-        export_config.concat(child_config) if child_config
-      end
-
-      export_config
-    end
-
-    def lookup_schemas_only
-      results = entry.select(&:schemas_only)
-      results << self if schemas_only
-      results
-    end
-
-    def process_entry(schema_output_path)
-      return [self] unless entry
-
-      ret = entry.each_with_object([]) do |e, m|
-        add = e.expand_schemas_only(schema_output_path)
-        m.concat(add)
-      end
-
-      self.entry = ret
-      [self]
-    end
-
-    def expand_schemas_only(schema_output_path)
-      return process_entry(schema_output_path) unless file
-
-      update_schema_config
-
-      return process_entry(schema_output_path) unless schemas_only
-
-      # If we are going to keep the schemas-only file and compile it, we can't
-      # have it showing up in output.
-      self.index = false
-
-      [self, added_collection_manifest(schema_output_path)]
-    end
-
-    def remove_schemas_only_sources
-      ret = entry.each_with_object([]) do |e, m|
-        e.schemas_only or m << e
-      end
-      self.entry = ret
-    end
-
-    def entries(schema_output_path)
-      @schema_config.schemas.map do |schema|
-        fname = [File.basename(schema.path, ".exp"), ".xml"].join
-
-        CollectionManifest.new(
-          identifier: schema.id,
-          title: schema.id,
-          file: File.join(schema_output_path, schema.id, "doc_#{fname}"),
-          # schema_source: schema.path
-        )
-      end
-    end
-
-    def added_collection_manifest(schema_output_path)
-      doc = CollectionConfig.from_file(file)
-      doc_id = doc.bibdata.id
-
-      # we need to separate this file from the following new entries
-      added = CollectionManifest.new(
-        title: "Collection",
-        type: "collection",
-        identifier: "#{identifier}_",
-      )
-
-      added.entry = [
-        CollectionManifest.new(
-          title: doc_id,
-          type: "document",
-          entry: entries(schema_output_path),
-        ),
-      ]
-
-      added
-    end
-
-    def update_schema_config
-      # If there is collection.yml, this is a document collection, we process
-      # schemas.yaml.
-      if File.basename(file) == "collection.yml"
-        schemas_yaml_path = File.join(File.dirname(file), "schemas.yaml")
-        if schemas_yaml_path && File.exist?(schemas_yaml_path)
-          @schema_config = Expressir::SchemaManifest.from_file(schemas_yaml_path)
-        end
-      end
     end
   end
 end
