@@ -1,11 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "express_schema"
-require_relative "schema_attachment"
-require_relative "schema_document"
-require_relative "schema_exporter"
 require "expressir"
-require_relative "utils"
 
 module Suma
   class SchemaCollection
@@ -30,36 +25,14 @@ module Suma
       @schema_name_to_docs[schema_name]
     end
 
-    def process_schemas(schemas, klass)
-      schemas.each do |config_schema|
-        process_schema(config_schema, klass)
-      end
-    end
-
-    def process_schema(config_schema, klass)
-      s = ExpressSchema.new(
-        id: config_schema.id, path: config_schema.path.to_s,
-        output_path: @output_path_schemas.to_s
-      )
-
-      doc = klass.new(
-        schema: s, output_path: @output_path_docs.join(s.id),
-      )
-
-      @docs[s.id] = doc
-      @schemas[s.id] = s
-      @schema_name_to_docs[s.id] = doc
-    end
-
     def finalize
-      process_schemas(@config.schemas, SchemaAttachment)
+      process_schemas(@config.schemas, SchemaTemplate::Plain)
 
-      manifest_entry = @manifest.lookup_schemas_only
-
-      manifest_entry.each do |entry|
+      schemas_only_entries = ManifestTraverser.new(@manifest).find_schemas_only
+      schemas_only_entries.each do |entry|
         next unless entry.schema_config
 
-        process_schemas(entry.schema_config.schemas, SchemaDocument)
+        process_schemas(entry.schema_config.schemas, SchemaTemplate::Document)
       end
     end
 
@@ -73,9 +46,32 @@ module Suma
       )
       exporter.export
 
-      docs.each_pair do |_schema_id, entry|
-        entry.compile
+      docs.each_pair do |_schema_id, compiler|
+        compiler.compile
       end
+    end
+
+    private
+
+    def process_schemas(schemas, template_class)
+      schemas.each { |s| process_schema(s, template_class) }
+    end
+
+    def process_schema(config_schema, template_class)
+      express = ExpressSchema.new(
+        id: config_schema.id, path: config_schema.path.to_s,
+        output_path: @output_path_schemas.to_s
+      )
+
+      compiler = SchemaCompiler.new(
+        schema: express,
+        output_path: @output_path_docs.join(express.id),
+        template: template_class.new(express.id),
+      )
+
+      @docs[express.id] = compiler
+      @schemas[express.id] = express
+      @schema_name_to_docs[express.id] = compiler
     end
   end
 end
