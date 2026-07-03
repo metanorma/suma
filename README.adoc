@@ -1065,34 +1065,31 @@ examples demonstrate common usage patterns.
 require 'suma'
 
 # Build a collection with default settings
-Suma::Processor.run(
+Suma::Processor.new(
   metanorma_yaml_path: "metanorma-srl.yml",
   schemas_all_path: "schemas-srl.yml",
   compile: true,
   output_directory: "_site"
-)
+).run
 
 # Generate schema listing without compilation
-Suma::Processor.run(
+Suma::Processor.new(
   metanorma_yaml_path: "metanorma-srl.yml",
   schemas_all_path: "schemas-srl.yml",
-  compile: false,
-  output_directory: "_site"
-)
+  compile: false
+).run
 ----
 
-=== Working with schema configurations
+=== Working with schema manifests
+
+Schema manifests are loaded via `Expressir::SchemaManifest`:
 
 [source,ruby]
 ----
 require 'suma'
 
-# Load schemas using SchemaConfig
 schemas_file_path = "schemas-srl.yml"
-schemas_config = Suma::SchemaConfig::Config.from_yaml(IO.read(schemas_file_path))
-
-# Set the initial path to resolve relative paths
-schemas_config.set_initial_path(schemas_file_path)
+schemas_config = Expressir::SchemaManifest.from_file(schemas_file_path)
 
 # Access schema information
 schemas_config.schemas.each do |schema|
@@ -1100,6 +1097,67 @@ schemas_config.schemas.each do |schema|
   puts "Schema path: #{schema.path}"
 end
 ----
+
+=== Extracting terms
+
+[source,ruby]
+----
+require 'suma'
+
+Suma::TermExtractor.new(
+  "schemas-smrl-part-2.yml",
+  "glossarist_output",
+  urn: "urn:iso:std:iso:10303:-2:ed-2:en:tech:*",
+).call
+----
+
+=== Generating a register.yaml
+
+[source,ruby]
+----
+require 'suma'
+
+Suma::RegisterManifestGenerator.new(
+  "schemas-smrl-part-2.yml",
+  "register_output",
+  urn: "urn:iso:std:iso:10303:-2:ed-2:en:tech:*",
+  id: "iso10303-2-express",
+  ref: "ISO 10303-2 EXPRESS Concepts",
+).generate
+----
+
+=== Architecture
+
+Suma's domain is split into MECE concerns:
+
+* **Data models** (pure): `CollectionManifest`, `ExpressSchema`
+* **Value objects** (pure): `SchemaCategory`, `Urn`
+* **Services** (single concern): `ManifestTraverser`, `SchemaDiscovery`,
+  `SchemaCompiler`, `SchemaExporter`, `SchemaIndex`, `LinkValidator`,
+  `SchemaComparer`, `SchemaManifestGenerator`, `TermExtractor`,
+  `RegisterManifestGenerator`, `Processor`
+* **Renderers** (pure, composable): `SchemaTemplate::Plain`,
+  `SchemaTemplate::Document`
+
+Key invariants:
+
+* The classifier `ExpressSchema::Type.classify(id:, path:)` is the single
+  source of truth for schema type. `SchemaCategory`, `SchemaNaming`,
+  `SchemaExporter`, and `RegisterManifestGenerator` all derive from it.
+* `Urn` owns URN semantics (wildcard stripping, base/alias split, leaf
+  composition).
+* `CollectionManifest` is a pure data model; tree walking lives in
+  `ManifestTraverser`, schema I/O lives in `SchemaDiscovery`.
+* `SchemaCompiler` orchestrates one Metanorma compilation; the adoc body
+  is injected via a `SchemaTemplate::*` renderer.
+
+Code-style rules enforced throughout `lib/suma/`:
+
+* Ruby `autoload` only — no `require_relative`
+* No `send` to call private methods
+* No `instance_variable_set` / `instance_variable_get`
+* No `respond_to?` for type checking
+* `Utils.log` writes to `$stderr`; debug level gated by `SUMA_DEBUG`
 
 
 == Copyright and license
