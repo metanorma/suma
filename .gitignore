@@ -13,11 +13,8 @@
 .ruby-version
 Gemfile.lock
 
-# local planning scratch directories (not for commit)
-/TODO.clean/
-/TODO.cleanup/
-/TODO.refactor/
-/TODO.remaining/
+# local planning scratch directories and files (not for commit)
+/TODO*
 
 # vendored gems (use Gemfile / Gemfile.lock elsewhere)
 /*.gem
