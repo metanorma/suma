@@ -26,6 +26,7 @@ module Suma
   autoload :SchemaTemplate,         "suma/schema_template"
   autoload :SiteConfig,             "suma/site_config"
   autoload :SvgQuality,             "suma/svg_quality"
+  autoload :TermClassification,     "suma/term_classification"
   autoload :TermExtractor,          "suma/term_extractor"
   autoload :ThorExt,                "suma/thor_ext"
   autoload :Urn,                    "suma/urn"

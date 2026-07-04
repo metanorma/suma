@@ -64,7 +64,9 @@ module Suma
 
       raise Error, "Schema must have an associated file" unless schema.file
 
-      collection = build_managed_concept_collection(schema)
+      classification = TermClassification.for_schema(id: schema.id,
+                                                      path: schema.file)
+      collection = build_managed_concept_collection(schema, classification)
       output_data(collection)
       collection
     end
@@ -86,7 +88,7 @@ module Suma
       end
     end
 
-    def build_managed_concept_collection(schema)
+    def build_managed_concept_collection(schema, classification)
       source_ref = get_source_ref(schema)
       section_ref = get_section_ref(schema)
 
@@ -102,6 +104,7 @@ module Suma
             entity: entity,
             source_ref: source_ref,
             uuid: localized_concept_id,
+            classification: classification,
           )
 
           managed_data = Glossarist::V3::ManagedConceptData.new.tap do |data|
@@ -126,12 +129,13 @@ module Suma
       end
     end
 
-    def build_localized_concept(schema:, entity:, source_ref:, uuid:)
-      schema_domain = get_domain(schema)
+    def build_localized_concept(schema:, entity:, source_ref:, uuid:,
+                                classification:)
+      schema_domain = classification.domain_for(schema.id)
 
       localized_concept_data = Glossarist::V3::ConceptData.new.tap do |data|
         data.terms = get_entity_terms(entity)
-        data.definition = get_entity_definitions(entity, schema)
+        data.definition = get_entity_definitions(entity, schema, classification)
         data.language_code = @language_code
         data.domain = schema_domain
         data.sources = [source_ref] if source_ref
@@ -200,16 +204,6 @@ module Suma
       localities
     end
 
-    def get_domain(schema)
-      prefix = if schema.id.end_with?("_arm", "_mim")
-                 "application module"
-               else
-                 "resource"
-               end
-
-      "#{prefix}: #{schema.id}"
-    end
-
     def get_entity_terms(entity)
       [
         Glossarist::Designation::Base.new(
@@ -220,11 +214,8 @@ module Suma
       ]
     end
 
-    def get_entity_definitions(entity, schema)
-      schema_type = extract_file_type(schema.file)
-      get_domain(schema)
-
-      definition = generate_entity_definition(entity, schema, schema_type)
+    def get_entity_definitions(entity, schema, classification)
+      definition = generate_entity_definition(entity, schema, classification)
       [Glossarist::V3::DetailedDefinition.new(content: definition)]
     end
 
@@ -306,17 +297,6 @@ module Suma
       notes.each do |note|
         note.content = note.content.gsub(/\s+\(see(.*?){1,999}\)/, "")
       end
-    end
-
-    def extract_file_type(filename)
-      match = filename.match(/(arm|mim|bom)_annotated\.exp$/)
-      return "resource" unless match
-
-      {
-        "arm" => "module_arm",
-        "mim" => "module_mim",
-        "bom" => "business_object_model",
-      }[match.captures[0]] || "resource"
     end
 
     def starts_with_list?(content)
@@ -420,22 +400,13 @@ module Suma
       entity_id.downcase.gsub("_", " ")
     end
 
-    def generate_entity_definition(entity, schema, schema_type)
+    def generate_entity_definition(entity, schema, classification)
       return "" if entity.nil?
 
-      entity_type = case schema_type
-                    when "module_arm"
-                      urn_mention(term_urn("general.application_object"),
-                                  "application object")
-                    when "module_mim"
-                      urn_mention(term_urn("express-language.entity_data_type"),
-                                  "entity data type")
-                    when "resource", "business_object_model"
-                      urn_mention(term_urn("express-language.entity_data_type"),
-                                  "entity data type")
-                    else
-                      raise Error, "[suma] encountered unsupported schema_type"
-                    end
+      entity_type = urn_mention(
+        term_urn(classification.entity_term),
+        classification.entity_display,
+      )
 
       entity_ref = urn_mention(term_urn("express-language.entity"), "entity")
 
