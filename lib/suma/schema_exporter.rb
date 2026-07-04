@@ -3,8 +3,19 @@
 require "fileutils"
 
 module Suma
-  # SchemaExporter exports EXPRESS schemas from a manifest
-  # with configurable options for annotations and ZIP packaging
+  # Exports EXPRESS schemas to a directory, with optional ZIP packaging.
+  #
+  # Pure sink: the exporter accepts already-loaded +Suma::ExpressSchema+
+  # instances and writes their content to disk. Construction of those
+  # instances (with the right +output_path+ and +is_standalone_file+
+  # flags) is the caller's responsibility — the exporter does not
+  # reach across the seam to inspect manifest entries or classify
+  # schema types itself.
+  #
+  # This is a deep module: a small interface (one +export+ method, one
+  # option hash) backed by save_exp + zip packaging. The CLI and
+  # SchemaCollection adapters construct ExpressSchema instances; the
+  # exporter never inspects their shape.
   class SchemaExporter
     attr_reader :schemas, :output_path, :options
 
@@ -35,30 +46,7 @@ module Suma
 
     def export_to_directory(schemas)
       schemas.each do |schema|
-        export_single_schema(schema)
-      end
-    end
-
-    def export_single_schema(schema)
-      is_standalone = !schema.is_a?(Expressir::SchemaManifestEntry)
-      schema_output_path = determine_output_path(schema, is_standalone)
-
-      express_schema = ExpressSchema.new(
-        id: schema.id,
-        path: schema.path.to_s,
-        output_path: schema_output_path,
-        is_standalone_file: is_standalone,
-      )
-
-      express_schema.save_exp(with_annotations: options[:annotations])
-    end
-
-    def determine_output_path(schema, is_standalone)
-      if is_standalone
-        output_path.to_s
-      else
-        category = SchemaCategory.for_schema(id: schema.id, path: schema.path)
-        output_path.join(category.directory).to_s
+        schema.save_exp(with_annotations: options[:annotations])
       end
     end
 
