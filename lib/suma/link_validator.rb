@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "expressir"
+require "suma/link_validation"
 
 module Suma
   LinkValidationResult = Struct.new(:file, :line, :link, :reason,
@@ -28,7 +29,7 @@ module Suma
       content = File.read(file)
       index = {}
       content.lines.each_with_index do |line, idx|
-        line.scan(/<<express:([^,>]+)(?:,[^>]+)?>>/).flatten.each do |link|
+        line.scan(LinkValidation::EXPRESS_LINK_PATTERN).flatten.each do |link|
           index[link] ||= idx
         end
       end

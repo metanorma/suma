@@ -1,0 +1,4 @@
+---
+schemas:
+  test_schema:
+    path: math_symbols.exp
