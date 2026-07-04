@@ -4,16 +4,19 @@ require "pathname"
 
 module Suma
   module Cli
-    # Check SVG quality using svg_conform Validator API - thin CLI wrapper
+    # Check SVG quality. Thin adapter around +Suma::SvgQuality::Scanner+:
+    # argument parsing, file discovery, sorting, filtering, output
+    # formatting. The deep scanner module owns validation orchestration
+    # and is reachable from specs without invoking Thor.
     class CheckSvgQuality
       DATA_PATH = "schemas"
       DEFAULT_PATTERN = "**/*.svg"
       DEFAULT_PROFILE = :metanorma
 
       def initialize(pattern: DEFAULT_PATTERN, profile: DEFAULT_PROFILE,
-                    format: "terminal", output: nil, min_errors: nil,
-                    summary_only: false, progress: false, limit: nil,
-                    sort: "errors")
+                     format: "terminal", output: nil, min_errors: nil,
+                     summary_only: false, progress: false, limit: nil,
+                     sort: "errors")
         @options = {
           pattern: pattern,
           profile: profile,
@@ -31,63 +34,16 @@ module Suma
         require "svg_conform"
 
         path_obj = Pathname.new(path).expand_path
-
-        # Enable progress by default when outputting to terminal
         show_progress = options[:progress] || ($stdout.tty? && !options[:output])
-        if show_progress
-          $stdout.sync = true
-          $stderr.sync = true
-        end
+        sync_stdio! if show_progress
 
-        if path_obj.file?
-          # Single file mode - show detailed errors
-          analyze_single_file(path_obj)
+        files = discover_files(path_obj)
+        return if files.empty?
+
+        if single_file?(path_obj, files)
+          print_single_report(scan_single(files.first))
         else
-          # Directory mode - show batch report
-          svg_files = find_svg_files(path_obj)
-
-          if svg_files.empty?
-            puts "No SVG files found in #{path}"
-            return
-          end
-
-          puts "🔍 Scanning #{svg_files.size} SVG files..."
-          puts
-
-          reports = analyze_files_one_by_one(svg_files, show_progress)
-          batch_report = SvgQuality::BatchReport.new(reports)
-          sorted_report = sort_report(batch_report)
-          output_report(sorted_report)
-        end
-      end
-
-      def analyze_single_file(path)
-        validator = SvgConform::Validator.new
-        result = validator.validate_file(path.to_s, profile: options[:profile])
-
-        puts "📄 SVG Quality Report: #{path}"
-        puts ""
-        puts "  Valid: #{result.valid? ? 'YES ✅' : 'NO ❌'}"
-        puts "  Errors: #{result.error_count}"
-        puts ""
-
-        if result.errors.any?
-          puts "  📋 Error Details"
-          puts ""
-
-          # Group errors by requirement_id
-          by_req = result.errors.group_by(&:requirement_id)
-
-          by_req.each do |req_id, errors|
-            puts "  #{req_id} (#{errors.size} occurrences)"
-            errors.first(5).each do |e|
-              puts "    - #{e.message}"
-            end
-            if errors.size > 5
-              puts "    ... and #{errors.size - 5} more"
-            end
-            puts ""
-          end
+          scan_and_output(files, show_progress)
         end
       end
 
@@ -95,7 +51,25 @@ module Suma
 
       attr_reader :options
 
-      def find_svg_files(path)
+      def single_file?(path_obj, files)
+        path_obj.file? && files.size == 1
+      end
+
+      def scan_and_output(files, show_progress)
+        puts "🔍 Scanning #{files.size} SVG files..." if show_progress
+        batch = SvgQuality::Scanner.new(
+          profile: options[:profile],
+          progress: progress_adapter(show_progress),
+        ).scan(files)
+        output_report(sort_report(batch))
+      end
+
+      def sync_stdio!
+        $stdout.sync = true
+        $stderr.sync = true
+      end
+
+      def discover_files(path)
         if path.directory?
           Pathname.glob(path.join(options[:pattern])).select(&:file?)
         elsif path.file? && path.extname == ".svg"
@@ -105,34 +79,47 @@ module Suma
         end
       end
 
-      def analyze_files_one_by_one(files, show_progress = false)
-        validator = SvgConform::Validator.new
-        reports = []
+      def scan_single(path)
+        SvgQuality::Scanner.new(profile: options[:profile]).scan_file(path)
+      end
 
-        files.each_with_index do |file, index|
-          result = validator.validate_file(file.to_s,
-                                           profile: options[:profile])
-          report = SvgQuality::Report.new(file.to_s, result)
-          reports << report
+      def print_single_report(report)
+        result = report
+        puts "📄 SVG Quality Report: #{result.file_path}"
+        puts ""
+        puts "  Valid: #{result.valid? ? 'YES ✅' : 'NO ❌'}"
+        puts "  Errors: #{result.error_count}"
+        puts ""
 
-          if show_progress
-            tier = report.quality_tier
-            status = report.valid? ? "✅" : "❌"
-            msg = "  [#{index + 1}/#{files.size}] #{tier[:emoji]} #{report.error_count} errors #{status} #{shorten_path(file)}\n"
-            $stderr.print msg
-            $stderr.flush
-          end
+        return unless result.errors.any?
+
+        puts "  📋 Error Details"
+        puts ""
+        by_req = result.errors.group_by(&:requirement_id)
+        by_req.each do |req_id, errors|
+          puts "  #{req_id} (#{errors.size} occurrences)"
+          errors.first(5).each { |e| puts "    - #{e.message}" }
+          puts "    ... and #{errors.size - 5} more" if errors.size > 5
+          puts ""
         end
+      end
 
-        reports
+      def progress_adapter(enabled)
+        return SvgQuality::Scanner::NullProgress.new unless enabled
+
+        ->(_index, _total, report) do
+          tier = report.quality_tier
+          status = report.valid? ? "✅" : "❌"
+          $stderr.print "  #{tier[:emoji]} #{report.error_count} errors " \
+                        "#{status} #{shorten_path(report.file_path)}\n"
+          $stderr.flush
+        end
       end
 
       def sort_report(batch_report)
         case options[:sort]
-        when :quality
-          batch_report.sort_by_quality
-        else
-          batch_report.sort_by_errors
+        when :quality then batch_report.sort_by_quality
+        else batch_report.sort_by_errors
         end
       end
 
@@ -140,19 +127,23 @@ module Suma
         filtered = batch_report.filter_by_min_errors(options[:min_errors])
         limited = filtered.limit(options[:limit])
 
-        formatter = case options[:format].to_sym
-                    when :json
-                      SvgQuality::Formatters::JsonFormatter.new(limited,
-                                                                output: options[:output])
-                    when :yaml
-                      SvgQuality::Formatters::YamlFormatter.new(limited,
-                                                                output: options[:output])
-                    else
-                      SvgQuality::Formatters::TerminalFormatter.new(limited,
-                                                                    output: options[:output], sort: options[:sort])
-                    end
-
+        formatter = formatter_for(limited)
         puts formatter.format
+      end
+
+      def formatter_for(batch_report)
+        case options[:format].to_sym
+        when :json
+          SvgQuality::Formatters::JsonFormatter.new(batch_report,
+                                                    output: options[:output])
+        when :yaml
+          SvgQuality::Formatters::YamlFormatter.new(batch_report,
+                                                    output: options[:output])
+        else
+          SvgQuality::Formatters::TerminalFormatter.new(batch_report,
+                                                        output: options[:output],
+                                                        sort: options[:sort])
+        end
       end
 
       def shorten_path(path)
