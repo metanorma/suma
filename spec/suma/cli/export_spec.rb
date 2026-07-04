@@ -3,6 +3,7 @@
 require "spec_helper"
 require "suma/cli/export"
 require "fileutils"
+require "tmpdir"
 
 RSpec.describe Suma::Cli::Export do
   let(:fixtures_path) { File.join(__dir__, "../../fixtures/extract_terms") }

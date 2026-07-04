@@ -40,7 +40,7 @@ module Suma
       finalize
 
       exporter = SchemaExporter.new(
-        schemas: @config.schemas,
+        schemas: schemas.values,
         output_path: @output_path_schemas,
         options: { annotations: false },
       )
