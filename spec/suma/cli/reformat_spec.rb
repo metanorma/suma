@@ -1,52 +1,84 @@
 # frozen_string_literal: true
 
+require "spec_helper"
 require "suma/cli"
-require "suma/utils"
 require "suma/cli/reformat"
+require "suma/express_reformatter"
+require "suma/utils"
+require "tmpdir"
+require "fileutils"
 
 RSpec.describe Suma::Cli::Reformat do
-  subject(:test_subject) { described_class.new }
+  let(:fixtures_path) { File.expand_path("../../fixtures", __dir__) }
 
-  it "reformats EXPRESS files" do
-    instance = described_class.new
-    allow(instance).to receive(:run)
-    instance.reformat(File.expand_path("../../fixtures", __dir__))
-    expect(instance).to have_received(:run)
+  describe "#reformat with a single file" do
+    let(:tmpdir) { Dir.mktmpdir("suma_reformat_spec") }
+
+    after do
+      FileUtils.rm_rf(tmpdir)
+    end
+
+    it "writes the file when ExpressReformatter reports a change" do
+      source = File.join(fixtures_path, "no_changes.exp")
+      file = File.join(tmpdir, "schema.exp")
+      FileUtils.cp(source, file)
+
+      described_class.start(["reformat", file])
+
+      rewritten = File.read(file)
+      expect(rewritten).not_to eq(File.read(source))
+    end
+
+    it "leaves the file untouched when ExpressReformatter reports no change" do
+      source = File.join(fixtures_path, "changes.exp")
+      file = File.join(tmpdir, "schema.exp")
+      FileUtils.cp(source, file)
+      original = File.read(file)
+
+      described_class.start(["reformat", file])
+
+      expect(File.read(file)).to eq(original)
+    end
+
+    it "raises ArgumentError when the file is not an EXPRESS file" do
+      non_exp = File.join(fixtures_path, "sample.adoc")
+      expect { described_class.start(["reformat", non_exp]) }
+        .to raise_error(ArgumentError, /not an EXPRESS file/)
+    end
+
+    it "raises Errno::ENOENT when the file does not exist" do
+      expect { described_class.start(["reformat", "not-found.exp"]) }
+        .to raise_error(Errno::ENOENT)
+    end
   end
 
-  it "raises ENOENT error" do
-    expect do
-      test_subject.reformat("not-found.exp")
-    end.to raise_error(Errno::ENOENT)
-  end
+  describe "#reformat with a directory" do
+    it "raises Errno::ENOENT when no EXPRESS files are found" do
+      empty_dir = Dir.mktmpdir("suma_reformat_empty")
+      begin
+        expect { described_class.start(["reformat", empty_dir]) }
+          .to raise_error(Errno::ENOENT, /No EXPRESS files found/)
+      ensure
+        FileUtils.rm_rf(empty_dir)
+      end
+    end
 
-  it "raises ArgumentError error" do
-    expect do
-      test_subject.reformat(File.expand_path("reformat_spec.rb", __dir__))
-    end.to raise_error(ArgumentError)
-  end
+    it "processes every .exp file in the directory" do
+      tmpdir = Dir.mktmpdir("suma_reformat_batch")
+      begin
+        FileUtils.cp(File.join(fixtures_path, "no_changes.exp"),
+                     File.join(tmpdir, "a.exp"))
+        FileUtils.cp(File.join(fixtures_path, "changes.exp"),
+                     File.join(tmpdir, "b.exp"))
 
-  it "raises ENOENT error when no files found" do
-    expect do
-      test_subject.reformat(File.expand_path(".", __dir__))
-    end.to raise_error(Errno::ENOENT)
-  end
+        expect { described_class.start(["reformat", tmpdir]) }
+          .not_to raise_error
 
-  it "reformats EXPRESS file as changes found" do # rubocop:disable RSpec/ExampleLength
-    instance = described_class.new
-    allow(instance).to receive(:update_exp)
-    instance.reformat(
-      File.expand_path("../../fixtures/no_changes.exp", __dir__),
-    )
-    expect(instance).to have_received(:update_exp)
-  end
-
-  it "ignore reformatting EXPRESS file as no changes found" do # rubocop:disable RSpec/ExampleLength
-    instance = described_class.new
-    allow(instance).to receive(:update_exp)
-    instance.reformat(
-      File.expand_path("../../fixtures/changes.exp", __dir__),
-    )
-    expect(instance).not_to have_received(:update_exp)
+        files = Dir.glob(File.join(tmpdir, "*.exp"))
+        expect(files.size).to eq(2)
+      ensure
+        FileUtils.rm_rf(tmpdir)
+      end
+    end
   end
 end

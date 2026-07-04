@@ -11,6 +11,7 @@ module Suma
   autoload :CollectionConfig,       "suma/collection_config"
   autoload :CollectionManifest,     "suma/collection_manifest"
   autoload :EengineConverter,       "suma/eengine_converter"
+  autoload :ExpressReformatter,     "suma/express_reformatter"
   autoload :ExpressSchema,          "suma/express_schema"
   autoload :LinkValidation,         "suma/link_validation"
   autoload :LinkValidator,          "suma/link_validator"
