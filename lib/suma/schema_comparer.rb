@@ -91,7 +91,7 @@ module Suma
         existing_schema = Expressir::Changes::SchemaChange.from_file(output_path)
       end
 
-      converter = EengineConverter.new(xml_path, schema_name)
+      converter = EengineConverter.new(schema_name, File.read(xml_path))
       change_schema = converter.convert(
         version: options[:version],
         existing_change_schema: existing_schema,
