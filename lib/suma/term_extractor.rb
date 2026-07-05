@@ -6,15 +6,6 @@ require "glossarist"
 
 module Suma
   class TermExtractor
-    REDUNDANT_NOTE_REGEX =
-      %r{
-        ^An?                   # Starts with "A" or "An"
-        \s.*?\sis\sa\stype\sof # Text followed by "is a type of"
-        (\sa|\san)?            # Optional " a" or " an"
-        \s\{\{[^\}]*\}\}       # Text in double curly braces
-        \s*?\.?$               # Optional whitespace and period at the end
-      }x
-
     def initialize(schema_manifest_file, output_path, urn:,
                    language_code: "eng")
       @schema_manifest_file = File.expand_path(schema_manifest_file)
@@ -140,7 +131,11 @@ module Suma
         data.domain = schema_domain
         data.sources = [source_ref] if source_ref
 
-        notes = get_entity_notes(entity, schema_domain, data.definition)
+        notes = NoteProcessor.call(
+          entity.remarks,
+          definitions: data.definition,
+          xref_to_mention: method(:xref_to_mention),
+        )
         data.notes = notes if notes && !notes.empty?
         data.examples = []
       end
@@ -164,6 +159,10 @@ module Suma
 
     def urn_mention(urn, display)
       "{{#{urn},#{display}}}"
+    end
+
+    def xref_to_mention(full_ref, display)
+      urn_mention(express_entity_urn(full_ref), display)
     end
 
     def get_section_ref(schema)
@@ -219,183 +218,6 @@ module Suma
       [Glossarist::V3::DetailedDefinition.new(content: definition)]
     end
 
-    def get_entity_notes(entity, schema_domain, definitions)
-      notes = []
-
-      if entity.remarks && !entity.remarks.empty?
-        trimmed_def = trim_definition(entity.remarks)
-        if trimmed_def && !trimmed_def.empty?
-          notes << Glossarist::V3::DetailedDefinition.new(
-            content: convert_express_xref(trimmed_def, schema_domain),
-          )
-        end
-      end
-
-      notes = only_keep_first_sentence(notes)
-      notes = remove_see_content(notes)
-      notes = remove_redundant_note(notes)
-      notes = remove_invalid_references(notes)
-      compare_with_definitions(notes, definitions)
-    end
-
-    def only_keep_first_sentence(notes)
-      notes.each do |note|
-        if note&.content && should_preserve_complete_structure?(note.content)
-          next
-        end
-
-        if note&.content
-          new_content = note.content
-            .split(".\n").first.strip
-            .split(". ").first.strip
-          note.content = new_content.end_with?(".") ? new_content : "#{new_content}."
-        end
-      end
-    end
-
-    def should_preserve_complete_structure?(content)
-      return false if content.nil? || content.empty?
-
-      lines = content.split("\n")
-      first_paragraph = lines.first&.strip
-
-      if first_paragraph&.end_with?(":") && lines.length > 1
-        if first_paragraph.count(".").positive?
-          return false
-        end
-
-        remaining_content = lines[1..].join("\n")
-        return starts_with_list?(remaining_content.strip)
-      end
-
-      false
-    end
-
-    def compare_with_definitions(notes, definitions)
-      if notes&.first&.content == definitions&.first&.content
-        return []
-      end
-
-      notes
-    end
-
-    def remove_invalid_references(notes)
-      notes.reject do |note|
-        note.content.include?("image::") ||
-          note.content.match?(/<<(.*?){1,999}>>/)
-      end
-    end
-
-    def remove_redundant_note(notes)
-      notes.reject do |note|
-        note.content.match?(REDUNDANT_NOTE_REGEX) &&
-          !note.content.include?("\n")
-      end
-    end
-
-    def remove_see_content(notes)
-      notes.each do |note|
-        note.content = note.content.gsub(/\s+\(see(.*?){1,999}\)/, "")
-      end
-    end
-
-    def starts_with_list?(content)
-      return false if content.nil? || content.empty?
-
-      content.match?(/^\s*[*\-+]\s+/) || content.match?(/^\s*\d+\.\s+/)
-    end
-
-    def trim_definition(definition)
-      return nil if definition.nil? || definition.empty?
-
-      definition_str = definition.is_a?(Array) ? definition.join("\n\n") : definition.to_s
-
-      return nil if definition_str.empty?
-
-      paragraphs = definition_str.split("\n\n")
-      first_paragraph = paragraphs.first
-
-      combined = if paragraphs.length == 1
-                   apply_first_sentence_logic(first_paragraph)
-                 elsif first_paragraph.end_with?(":") && paragraphs.length > 1 && starts_with_list?(paragraphs[1])
-                   complete_list = extract_complete_list(paragraphs, 1)
-                   "#{first_paragraph}\n\n#{complete_list}"
-                 else
-                   apply_first_sentence_logic(first_paragraph)
-                 end
-
-      combined = "#{combined}\n"
-      combined.gsub!(/\n\/\/.*?\n/, "\n")
-      combined.strip!
-
-      express_reference_to_mention(combined)
-    end
-
-    def apply_first_sentence_logic(paragraph)
-      new_content = paragraph
-        .split(".\n").first.strip
-        .split(". ").first.strip
-
-      new_content.end_with?(".") ? new_content : "#{new_content}."
-    end
-
-    def extract_complete_list(paragraphs, start_index)
-      return paragraphs[start_index] if start_index >= paragraphs.length
-
-      combined = paragraphs[start_index].dup
-      current_index = start_index + 1
-      in_continuation_block = combined.include?("--") && !combined.match?(/--.*--/m)
-
-      while current_index < paragraphs.length
-        next_para = paragraphs[current_index]
-
-        if next_para.match?(/^--\s*$/) || next_para.end_with?("--")
-          in_continuation_block = !in_continuation_block
-          combined += "\n\n#{next_para}"
-          current_index += 1
-          next
-        end
-
-        if in_continuation_block
-          combined += "\n\n#{next_para}"
-          current_index += 1
-          next
-        end
-
-        if starts_with_list?(next_para) || is_list_continuation?(next_para)
-          combined += "\n\n#{next_para}"
-          current_index += 1
-          in_continuation_block = true if next_para.include?("--") && !next_para.match?(/--.*--/m)
-        else
-          break
-        end
-      end
-
-      combined
-    end
-
-    def is_list_continuation?(content)
-      return false if content.nil? || content.empty?
-
-      content.match?(/^\+\s*$/) ||
-        content.match?(/^--\s*$/) ||
-        content.match?(/^\s{2,}/) ||
-        content.start_with?("which", "where", "that")
-    end
-
-    def express_reference_to_mention(description)
-      description
-        .gsub(/<<express:([\w.]+)>>/) do |_match|
-          full_ref = Regexp.last_match[1]
-          entity_id = full_ref.split(".").last
-          urn_mention(express_entity_urn(full_ref), entity_id)
-        end.gsub(/<<express:([\w.]+),([\w. ][\w. ]*)>>/) do |_match|
-          full_ref = Regexp.last_match[1]
-          display = Regexp.last_match(2)
-          urn_mention(express_entity_urn(full_ref), display)
-        end
-    end
-
     def entity_name_to_text(entity_id)
       entity_id.downcase.gsub("_", " ")
     end
@@ -423,14 +245,6 @@ module Suma
           "#{entity_subtypes.join(' and ')} " \
           "that represents the " \
           "#{entity_name_to_text(entity.id)} #{entity_ref}"
-      end
-    end
-
-    def convert_express_xref(content, _schema_domain)
-      content.gsub(/<<express:([\w.]+),([\w. ][\w. ]*)>>/) do
-        full_ref = Regexp.last_match(1)
-        display = Regexp.last_match(2)
-        urn_mention(express_entity_urn(full_ref), display)
       end
     end
   end
