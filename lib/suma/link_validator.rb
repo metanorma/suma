@@ -8,6 +8,8 @@ module Suma
                                     keyword_init: true)
 
   class LinkValidator
+    autoload :Step, "suma/link_validator/step"
+
     def initialize(index)
       @index = index
     end
@@ -100,113 +102,34 @@ module Suma
     end
 
     def validate_deep_path(schema, element, path_parts, file, line_idx,
-full_link)
+                           full_link)
       current = element
       current_path = "#{schema.id}.#{element.id}"
+      context = Step::Context.new(file: file, line: line_idx, link: full_link,
+                                  schema: schema, path: current_path)
 
       path_parts.each do |part|
-        case current
-        when Expressir::Model::Declarations::Entity
-          attribute = current.attributes&.find do |a|
-            a.id.downcase == part.downcase
-          end
+        step = Step.for(current)
+        return unsupported_step_failure(context) unless step
 
-          unless attribute
-            return LinkValidationResult.new(
-              file: file,
-              line: line_idx + 1,
-              link: full_link,
-              reason: "Attribute '#{part}' not found in entity '#{current_path}'",
-            )
-          end
+        outcome = step.new.navigate(current, part, context)
+        return outcome if outcome.is_a?(LinkValidationResult)
 
-          current = attribute
-          current_path += ".#{part}"
-
-        when Expressir::Model::Declarations::Type
-          underlying = current.underlying_type
-
-          if underlying.is_a?(Expressir::Model::DataTypes::Enumeration)
-            enum_value = underlying.items.find do |e|
-              e.id.downcase == part.downcase
-            end
-
-            unless enum_value
-              return LinkValidationResult.new(
-                file: file,
-                line: line_idx + 1,
-                link: full_link,
-                reason: "Enumeration value '#{part}' not found in type '#{current_path}'",
-              )
-            end
-
-            current = enum_value
-            current_path += ".#{part}"
-
-          elsif underlying
-            base_type = find_base_type(schema, underlying)
-
-            unless base_type
-              return LinkValidationResult.new(
-                file: file,
-                line: line_idx + 1,
-                link: full_link,
-                reason: "Base type not found for '#{current_path}'",
-              )
-            end
-
-            current = base_type
-
-          else
-            return LinkValidationResult.new(
-              file: file,
-              line: line_idx + 1,
-              link: full_link,
-              reason: "Cannot navigate deeper from type '#{current_path}'",
-            )
-          end
-
-        else
-          return LinkValidationResult.new(
-            file: file,
-            line: line_idx + 1,
-            link: full_link,
-            reason: "Cannot navigate deeper from '#{current_path}'",
-          )
-        end
+        current = outcome
+        current_path += ".#{part}"
+        context.path = current_path
       end
 
       nil
     end
 
-    def find_base_type(schema, type_ref)
-      return nil if %w[INTEGER REAL STRING BOOLEAN NUMBER BINARY
-                       LOGICAL].include?(type_ref.to_s.upcase)
-
-      if type_ref.is_a?(String)
-        find_schema_element(schema, type_ref)
-      elsif type_ref.is_a?(Expressir::Model::ModelElement)
-        type_ref
-      end
-    end
-
-    def find_schema_element(schema, element_name)
-      [
-        schema.entities,
-        schema.types,
-        schema.constants,
-        schema.functions,
-        schema.rules,
-        schema.procedures,
-        schema.subtype_constraints,
-      ].each do |collection|
-        element = collection&.find do |e|
-          e.id.downcase == element_name.downcase
-        end
-        return element if element
-      end
-
-      nil
+    def unsupported_step_failure(context)
+      LinkValidationResult.new(
+        file: context.file,
+        line: context.line + 1,
+        link: context.link,
+        reason: "Cannot navigate deeper from '#{context.path}'",
+      )
     end
   end
 end
