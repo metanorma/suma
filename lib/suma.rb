@@ -29,6 +29,7 @@ module Suma
   autoload :SchemaNaming,           "suma/schema_naming"
   autoload :SchemaTemplate,         "suma/schema_template"
   autoload :SiteConfig,             "suma/site_config"
+  autoload :StagedCollectionBuilder, "suma/staged_collection_builder"
   autoload :SvgQuality,             "suma/svg_quality"
   autoload :TermClassification,     "suma/term_classification"
   autoload :TermExtractor,          "suma/term_extractor"
