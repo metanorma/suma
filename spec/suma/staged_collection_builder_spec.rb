@@ -18,6 +18,8 @@ RSpec.describe Suma::StagedCollectionBuilder do
                         output_directory: File.join(dir, "_site"))
   end
 
+  subject(:builder) { builder_for(manifest) }
+
   let(:manifest) do
     {
       "directives" => ["documents-inline"],
@@ -40,8 +42,6 @@ RSpec.describe Suma::StagedCollectionBuilder do
       },
     }
   end
-
-  subject(:builder) { builder_for(manifest) }
 
   describe "#collection_members" do
     let(:members) { builder.send(:collection_members) }

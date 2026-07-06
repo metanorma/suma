@@ -67,21 +67,23 @@ module Suma
     # file reference (+fileref+ or legacy +file+) that is not an attachment.
     def collection_members
       members = []
-      collect = lambda do |node|
-        case node
-        when Array then node.each { |n| collect.call(n) }
-        when Hash
-          ref = node["fileref"] || node["file"]
-          if ref && !truthy(node["attachment"])
-            members << { "fileref" => ref,
-                         "identifier" => node["identifier"],
-                         "sectionsplit" => node["sectionsplit"] }.compact
-          end
-          node.each_value { |v| collect.call(v) }
-        end
-      end
-      collect.call(manifest["manifest"])
+      walk_members(manifest["manifest"]) { |member| members << member }
       members
+    end
+
+    def walk_members(node, &block)
+      case node
+      when Array then node.each { |child| walk_members(child, &block) }
+      when Hash then walk_member_hash(node, &block)
+      end
+    end
+
+    def walk_member_hash(node, &block)
+      ref = node["fileref"] || node["file"]
+      ref && !truthy?(node["attachment"]) and
+        yield({ "fileref" => ref, "identifier" => node["identifier"],
+                "sectionsplit" => node["sectionsplit"] }.compact)
+      node.each_value { |value| walk_members(value, &block) }
     end
 
     # Stage one member in its own process: a single-member manifest rendered with
@@ -91,13 +93,12 @@ module Suma
       one_path = File.join(@config_dir, "._suma_staged_#{idx}.yml")
       File.write(one_path, single_member_manifest(member).to_yaml)
       out = File.join(@output_directory, "._staged_out_#{idx}")
-      ok = run_render(
+      run_render(
         manifest_path: one_path,
         opts: { format: [:xml], output_folder: out,
                 preserve_unresolved: true, artifact_store_dir: @store_dir,
                 compile: { install_fonts: false } },
       )
-      ok or raise "[staged] member #{idx} (#{member['identifier']}) failed to stage"
     ensure
       FileUtils.rm_f(one_path)
       FileUtils.rm_rf(File.join(@output_directory, "._staged_out_#{idx}"))
@@ -107,22 +108,10 @@ module Suma
     def reinflate(members)
       reinf_dir = File.join(@output_directory, "_staged_reinflate")
       FileUtils.mkdir_p(reinf_dir)
-      docrefs = members.map.with_index do |member, i|
-        stored = stored_semantic(member["identifier"]) or
-          raise "[staged] no stored artefact for #{member['identifier'].inspect}"
-        name = "member_#{i}.xml"
-        FileUtils.cp(stored, File.join(reinf_dir, name))
-        dr = { "fileref" => name, "identifier" => member["identifier"] }
-        dr["sectionsplit"] = true if truthy(member["sectionsplit"])
-        dr
-      end
-      man = base_manifest
-      man["manifest"] = { "level" => "collection", "title" => "Collection",
-                          "manifest" => [{ "level" => "subcollection",
-                                           "title" => "Members",
-                                           "docref" => docrefs }] }
+      docrefs = stored_docrefs(members, reinf_dir)
       reinf_path = File.join(reinf_dir, "reinflate.yml")
-      File.write(reinf_path, man.to_yaml)
+      File.write(reinf_path,
+                 base_manifest.merge("manifest" => collection_manifest(docrefs)).to_yaml)
       Utils.log "[staged] reinflating #{docrefs.size} stored members -> " \
                 "#{@output_directory}"
       run_render(
@@ -130,18 +119,33 @@ module Suma
         opts: { format: @formats, output_folder: @output_directory,
                 reinflate: true, coverpage: @coverpage,
                 compile: { install_fonts: false } }.compact,
-      ) or raise "[staged] reinflation failed"
+      )
+    end
+
+    # Copy each member's stored stub into +dir+ and return docref entries pointing
+    # at the copies, keyed by real docid (as the store keys them).
+    def stored_docrefs(members, dir)
+      members.map.with_index do |member, i|
+        stored = stored_semantic(member["identifier"]) or
+          raise "[staged] no stored artefact for #{member['identifier'].inspect}"
+        name = "member_#{i}.xml"
+        FileUtils.cp(stored, File.join(dir, name))
+        dr = { "fileref" => name, "identifier" => member["identifier"] }
+        dr["sectionsplit"] = true if truthy?(member["sectionsplit"])
+        dr
+      end
     end
 
     # A minimal single-member manifest reusing the collection's directives and
     # bibdata, so the isolated render carries the right collection identity.
     def single_member_manifest(member)
-      man = base_manifest
-      man["manifest"] = { "level" => "collection", "title" => "Collection",
-                          "manifest" => [{ "level" => "subcollection",
-                                           "title" => "Members",
-                                           "docref" => [member] }] }
-      man
+      base_manifest.merge("manifest" => collection_manifest([member]))
+    end
+
+    def collection_manifest(docrefs)
+      { "level" => "collection", "title" => "Collection",
+        "manifest" => [{ "level" => "subcollection", "title" => "Members",
+                         "docref" => docrefs }] }
     end
 
     def base_manifest
@@ -161,8 +165,7 @@ module Suma
     end
 
     # Render a manifest in a FRESH child process so its memory is reclaimed on
-    # exit. Under +bundle exec+, the child inherits the bundle. Returns true on
-    # success.
+    # exit. Under +bundle exec+, the child inherits the bundle. Raises on failure.
     def run_render(manifest_path:, opts:)
       script = <<~RUBY
         require "metanorma"
@@ -173,11 +176,13 @@ module Suma
         io.write(Marshal.dump(opts))
         io.close_write
       end
-      $?.success?
+      return if $?.success?
+
+      raise "[staged] render subprocess failed for #{manifest_path}"
     end
 
-    def truthy(val)
-      val == true || val == "true"
+    def truthy?(val)
+      [true, "true"].include?(val)
     end
   end
 end
