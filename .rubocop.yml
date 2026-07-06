@@ -2,6 +2,7 @@
 # See https://github.com/metanorma/cimas
 inherit_from:
   - https://raw.githubusercontent.com/riboseinc/oss-guides/main/ci/rubocop.yml
+  - .rubocop_todo.yml
 
 # Rubocop plugins enabled centrally so every metanorma-org gem picks them up
 # on cimas sync — best practice belongs at the shared-template layer, not
