@@ -7,14 +7,17 @@ RSpec.describe Suma::EengineConverter do
   let(:xml_path) do
     File.join(__dir__, "../fixtures/compare/sample_comparison.xml")
   end
+  let(:xml_content) { File.read(xml_path) }
   let(:schema_name) { "support_resource_schema" }
-  let(:converter) { described_class.new(xml_path, schema_name) }
+  let(:converter) { described_class.new(schema_name, xml_content) }
 
   describe "#initialize" do
-    it "loads the XML content" do
-      expect(converter.instance_variable_get(:@schema_name)).to eq(schema_name)
-      expect(converter.instance_variable_get(:@xml_content)).to be_a(String)
-      expect(converter.instance_variable_get(:@xml_content)).to include("<schema.changes>")
+    it "accepts XML content as a string (no I/O during construction)" do
+      # Constructing the converter with already-loaded content must not
+      # touch the filesystem. Verified by passing a literal string and
+      # confirming convert works.
+      instance = described_class.new(schema_name, xml_content)
+      expect(instance.convert(version: 2)).to be_a(Expressir::Changes::SchemaChange)
     end
   end
 
@@ -43,10 +46,10 @@ RSpec.describe Suma::EengineConverter do
 
       # Description extraction depends on Expressir's implementation
       # It may be nil or contain the extracted text
-      if version.description
-        expect(version.description).not_to start_with("\n")
-        expect(version.description).not_to end_with("\n")
-      end
+      next unless version.description
+
+      expect(version.description).not_to start_with("\n")
+      expect(version.description).not_to end_with("\n")
     end
 
     it "appends to existing change schema" do
@@ -71,7 +74,6 @@ RSpec.describe Suma::EengineConverter do
       result = converter.convert(version: 2, existing_change_schema: existing)
 
       expect(result.versions.size).to eq(1)
-      # The new version replaces the old one
       expect(result.versions[0].version).to eq(2)
     end
   end

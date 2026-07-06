@@ -6,6 +6,7 @@ module Suma
   module SvgQuality
     autoload :Report,      "suma/svg_quality/report"
     autoload :BatchReport, "suma/svg_quality/batch_report"
+    autoload :Scanner,     "suma/svg_quality/scanner"
 
     module QualityTiers
       CRITICAL = { name: :critical, min_errors: 200, emoji: "💥" }.freeze

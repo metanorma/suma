@@ -4,15 +4,21 @@ require "metanorma"
 
 module Suma
   class Processor
+    # Emitted collection manifest that both the normal and staged builds render.
+    COLLECTION_OUTPUT_PATH = "collection-output.yaml"
+
     attr_reader :metanorma_yaml_path, :output_directory, :schemas_all_path,
                 :compile_flag
 
     def initialize(metanorma_yaml_path:, schemas_all_path:, compile: true,
-                   output_directory: "_site")
+                   output_directory: "_site", staged: false)
       @metanorma_yaml_path = metanorma_yaml_path
       @schemas_all_path = schemas_all_path
       @compile_flag = compile
       @output_directory = output_directory
+      # Opt-in memory-bounded staged build (metanorma/suma#94); the default
+      # single-process build below is unchanged when false.
+      @staged = staged
     end
 
     def run
@@ -64,11 +70,21 @@ module Suma
         collection_config, output_directory
       )
 
-      metanorma_collection.render(collection_opts)
+      if @staged
+        # build_collection has written the emitted manifest; stage each member in
+        # its own process, then reinflate. Bounds peak memory to a single member.
+        StagedCollectionBuilder.new(
+          collection_config_path: COLLECTION_OUTPUT_PATH,
+          output_directory: output_directory,
+          coverpage: collection_opts[:coverpage],
+        ).build
+      else
+        metanorma_collection.render(collection_opts)
+      end
     end
 
     def build_collection(collection_config, output_directory)
-      new_collection_config_path = "collection-output.yaml"
+      new_collection_config_path = COLLECTION_OUTPUT_PATH
       ManifestTraverser.new(collection_config.manifest).remove_schemas_only_sources
       collection_config.to_file(new_collection_config_path)
 

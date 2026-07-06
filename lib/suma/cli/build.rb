@@ -12,6 +12,10 @@ module Suma
                        desc: "Compile or skip compile of collection"
       option :schemas_all_path, type: :string, aliases: "-s",
                                 desc: "Generate file that contains all schemas in the collection."
+      option :staged, type: :boolean, default: false,
+                      desc: "Memory-bounded staged build: compile each member in " \
+                            "its own process (sequential) and reinflate. For large " \
+                            "collections that OOM a single-process build (suma#94)."
 
       def build(metanorma_site_manifest)
         unless File.exist?(metanorma_site_manifest)
@@ -34,6 +38,7 @@ module Suma
           schemas_all_path: schemas_all_path,
           compile: options[:compile],
           output_directory: "_site",
+          staged: options[:staged],
         ).run
       end
 

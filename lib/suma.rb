@@ -2,6 +2,7 @@
 
 require "expressir"
 require "lutaml/model"
+require "fileutils"
 
 module Suma
   autoload :VERSION, "suma/version"
@@ -10,9 +11,12 @@ module Suma
   autoload :CollectionConfig,       "suma/collection_config"
   autoload :CollectionManifest,     "suma/collection_manifest"
   autoload :EengineConverter,       "suma/eengine_converter"
+  autoload :ExpressReformatter,     "suma/express_reformatter"
   autoload :ExpressSchema,          "suma/express_schema"
+  autoload :LinkValidation,         "suma/link_validation"
   autoload :LinkValidator,          "suma/link_validator"
   autoload :ManifestTraverser,      "suma/manifest_traverser"
+  autoload :NoteProcessor,          "suma/note_processor"
   autoload :RegisterManifestGenerator, "suma/register_manifest_generator"
   autoload :SchemaCategory,         "suma/schema_category"
   autoload :SchemaCollection,       "suma/schema_collection"
@@ -25,7 +29,9 @@ module Suma
   autoload :SchemaNaming,           "suma/schema_naming"
   autoload :SchemaTemplate,         "suma/schema_template"
   autoload :SiteConfig,             "suma/site_config"
+  autoload :StagedCollectionBuilder, "suma/staged_collection_builder"
   autoload :SvgQuality,             "suma/svg_quality"
+  autoload :TermClassification,     "suma/term_classification"
   autoload :TermExtractor,          "suma/term_extractor"
   autoload :ThorExt,                "suma/thor_ext"
   autoload :Urn,                    "suma/urn"

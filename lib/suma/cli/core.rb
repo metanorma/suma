@@ -40,14 +40,42 @@ module Suma
       desc "extract-terms SCHEMA_MANIFEST_FILE GLOSSARIST_OUTPUT_PATH",
            "Extract terms from SCHEMA_MANIFEST_FILE into " \
            "Glossarist v3 format"
-      def extract_terms(_schema_manifest_file, _glossarist_output_path)
-        Cli::ExtractTerms.start
+      option :urn, type: :string, required: true, aliases: "-u",
+                   desc: "URN for the dataset source " \
+                         "(used for section references)"
+      option :language_code, type: :string, default: "eng", aliases: "-l",
+                             desc: "Language code for the Glossarist"
+      def extract_terms(schema_manifest_file, glossarist_output_path)
+        TermExtractor.new(
+          schema_manifest_file,
+          glossarist_output_path,
+          urn: options[:urn],
+          language_code: options[:language_code],
+        ).call
       end
 
       desc "generate-register SCHEMA_MANIFEST_FILE OUTPUT_PATH",
            "Generate a Glossarist register.yaml with hierarchical sections"
-      def generate_register(_schema_manifest_file, _output_path)
-        Cli::GenerateRegister.start
+      option :urn, type: :string, required: true, aliases: "-u",
+                   desc: "URN prefix for the dataset"
+      option :id, type: :string, required: true,
+                  desc: "Dataset identifier (e.g. iso10303-2-express)"
+      option :ref, type: :string, required: true,
+                   desc: "Human-readable reference label"
+      option :language_code, type: :string, default: "eng", aliases: "-l",
+                             desc: "Language code for section names"
+      option :owner, type: :string, default: Suma::RegisterManifestGenerator::DEFAULT_OWNER,
+                     desc: "Owner of the dataset (e.g. 'ISO/TC 184/SC 4')"
+      def generate_register(schema_manifest_file, output_path)
+        RegisterManifestGenerator.new(
+          schema_manifest_file,
+          output_path,
+          urn: options[:urn],
+          id: options[:id],
+          ref: options[:ref],
+          language_code: options[:language_code],
+          owner: options[:owner],
+        ).generate
       end
 
       desc "convert-jsdai XML_FILE IMAGE_FILE OUTPUT_DIR",
