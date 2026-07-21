@@ -58,9 +58,12 @@ module Suma
     end
 
     def process_schema(config_schema, template_class)
+      category = SchemaCategory.for_schema(
+        id: config_schema.id, path: config_schema.path.to_s,
+      )
       express = ExpressSchema.new(
         id: config_schema.id, path: config_schema.path.to_s,
-        output_path: @output_path_schemas.to_s
+        output_path: @output_path_schemas.join(category.directory).to_s
       )
 
       compiler = SchemaCompiler.new(
