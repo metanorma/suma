@@ -1,0 +1,11 @@
+(*
+   Synthetic MIM schema for the suma dummy-collection fixture.
+   Invented content; no ISO 10303 material.
+*)
+SCHEMA doohickey_mim;
+
+ENTITY doohickey_representation;
+  identifier : STRING;
+END_ENTITY;
+
+END_SCHEMA;

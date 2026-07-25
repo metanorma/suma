@@ -1,0 +1,25 @@
+(*
+   Synthetic test schema for the suma dummy-collection fixture.
+   Invented content; no ISO 10303 material.
+*)
+SCHEMA widget_schema;
+
+REFERENCE FROM gadget_schema
+  (gadget);
+
+TYPE widget_identifier = STRING;
+END_TYPE;
+
+ENTITY widget;
+  id          : widget_identifier;
+  components  : LIST [1:?] OF gadget;
+DERIVE
+  component_count : INTEGER := SIZEOF(components);
+END_ENTITY;
+
+ENTITY labelled_widget
+  SUBTYPE OF (widget);
+  label : STRING;
+END_ENTITY;
+
+END_SCHEMA;

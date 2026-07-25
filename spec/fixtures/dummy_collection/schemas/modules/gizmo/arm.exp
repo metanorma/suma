@@ -1,0 +1,25 @@
+(*
+   Synthetic ARM schema for the suma dummy-collection fixture.
+   Invented content; no ISO 10303 material.
+*)
+SCHEMA gizmo_arm;
+
+TYPE gizmo_state = ENUMERATION OF
+  (idle,
+   spinning,
+   stopped);
+END_TYPE;
+
+ENTITY gizmo;
+  designation : STRING;
+  state       : gizmo_state;
+END_ENTITY;
+
+ENTITY calibrated_gizmo
+  SUBTYPE OF (gizmo);
+  calibration_factor : REAL;
+WHERE
+  sane_factor : calibration_factor > 0.0;
+END_ENTITY;
+
+END_SCHEMA;
