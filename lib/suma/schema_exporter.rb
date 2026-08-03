@@ -23,6 +23,7 @@ module Suma
       @schemas = schemas
       @output_path = Pathname.new(output_path).expand_path
       @options = default_options.merge(options)
+      @cache = build_cache
     end
 
     def export
@@ -45,9 +46,41 @@ module Suma
     end
 
     def export_to_directory(schemas)
-      schemas.each do |schema|
-        schema.save_exp(with_annotations: options[:annotations])
-      end
+      schemas.each { |schema| export_single_schema(schema) }
+    end
+
+    # Reuse cached plain/annotated output when the schema source is unchanged,
+    # otherwise generate it via +save_exp+ and cache the result. The Expressir
+    # parse (the cost) happens only on a cache miss. Caching is an orchestration
+    # concern, so it lives here in the service rather than in the ExpressSchema
+    # data model.
+    def export_single_schema(schema)
+      source = File.read(schema.path.to_s, encoding: "UTF-8")
+      cached = @cache.fetch(source, annotations: options[:annotations])
+      cached ? write_cached(schema, cached) : generate_and_cache(schema, source)
+    end
+
+    def generate_and_cache(schema, source)
+      schema.save_exp(with_annotations: options[:annotations])
+      content = File.read(schema.filename_plain)
+      @cache.store(source, annotations: options[:annotations], content: content)
+    end
+
+    def write_cached(schema, content)
+      relative = Pathname.new(schema.filename_plain).relative_path_from(Dir.pwd)
+      Utils.log "Save schema (cached): #{relative}"
+      FileUtils.mkdir_p(File.dirname(schema.filename_plain))
+      File.write(schema.filename_plain, content)
+    end
+
+    # A shared, content-addressed cache when a cache directory is configured
+    # (via the +:cache_dir+ option or the SUMA_SCHEMA_CACHE_DIR environment
+    # variable), otherwise a null cache (caching disabled).
+    def build_cache
+      directory = options[:cache_dir] || ENV.fetch("SUMA_SCHEMA_CACHE_DIR", nil)
+      return NullCache.new if directory.nil? || directory.empty?
+
+      SchemaCache.new(directory)
     end
 
     # rubocop:disable Metrics/MethodLength
