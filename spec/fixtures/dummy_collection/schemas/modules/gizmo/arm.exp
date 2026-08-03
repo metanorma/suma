@@ -23,3 +23,34 @@ WHERE
 END_ENTITY;
 
 END_SCHEMA;
+
+(*"gizmo_arm"
+Synthetic application resource model exercising entity, subtype, enumeration,
+and EXPRESS-G annotations in the suma dummy collection. It contains no
+ISO 10303 material.
+*)
+
+(*"gizmo_arm.gizmo_state"
+The operating state of a *gizmo*: `idle`, `spinning`, or `stopped`.
+*)
+
+(*"gizmo_arm.gizmo"
+A synthetic device identified by a designation and characterised by its
+operating *gizmo_state*.
+*)
+
+(*"gizmo_arm.calibrated_gizmo"
+A *gizmo* that additionally records a calibration factor, constrained to be
+strictly positive.
+*)
+
+(*"gizmo_arm.__expressg"
+[[gizmo_arm_expg1]]
+[.svgmap]
+====
+image::armexpg1.svg[]
+
+* <<express:gizmo>>; 1
+* <<express:calibrated_gizmo>>; 2
+====
+*)

@@ -22,3 +22,21 @@ WHERE
 END_ENTITY;
 
 END_SCHEMA;
+
+(*"gadget_schema"
+Synthetic resource schema defining the *gadget* component and its supporting
+types. It contains no ISO 10303 material.
+*)
+
+(*"gadget_schema.gadget_name"
+A string-valued name for a *gadget*.
+*)
+
+(*"gadget_schema.gadget_grade"
+The quality grade of a *gadget*: `standard`, `premium`, or `experimental`.
+*)
+
+(*"gadget_schema.gadget"
+A synthetic component characterised by a name, a *gadget_grade*, and a strictly
+positive weight.
+*)

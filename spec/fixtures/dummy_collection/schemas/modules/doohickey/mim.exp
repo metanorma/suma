@@ -9,3 +9,12 @@ ENTITY doohickey_representation;
 END_ENTITY;
 
 END_SCHEMA;
+
+(*"doohickey_mim"
+Synthetic module interpreted model for the *doohickey* concept. It contains no
+ISO 10303 material.
+*)
+
+(*"doohickey_mim.doohickey_representation"
+The interpreted representation of a *doohickey*, carrying an identifier.
+*)
