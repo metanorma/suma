@@ -67,7 +67,8 @@ RSpec.describe Suma::Cli::Build do
                             "doc_#{schema}.html"))
     end
     expect(File)
-      .to exist(File.join(workdir, "plain_schemas", "gizmo", "arm.exp"))
+      .to exist(File.join(workdir, "plain_schemas", "modules", "gizmo",
+                          "arm.exp"))
   end
 
   # collection rendering outputs; under sectionsplit the split-part

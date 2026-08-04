@@ -27,13 +27,13 @@ manifest:
     - level: attachments
       title: Attachments
       docref:
-        - fileref: ../../plain_schemas/doohickey/arm.exp
+        - fileref: ../../plain_schemas/modules/doohickey/arm.exp
           identifier: doohickey_arm.exp
           attachment: true
         - fileref: ../../schema_docs/doohickey_arm/doc_doohickey_arm.html
           identifier: doohickey_arm.html
           attachment: true
-        - fileref: ../../plain_schemas/doohickey/mim.exp
+        - fileref: ../../plain_schemas/modules/doohickey/mim.exp
           identifier: doohickey_mim.exp
           attachment: true
         - fileref: ../../schema_docs/doohickey_mim/doc_doohickey_mim.html

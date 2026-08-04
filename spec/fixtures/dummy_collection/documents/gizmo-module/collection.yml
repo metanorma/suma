@@ -27,13 +27,13 @@ manifest:
     - level: attachments
       title: Attachments
       docref:
-        - fileref: ../../plain_schemas/gizmo/arm.exp
+        - fileref: ../../plain_schemas/modules/gizmo/arm.exp
           identifier: gizmo_arm.exp
           attachment: true
         - fileref: ../../schema_docs/gizmo_arm/doc_gizmo_arm.html
           identifier: gizmo_arm.html
           attachment: true
-        - fileref: ../../plain_schemas/gizmo/mim.exp
+        - fileref: ../../plain_schemas/modules/gizmo/mim.exp
           identifier: gizmo_mim.exp
           attachment: true
         - fileref: ../../schema_docs/gizmo_mim/doc_gizmo_mim.html

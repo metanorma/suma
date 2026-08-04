@@ -27,13 +27,13 @@ manifest:
     - level: attachments
       title: Attachments
       docref:
-        - fileref: ../../plain_schemas/widget_schema/widget_schema.exp
+        - fileref: ../../plain_schemas/resources/widget_schema/widget_schema.exp
           identifier: widget_schema.exp
           attachment: true
         - fileref: ../../schema_docs/widget_schema/doc_widget_schema.html
           identifier: widget_schema.html
           attachment: true
-        - fileref: ../../plain_schemas/gadget_schema/gadget_schema.exp
+        - fileref: ../../plain_schemas/resources/gadget_schema/gadget_schema.exp
           identifier: gadget_schema.exp
           attachment: true
         - fileref: ../../schema_docs/gadget_schema/doc_gadget_schema.html
