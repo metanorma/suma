@@ -6,11 +6,14 @@ source "https://rubygems.org"
 gemspec
 
 gem "canon"
-# Staged build (suma#94) needs the preserve_unresolved: / artifact_store_dir: /
-# reinflate: render options from metanorma#578 (metanorma 2.5.0). Point at the
-# feature branch until it is released; drop this once 2.5.0 is on rubygems.
-gem "metanorma", github: "metanorma/metanorma",
-                 branch: "feature/collection-incremental-resumable"
+# metanorma resolves from the gemspec constraint (~> 2.3) to the released gem.
+# The staged-build render options (preserve_unresolved:/artifact_store_dir:/
+# reinflate:, metanorma#578) landed in metanorma 2.5.0, now on rubygems, so the
+# former feature-branch override (feature/collection-incremental-resumable) is
+# dropped: CI builds against a stable released metanorma, not a floating branch.
+# Flavor gem needed to compile the dummy-collection integration fixture
+# (spec/fixtures/dummy_collection, suma#107).
+gem "metanorma-iso"
 # gem "metanorma-plugin-lutaml", github: "metanorma/metanorma-plugin-lutaml", branch: "main"
 # gem "metanorma-standoc", github: "metanorma/metanorma-standoc", branch: "main"
 gem "nokogiri"
