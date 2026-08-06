@@ -64,7 +64,7 @@ module Suma
     end
 
     def to_plain
-      parsed.to_s(no_remarks: true)
+      parsed.format(no_remarks: true)
     end
 
     def filename_plain
@@ -92,7 +92,7 @@ module Suma
 
       FileUtils.mkdir_p(File.dirname(filename_plain))
 
-      content = with_annotations ? parsed.to_s(no_remarks: false) : to_plain
+      content = with_annotations ? parsed.format(no_remarks: false) : to_plain
       File.write(filename_plain, content)
     end
 
