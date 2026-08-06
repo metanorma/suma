@@ -64,7 +64,7 @@ module Suma
     end
 
     def to_plain
-      parsed.format(no_remarks: true)
+      parsed.to_s
     end
 
     def filename_plain
