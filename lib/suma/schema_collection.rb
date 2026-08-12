@@ -7,8 +7,9 @@ module Suma
     attr_accessor :config, :schemas, :docs, :output_path_docs,
                   :output_path_schemas, :manifest
 
-    def initialize(config: nil, config_yaml: nil, output_path_docs: nil,
-                   output_path_schemas: nil, manifest: nil)
+    def initialize(config: nil, config_yaml: nil, output_path_docs: nil, # rubocop:disable Metrics/ParameterLists
+                   output_path_schemas: nil, manifest: nil,
+                   options: { annotations: true })
       @schemas = {}
       @docs = {}
       @schema_name_to_docs = {}
@@ -19,6 +20,7 @@ module Suma
       @config = config
       @config ||= config_yaml && Expressir::SchemaManifest.from_file(config_yaml)
       @manifest = manifest
+      @options = options
     end
 
     def doc_from_schema_name(schema_name)
@@ -42,7 +44,7 @@ module Suma
       exporter = SchemaExporter.new(
         schemas: schemas.values,
         output_path: @output_path_schemas,
-        options: { annotations: false },
+        options: @options,
       )
       exporter.export
 
