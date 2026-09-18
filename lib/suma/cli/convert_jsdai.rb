@@ -10,7 +10,7 @@ module Suma
       desc "convert_jsdai XML_FILE IMAGE_FILE OUTPUT_DIR",
            "Convert JSDAI XML and image files to SVG and EXP files"
 
-      # rubocop:disable Metrics/MethodLength
+      # rubocop:disable-next Metrics/MethodLength
       def convert_jsdai(xml_file, image_file, output_dir)
         xml_file = File.expand_path(xml_file)
         image_file = File.expand_path(image_file)
@@ -34,11 +34,10 @@ module Suma
 
         run(xml_file, image_file, output_dir)
       end
-      # rubocop:enable Metrics/MethodLength
 
       private
 
-      # rubocop:disable Metrics/MethodLength
+      # rubocop:disable-next Metrics/MethodLength
       def run(xml_file, image_file, output_dir)
         FileUtils.mkdir_p(output_dir)
 
@@ -57,7 +56,6 @@ module Suma
 
         puts "Conversion complete."
       end
-      # rubocop:enable Metrics/MethodLength
     end
   end
 end
