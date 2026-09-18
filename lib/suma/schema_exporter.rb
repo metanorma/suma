@@ -90,7 +90,7 @@ module Suma
       zip_path = "#{output_path}.zip"
       Utils.log "Creating ZIP archive: #{zip_path}"
 
-      Zip::File.open(zip_path, Zip::File::CREATE) do |zipfile|
+      Zip::File.open(zip_path, create: true) do |zipfile|
         Dir.glob("#{output_path}/**/*").each do |file|
           next if File.directory?(file)
 
