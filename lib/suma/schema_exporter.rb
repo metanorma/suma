@@ -83,7 +83,7 @@ module Suma
       SchemaCache.new(directory)
     end
 
-    # rubocop:disable Metrics/MethodLength
+    # rubocop:disable-next Metrics/MethodLength
     def create_zip_archive
       require "zip"
 
@@ -101,6 +101,5 @@ module Suma
 
       Utils.log "ZIP archive created: #{zip_path}"
     end
-    # rubocop:enable Metrics/MethodLength
   end
 end

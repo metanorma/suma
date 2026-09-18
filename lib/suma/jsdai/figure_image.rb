@@ -58,7 +58,7 @@ module Suma
         end
       end
 
-      # rubocop:disable Metrics/MethodLength
+      # rubocop:disable-next Metrics/MethodLength
       def extract_jpeg_dimensions
         # Read JPEG file to extract dimensions
         # JPEG uses markers, we look for SOF (Start of Frame) markers
@@ -90,7 +90,6 @@ module Suma
           end
         end
       end
-      # rubocop:enable Metrics/MethodLength
     end
   end
 end
