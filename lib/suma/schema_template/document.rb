@@ -35,9 +35,9 @@ module Suma
           [%unnumbered,type=express]
           == #{schema_id} #{rendered_anchors}
 
-          [source%unnumbered]
+          [source%unnumbered,subs="+macros"]
           --
-          {{ schema.formatted }}
+          {{ schema.formatted_hyperlinked_adoc }}
           --
           {% endfor %}
           ----
