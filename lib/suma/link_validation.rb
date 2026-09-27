@@ -127,11 +127,26 @@ module Suma
     def validate_links(schemas_config, links_by_file)
       paths_by_id = schemas_config.schemas.to_h { |s| [s.id, s.path] }
       progress.start("Loading schemas", paths_by_id.size)
-      repo = Expressir::Express::Parser.from_files(paths_by_id.values) do |*_args|
-        progress.increment
-      end
+      repo = load_repository(paths_by_id.values)
       index = SchemaIndex.new(repo)
       LinkValidator.new(index).validate(links_by_file)
+    end
+
+    # Compiled-set warm start (expressir TODO.suma-improvements/04),
+    # opt-in via SUMA_COMPILED_SET=1: parse the closure once into an
+    # EXSCS1 artifact beside the output and hydrate from it on
+    # subsequent runs.
+    def load_repository(paths)
+      return Expressir::Express::Parser.from_files(paths) unless ENV["SUMA_COMPILED_SET"] == "1"
+
+      dir = output_file ? output_file.dirname : Pathname.new(Dir.pwd)
+      set_path = File.join(dir, "schema-closure.exscs")
+      if File.file?(set_path)
+        return Expressir::Express::LazyRepository.new(set_path).to_eager
+      end
+
+      FileUtils.mkdir_p(dir)
+      Expressir::Express::Parser.from_files(paths, compiled_set: set_path)
     end
 
     def write_summary(result)
