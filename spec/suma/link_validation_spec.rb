@@ -218,6 +218,7 @@ RSpec.describe Suma::LinkValidation do
 
   context "with SUMA_COMPILED_SET=1 (expressir TODO.suma-improvements/04)" do
     let(:dir) { Dir.mktmpdir("suma-warm") }
+
     def exp
       File.join(dir, "s.exp")
     end
