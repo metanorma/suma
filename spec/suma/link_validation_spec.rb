@@ -215,44 +215,51 @@ RSpec.describe Suma::LinkValidation do
       end
     end.new
   end
-end
 
-RSpec.describe Suma::LinkValidation, "compiled-set warm start (expressir TODO.suma-improvements/04)" do
-  let(:dir) { Dir.mktmpdir("suma-warm") }
-  let(:exp) { File.join(dir, "s.exp") }
-  let(:validator) do
-    described_class.new(schemas_file: File.join(dir, "schemas.yaml"),
-                        documents_path: dir,
-                        output_file: File.join(dir, "summary.yaml"))
-  end
-
-  before { File.write(exp, "SCHEMA s; ENTITY e; a : STRING; END_ENTITY; END_SCHEMA;\n") }
-  after { FileUtils.remove_entry(dir) }
-
-  it "parses eagerly unless SUMA_COMPILED_SET=1" do
-    repo = validator.send(:load_repository, [exp])
-    expect(repo).to be_a(Expressir::Model::Repository)
-    expect(File.exist?(File.join(dir, "schema-closure.exscs"))).to be(false)
-  end
-
-  it "builds the artifact once and hydrates on the second run" do
-    # Single-file closures only write the compiled-set artifact from
-    # expressir 2.4.25 (lutaml/expressir#470); skip until it resolves.
-    unless Gem::Version.new(Expressir::Version::VERSION) >= Gem::Version.new("2.4.25")
-      skip "requires expressir >= 2.4.25 (sequential compiled-set writes)"
+  context "with SUMA_COMPILED_SET=1 (expressir TODO.suma-improvements/04)" do
+    let(:dir) { Dir.mktmpdir("suma-warm") }
+    def exp
+      File.join(dir, "s.exp")
     end
 
-    old = ENV["SUMA_COMPILED_SET"]
-    ENV["SUMA_COMPILED_SET"] = "1"
-    begin
-      first = validator.send(:load_repository, [exp])
-      expect(first).to be_a(Expressir::Model::Repository)
-      expect(File.exist?(File.join(dir, "schema-closure.exscs"))).to be(true)
+    def validator
+      described_class.new(schemas_file: File.join(dir, "schemas.yaml"),
+                          documents_path: dir,
+                          output_file: File.join(dir, "summary.yaml"))
+    end
 
-      second = validator.send(:load_repository, [exp])
-      expect(second.schemas.first.id).to eq("s")
-    ensure
-      ENV["SUMA_COMPILED_SET"] = old
+    before do
+      File.write(exp,
+                 "SCHEMA s; ENTITY e; a : STRING; END_ENTITY; END_SCHEMA;\n")
+    end
+
+    after { FileUtils.remove_entry(dir) }
+
+    it "parses eagerly unless SUMA_COMPILED_SET=1" do
+      repo = validator.send(:load_repository, [exp])
+      expect(repo).to be_a(Expressir::Model::Repository)
+      expect(File.exist?(File.join(dir, "schema-closure.exscs"))).to be(false)
+    end
+
+    it "builds the artifact once and hydrates on the second run" do
+      # Single-file closures only write the compiled-set artifact from
+      # expressir 2.4.25 (lutaml/expressir#470); skip until it resolves.
+      unless Gem::Version.new(Expressir::Version::VERSION) >= Gem::Version.new("2.4.25")
+        skip "requires expressir >= 2.4.25 (sequential compiled-set writes)"
+      end
+
+      old = ENV.fetch("SUMA_COMPILED_SET", nil)
+      ENV["SUMA_COMPILED_SET"] = "1"
+      begin
+        first = validator.send(:load_repository, [exp])
+        expect(first).to be_a(Expressir::Model::Repository)
+        expect(File.exist?(File.join(dir, "schema-closure.exscs"))).to be(true)
+
+        second = validator.send(:load_repository, [exp])
+        expect(second.schemas.first.id).to eq("s")
+      ensure
+        ENV["SUMA_COMPILED_SET"] = old
+      end
     end
   end
 end
