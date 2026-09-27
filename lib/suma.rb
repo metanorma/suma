@@ -16,6 +16,7 @@ module Suma
   autoload :LinkValidation,         "suma/link_validation"
   autoload :LinkValidator,          "suma/link_validator"
   autoload :ManifestTraverser,      "suma/manifest_traverser"
+  autoload :MappingDrift,           "suma/mapping_drift"
   autoload :NoteProcessor,          "suma/note_processor"
   autoload :NullCache,              "suma/null_cache"
   autoload :RegisterManifestGenerator, "suma/register_manifest_generator"
