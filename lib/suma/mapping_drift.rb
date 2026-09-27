@@ -42,10 +42,14 @@ module Suma
     MODULE_SCHEMAS = %w[arm.exp mim.exp].freeze
     private_constant :MAPPING_GLOB, :MODULE_SCHEMAS
 
-    attr_reader :documents_path
+    attr_reader :documents_path, :stepmod
 
-    def initialize(documents_path)
+    # +stepmod+ overrides where closure schema resolution looks up
+    # USE/REFERENCE dependencies (STEPmod `schemas/**/<name>.exp`
+    # layout); it defaults to +documents_path+ itself.
+    def initialize(documents_path, stepmod: nil)
       @documents_path = Pathname.new(documents_path).expand_path
+      @stepmod = stepmod
     end
 
     # Every module mapping under documents_path that has arm/mim
@@ -63,8 +67,11 @@ module Suma
       modules = discover
       return Report.new(entries: []) if modules.empty?
 
-      repository = Expressir::Express::Parser.from_files(module_closure(modules))
-      Report.new(entries: modules.flat_map { |mod| drift_for(mod, repository) })
+      paths, gaps = closure(modules)
+      repository = Expressir::Express::Parser.from_files(paths)
+      Report.new(entries: gaps + modules.flat_map do |mod|
+        drift_for(mod, repository)
+      end)
     end
 
     # Scan and compare against the baseline file.
@@ -84,8 +91,33 @@ module Suma
         .select { |path| File.file?(path) }
     end
 
-    def module_closure(modules)
-      modules.flat_map { |mod| mod[:schemas] }.uniq
+    # The repository covers every module schema plus its transitive
+    # USE/REFERENCE closure — reference paths name resource-schema
+    # types the modules themselves never declare. A schema the corpus
+    # does not carry (e.g. external PLIB templates) becomes a closure
+    # gap entry instead of aborting the whole scan; the affected
+    # module still validates against its own schemas.
+    def closure(modules)
+      paths = []
+      gaps = []
+      modules.each do |mod|
+        mod[:schemas].each do |root|
+          paths.concat(closure_of(root, mod[:mapping], gaps))
+        end
+      end
+      [paths.compact.uniq, gaps]
+    end
+
+    def closure_of(root, mapping_path, gaps)
+      Expressir::Commands::ParityInputs.closure_paths(root,
+                                                      stepmod: stepmod_root)
+    rescue StandardError => e
+      gaps << Entry.new(key: entry_key(mapping_path, "closure", e.message))
+      [root]
+    end
+
+    def stepmod_root
+      stepmod || documents_path.to_s
     end
 
     def drift_for(mod, repository)

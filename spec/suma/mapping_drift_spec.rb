@@ -103,6 +103,26 @@ RSpec.describe Suma::MappingDrift do
     expect(drift.scan.keys).to match_array(ghost_refpath_keys)
   end
 
+  def arm_with_unresolved_import
+    "SCHEMA gap_mod_arm;\nUSE FROM external_template_arm;\n" \
+      "ENTITY thing; a : STRING; END_ENTITY;\nEND_SCHEMA;\n"
+  end
+
+  def rewrite_gap_mod_arm
+    arm = File.join(documents_path, "modules", "gap_mod", "arm.exp")
+    File.write(arm, arm_with_unresolved_import)
+  end
+
+  def closure_pattern
+    %r{\Amodules/gap_mod/mapping\.yaml\|closure\|}
+  end
+
+  it "records a closure gap instead of aborting on a missing schema" do
+    write_module("gap_mod", clean_mapping("gap_mod"))
+    rewrite_gap_mod_arm
+    expect(drift.scan.keys).to include(a_string_matching(closure_pattern))
+  end
+
   it "survives an unreadable mapping as a load entry" do
     write_module("broken_mod", "\t{- not yaml")
     prefix = "modules/broken_mod/mapping.yaml|load|"
