@@ -236,6 +236,12 @@ RSpec.describe Suma::LinkValidation, "compiled-set warm start (expressir TODO.su
   end
 
   it "builds the artifact once and hydrates on the second run" do
+    # Single-file closures only write the compiled-set artifact from
+    # expressir 2.4.25 (lutaml/expressir#470); skip until it resolves.
+    unless Gem::Version.new(Expressir::Version::VERSION) >= Gem::Version.new("2.4.25")
+      skip "requires expressir >= 2.4.25 (sequential compiled-set writes)"
+    end
+
     old = ENV["SUMA_COMPILED_SET"]
     ENV["SUMA_COMPILED_SET"] = "1"
     begin
