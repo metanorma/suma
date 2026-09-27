@@ -122,7 +122,7 @@ RSpec.describe Suma::Cli::ExtractTerms do
       # Verify that all concepts from the same schema share the same citation
       activity_arm_collection.managed_concepts.each do |concept|
         localized_concept = concept.data.localizations["eng"]
-        expect(localized_concept.data.sources.length).to eq(1)
+        expect(localized_concept.data.sources.size).to eq(1)
         source = localized_concept.data.sources.first
         expect(source.origin.ref.source).to eq("urn:iso:std:iso:10303:-2:ed-2:en:tech:Activity_arm")
         expect(source.origin.ref.version).to eq("3")
