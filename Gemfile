@@ -26,4 +26,7 @@ gem "rubocop-performance"
 gem "rubocop-rake"
 gem "rubocop-rspec"
 gem "expressir", "2.4.27"
+# metanorma-iso 3.5.0 requires "pubid-iso" at runtime but does not
+# declare it; in the relaton-3 chain nothing else pulls it in either.
+gem "pubid-iso", "~> 1.15"
 
