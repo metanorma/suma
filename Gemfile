@@ -24,13 +24,14 @@ gem "metanorma-standoc", github: "metanorma/metanorma-standoc", branch: "main"
 # metanorma#607: Collection#bibitem must drop localized <edition> variants
 # (metanorma-iso main emits them) before the relaton parse.
 gem "metanorma", github: "metanorma/metanorma",
-    branch: "fix/collection-bibdata-localized-edition"
+                 branch: "fix/collection-bibdata-localized-edition"
 # iso/standoc main also use unreleased metanorma-document 0.5.x model
 # classes (e.g. Components::Inline::TermrefElement).
 gem "metanorma-document", github: "metanorma/metanorma-document", branch: "main"
 # gem "metanorma-plugin-lutaml", github: "metanorma/metanorma-plugin-lutaml", branch: "main"
 # gem "metanorma-standoc", github: "metanorma/metanorma-standoc", branch: "main"
 # gem "expressir", github: "lutaml/expressir", branch: "main"
+gem "expressir", "2.4.27"
 gem "nokogiri"
 gem "openssl", "~> 3.0"
 gem "rake"
@@ -39,7 +40,6 @@ gem "rubocop"
 gem "rubocop-performance"
 gem "rubocop-rake"
 gem "rubocop-rspec"
-gem "expressir", "2.4.27"
 # isodoc 3.7.3 `require`s "sassc-embedded" while rendering HTML but does
 # not declare it.
 gem "sassc-embedded", "~> 1.0"
@@ -48,4 +48,3 @@ gem "sassc-embedded", "~> 1.0"
 # collection checks (duplicate <edition> raise). 2.1.9 is the current
 # lutaml-model-0.8 line.
 gem "relaton-bib", "2.1.9"
-

@@ -249,7 +249,7 @@ RSpec.describe Suma::LinkValidation do
         skip "requires expressir >= 2.4.25 (sequential compiled-set writes)"
       end
       # The compiled-set writer is the expressir native extension; source-only
-      # installs (e.g. windows, whose platform gem is unpublished) cannot write it.
+      # installs (no platform gem, e.g. windows) cannot write it.
       unless Expressir::Express::Parser.native_available?
         skip "requires the expressir native extension"
       end
