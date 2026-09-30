@@ -248,15 +248,15 @@ RSpec.describe Suma::LinkValidation do
       unless Gem::Version.new(Expressir::Version::VERSION) >= Gem::Version.new("2.4.25")
         skip "requires expressir >= 2.4.25 (sequential compiled-set writes)"
       end
-      # The compiled-set writer is the expressir native extension; source-only
-      # installs (no platform gem, e.g. windows) cannot write it.
-      unless Expressir::Express::Parser.native_available?
-        skip "requires the expressir native extension"
-      end
-      # The artifact write silently no-ops on windows (no parse errors, no
-      # file); verify there once expressir ships windows platform gems.
-      if %w[mingw mswin].include?(Gem::Platform.local.os)
-        skip "compiled-set writes unverified on windows"
+      # The compiled-set writer is the expressir-core native extension - a
+      # different library from the parsanol grammar extension that
+      # Parser.native_available? reports. Gate on the writer itself: installs
+      # without it (no mingw platform gem, no rust toolchain; e.g. windows CI)
+      # parse fine but cannot write the artifact.
+      core_set = Expressir::Express::Core::NATIVE_AVAILABLE &&
+        Expressir::Core.const_defined?(:Set, false)
+      unless core_set
+        skip "requires the expressir-core native extension"
       end
 
       old = ENV.fetch("SUMA_COMPILED_SET", nil)
