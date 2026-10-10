@@ -39,7 +39,7 @@ Gem::Specification.new do |spec| # rubocop:disable Metrics/BlockLength
   spec.add_dependency "metanorma", "~> 2.3"
   spec.add_dependency "plurimath"
   spec.add_dependency "ruby-progressbar"
-  spec.add_dependency "rubyzip"
+  spec.add_dependency "rubyzip", "~> 3.7"
   spec.add_dependency "svg_conform", "~> 0.1.0"
   spec.add_dependency "table_tennis"
   spec.add_dependency "thor", ">= 0.20"
