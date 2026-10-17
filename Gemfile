@@ -21,13 +21,27 @@ gem "canon"
 # Flip both to released gems once metanorma-iso releases the migration.
 gem "metanorma-iso", github: "metanorma/metanorma-iso", branch: "main"
 gem "metanorma-standoc", github: "metanorma/metanorma-standoc", branch: "main"
-# metanorma#607: Collection#bibitem must drop localized <edition> variants
-# (metanorma-iso main emits them) before the relaton parse.
-gem "metanorma", github: "metanorma/metanorma",
-                 branch: "fix/collection-bibdata-localized-edition"
+# metanorma#607 (drop localized <edition> variants before the relaton
+# parse; metanorma-iso main emits them) landed on main, where the
+# collection document parser lives at
+# lib/metanorma/collection/document/document.rb.
+gem "metanorma", github: "metanorma/metanorma", branch: "main"
 # iso/standoc main also use unreleased metanorma-document 0.5.x model
 # classes (e.g. Components::Inline::TermrefElement).
 gem "metanorma-document", github: "metanorma/metanorma-document", branch: "main"
+# Collection/Compile implementation gem the main-line metanorma stack
+# resolves against (standoc main needs ~> 0.2.3).
+gem "metanorma-core", github: "metanorma/metanorma-core", branch: "main"
+# Main-line isodoc carries the relaton-render ~> 3.0.0.pre.alpha family
+# allowance (< 5) that metanorma-iso main's CitationStyle needs
+# (deep_symbolize / Iso690::Renderer exist only on the family
+# prerelease); the released 3.7.3 still pins relaton-render ~> 1.3.0
+# and crashes collection renders. Revert to the released gem once an
+# isodoc release carries the allowance.
+gem "isodoc", github: "metanorma/isodoc", branch: "main"
+# relaton 3 prerelease floor: names the family prerelease for
+# resolution (isodoc's relaton-render range alone is prerelease-blind).
+gem "relaton", "~> 3.0.0.pre.alpha"
 # gem "metanorma-plugin-lutaml", github: "metanorma/metanorma-plugin-lutaml", branch: "main"
 # gem "metanorma-standoc", github: "metanorma/metanorma-standoc", branch: "main"
 # gem "expressir", github: "lutaml/expressir", branch: "main"
