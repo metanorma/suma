@@ -54,8 +54,14 @@ gem "rubocop"
 gem "rubocop-performance"
 gem "rubocop-rake"
 gem "rubocop-rspec"
-# isodoc 3.7.3 `require`s "sassc-embedded" while rendering HTML but does
-# not declare it.
+# isodoc only `require`s "sassc-embedded" when compiling SCSS at
+# runtime (css.rb#convert_scss). Release-built isodoc gems ship
+# precompiled .css (gem_tasks compiles lib/**/*.scss during `rake
+# build`, then git-rm's it), so consumers of released isodoc never
+# load it. Suma rides isodoc from git, whose artifact carries only
+# .scss, so every HTML render goes through convert_scss and needs
+# this shim (verified: HTML builds LoadError without it).
+# Re-evaluate once suma rides released isodoc.
 gem "sassc-embedded", "~> 1.0"
 # relaton-render's floor (>= 2.0.0.pre.alpha.6) admits the stale June
 # 2.2.0.pre prerelease, which predates lutaml-model 0.8.78's strict
