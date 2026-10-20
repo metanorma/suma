@@ -160,8 +160,24 @@ module Suma
       desc "validate SUBCOMMAND ...ARGS", "Validate express documents"
       subcommand "validate", Cli::Validate
 
-      desc "resolve URN", "Resolve URNs to canonical JSON + HTML artifacts"
-      subcommand "resolve", Cli::Resolve
+      desc "resolve [URN]", "Resolve URNs to canonical JSON + HTML artifacts"
+      # Mirrors so Core accepts the switches Cli::Resolve reparses; the
+      # inner class owns their declarations.
+      option :manifest, type: :string, required: true,
+                        desc: "Schema manifest used for schema/entity URNs"
+      option :urn, type: :string,
+                   desc: "Corpus URN base (defaults to the register URN)"
+      option :concepts, type: :string,
+                        desc: "Directory of Glossarist concept YAML files"
+      option :register, type: :string,
+                        desc: "Glossarist register.yaml (dataset URN)"
+      option :output, type: :string, aliases: "-o", required: true,
+                      desc: "Artifact output directory"
+      option :all, type: :boolean, default: false,
+                   desc: "Emit artifacts for every known URN"
+      def resolve(_urn = nil)
+        Cli::Resolve.start
+      end
 
       desc "check_svg_quality [PATH]",
            "Check SVG quality and sort by severity (critical files first)"

@@ -81,4 +81,26 @@ RSpec.describe Suma::Cli do
       expect(register.tags).to include("edition:3")
     end
   end
+
+  describe "resolve command" do
+    it "dispatches directly to the resolver instead of a subcommand group" do
+      args = [
+        "resolve",
+        "--manifest", "ap_publication/schemas.yaml",
+        "--urn", "urn:iso:std:iso:10303:-2:ed-2:en",
+        "--output", "resolved",
+        "--all"
+      ]
+      original_argv = ARGV.dup
+      begin
+        ARGV.replace(args)
+        Suma::Cli::Core.start(args)
+      ensure
+        ARGV.replace(original_argv)
+      end
+
+      expect(Dir[File.join("resolved", "**/*.json")]).not_to be_empty
+      expect(Dir[File.join("resolved", "**/*.html")]).not_to be_empty
+    end
+  end
 end
