@@ -19,6 +19,12 @@ module Suma
                      desc: "Owner of the dataset (e.g. 'ISO/TC 184/SC 4')"
       option :profile, type: :string, default: "iso10303",
                        desc: "Corpus profile (iso10303 or generic)"
+      option :year, type: :numeric,
+                    desc: "Edition year for the register"
+      option :supersedes, type: :string,
+                          desc: "URN/ref of the superseded edition"
+      option :edition, type: :numeric,
+                       desc: "Edition number (tagged as edition:N)"
 
       def generate_register(schema_manifest_file, output_path)
         RegisterManifestGenerator.new(
@@ -30,6 +36,9 @@ module Suma
           language_code: options[:language_code],
           owner: options[:owner],
           profile: options[:profile],
+          year: options[:year],
+          supersedes: options[:supersedes],
+          edition: options[:edition],
         ).generate
       end
     end

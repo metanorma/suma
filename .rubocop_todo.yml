@@ -133,6 +133,8 @@ Metrics/AbcSize:
     - 'lib/suma/thor_ext.rb'
     - 'lib/suma/closure_validator.rb'
     - 'lib/suma/corpus_graph.rb'
+    - 'lib/suma/change_manifest.rb'
+    - 'lib/suma/cli/generate_register.rb'
 
 # Offense count: 2
 # Configuration parameters: CountComments, Max, CountAsOne, AllowedMethods, AllowedPatterns, inherit_mode.
@@ -177,6 +179,7 @@ Metrics/MethodLength:
     - 'lib/suma/term_extractor.rb'
     - 'lib/suma/closure_validator.rb'
     - 'lib/suma/cli/validate.rb'
+    - 'lib/suma/cli/generate_register.rb'
 
 # Offense count: 3
 # Configuration parameters: Max, CountKeywordArgs, MaxOptionalParameters.
@@ -267,6 +270,9 @@ RSpec/ExampleLength:
     - 'spec/suma/term_classification_spec.rb'
     - 'spec/suma/term_extractor_spec.rb'
     - 'spec/suma/urn_spec.rb'
+    - 'spec/suma/change_classification_spec.rb'
+    - 'spec/suma/change_manifest_spec.rb'
+    - 'spec/suma/change_impact_spec.rb'
 
 # Offense count: 4
 # Configuration parameters: Max, AllowedIdentifiers, AllowedPatterns.
@@ -334,6 +340,9 @@ RSpec/MultipleExpectations:
     - 'spec/suma/svg_quality/scanner_spec.rb'
     - 'spec/suma/term_classification_spec.rb'
     - 'spec/suma/term_extractor_spec.rb'
+    - 'spec/suma/change_classification_spec.rb'
+    - 'spec/suma/change_manifest_spec.rb'
+    - 'spec/suma/change_impact_spec.rb'
 
 # Offense count: 3
 # Configuration parameters: Max, AllowedGroups.

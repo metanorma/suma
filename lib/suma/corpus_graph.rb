@@ -71,6 +71,39 @@ module Suma
       @interfaces[normalize(schema_id)] || []
     end
 
+    # Transitive interface closure: every schema +schema_id+ depends on,
+    # directly or through other schemas.
+    #
+    # @param schema_id [String]
+    # @return [Array<String>] normalized ids (excluding +schema_id+)
+    def dependency_closure(schema_id)
+      seen = {}
+      queue = interface_targets(schema_id).dup
+      until queue.empty?
+        id = queue.shift
+        next if seen.key?(id)
+
+        seen[id] = true
+        queue.concat(interface_targets(id))
+      end
+      seen.keys
+    end
+
+    # Schemas that transitively depend on +schema_id+ — the reverse of
+    # {#dependency_closure}; used by change-impact analysis (S3).
+    #
+    # @param schema_id [String]
+    # @return [Array<String>] normalized ids, sorted
+    def dependents_of(schema_id)
+      target = normalize(schema_id)
+      @schemas.keys
+        .reject { |candidate| candidate == target }
+        .select do |candidate|
+          dependency_closure(candidate).include?(target)
+        end
+        .sort
+    end
+
     private
 
     def add_schema(schema)
