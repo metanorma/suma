@@ -66,6 +66,8 @@ module Suma
                              desc: "Language code for section names"
       option :owner, type: :string, default: Suma::RegisterManifestGenerator::DEFAULT_OWNER,
                      desc: "Owner of the dataset (e.g. 'ISO/TC 184/SC 4')"
+      option :profile, type: :string, default: "iso10303",
+                       desc: "Corpus profile (iso10303 or generic)"
       def generate_register(schema_manifest_file, output_path)
         RegisterManifestGenerator.new(
           schema_manifest_file,
@@ -75,6 +77,7 @@ module Suma
           ref: options[:ref],
           language_code: options[:language_code],
           owner: options[:owner],
+          profile: options[:profile],
         ).generate
       end
 
@@ -87,6 +90,22 @@ module Suma
       desc "export *FILES",
            "Export EXPRESS schemas from manifest files or " \
            "standalone EXPRESS files"
+      # The inner class reparses ARGV and owns the canonical declarations;
+      # these mirrors exist only so Core accepts the switches it passes
+      # through (Core checks unknown options before dispatch).
+      option :output, type: :string, aliases: "-o", required: true,
+                      desc: "Output directory path"
+      option :annotations, type: :boolean, default: false,
+                           desc: "Include annotations (remarks/comments)"
+      option :zip, type: :boolean, default: false,
+                   desc: "Create ZIP archive of exported schemas"
+      option :publication, type: :string, banner: "SCHEMA_ID",
+                           desc: "Export an AP publication bundle: the " \
+                                 "lead schema plus its transitive " \
+                                 "USE-FROM/REFERENCE closure (manifest " \
+                                 "input only)"
+      option :profile, type: :string, default: "iso10303",
+                       desc: "Corpus profile (iso10303 or generic)"
       def export(*_files)
         Cli::Export.start
       end

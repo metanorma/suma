@@ -13,6 +13,8 @@ module Suma
       option :urn, type: :string, required: true, aliases: "-u",
                    desc: "URN for the dataset source " \
                          "(used for section references)"
+      option :profile, type: :string, default: "iso10303",
+                       desc: "Corpus profile (iso10303 or generic)"
 
       def extract_terms(schema_manifest_file, output_path)
         TermExtractor.new(
@@ -20,6 +22,7 @@ module Suma
           output_path,
           language_code: options[:language_code],
           urn: options[:urn],
+          profile: options[:profile],
         ).call
       end
     end

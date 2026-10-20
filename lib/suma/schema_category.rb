@@ -34,6 +34,13 @@ module Suma
       types: [ExpressSchema::Type::RESOURCE].freeze,
       directory: "resources",
     )
+    APPLICATION_PROTOCOLS = new(
+      id: "application_protocols",
+      label: "Application Protocols",
+      prefix: "Application Protocol",
+      types: [ExpressSchema::Type::APPLICATION_PROTOCOL].freeze,
+      directory: "applications",
+    )
     MODULES = new(
       id: "modules",
       label: "Application Modules",
@@ -65,18 +72,40 @@ module Suma
 
     ALL = [
       RESOURCES,
+      APPLICATION_PROTOCOLS,
       MODULES,
       BUSINESS_OBJECT_MODELS,
       CORE_MODEL,
       OTHER,
     ].freeze
 
+    BY_ID = ALL.to_h do |category|
+      [category.id, category]
+    end.freeze
+
     def self.for_type(type)
       ALL.find { |category| category.member?(type) } || OTHER
     end
 
-    def self.for_schema(id:, path:)
-      type = ExpressSchema::Type.classify(id: id, path: path)
+    # Look up a category by its slug; unknown ids fall back to OTHER so
+    # that schema profiles naming an unknown category still resolve.
+    #
+    # @param id [String, Symbol]
+    # @return [SchemaCategory]
+    def self.find(id)
+      BY_ID.fetch(id.to_s, OTHER)
+    end
+
+    # Ordered category list for a schema profile.
+    #
+    # @param profile [SchemaProfile, Symbol, String, nil]
+    # @return [Array<SchemaCategory>]
+    def self.for_profile(profile)
+      SchemaProfile.fetch(profile).category_ids.map { |id| find(id) }
+    end
+
+    def self.for_schema(id:, path:, profile: nil)
+      type = ExpressSchema::Type.classify(id: id, path: path, profile: profile)
       for_type(type)
     end
   end

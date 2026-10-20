@@ -233,6 +233,7 @@ RSpec/ExampleLength:
     - 'spec/suma/cli_spec.rb'
     - 'spec/suma/collection_config_spec.rb'
     - 'spec/suma/collection_manifest_spec.rb'
+    - 'spec/suma/schema_profile_spec.rb'
     - 'spec/suma/eengine_converter_spec.rb'
     - 'spec/suma/express_reformatter_spec.rb'
     - 'spec/suma/express_schema_spec.rb'
@@ -242,6 +243,7 @@ RSpec/ExampleLength:
     - 'spec/suma/link_validator_spec.rb'
     - 'spec/suma/manifest_traverser_spec.rb'
     - 'spec/suma/note_processor_spec.rb'
+    - 'spec/suma/publication_spec.rb'
     - 'spec/suma/processor_spec.rb'
     - 'spec/suma/register_manifest_generator_spec.rb'
     - 'spec/suma/schema_category_spec.rb'
@@ -294,6 +296,7 @@ RSpec/MultipleExpectations:
     - 'spec/suma/cli_spec.rb'
     - 'spec/suma/collection_config_spec.rb'
     - 'spec/suma/collection_manifest_spec.rb'
+    - 'spec/suma/schema_profile_spec.rb'
     - 'spec/suma/eengine_converter_spec.rb'
     - 'spec/suma/eengine_spec.rb'
     - 'spec/suma/express_reformatter_spec.rb'
@@ -304,6 +307,7 @@ RSpec/MultipleExpectations:
     - 'spec/suma/link_validator_spec.rb'
     - 'spec/suma/manifest_traverser_spec.rb'
     - 'spec/suma/note_processor_spec.rb'
+    - 'spec/suma/publication_spec.rb'
     - 'spec/suma/processor_spec.rb'
     - 'spec/suma/register_manifest_generator_spec.rb'
     - 'spec/suma/schema_category_spec.rb'
@@ -312,6 +316,7 @@ RSpec/MultipleExpectations:
     - 'spec/suma/schema_discovery_spec.rb'
     - 'spec/suma/schema_exporter_spec.rb'
     - 'spec/suma/schema_index_spec.rb'
+    - 'spec/suma/schema_naming_spec.rb'
     - 'spec/suma/schema_template_spec.rb'
     - 'spec/suma/site_config/config_spec.rb'
     - 'spec/suma/staged_collection_builder_spec.rb'
@@ -337,3 +342,9 @@ RSpec/SpecFilePathFormat:
 RSpec/StubbedMock:
   Exclude:
     - 'spec/suma/schema_comparer_integration_spec.rb'
+
+# Offense count: 2
+# Configuration parameters: Max.
+RSpec/MultipleMemoizedHelpers:
+  Exclude:
+    - 'spec/suma/register_manifest_generator_spec.rb'

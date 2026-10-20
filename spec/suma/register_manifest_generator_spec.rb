@@ -293,4 +293,106 @@ RSpec.describe Suma::RegisterManifestGenerator do
       expect(File).to exist(File.join(nested_output_dir, "register.yaml"))
     end
   end
+
+  describe "application protocol publications" do
+    subject(:ap_result) { ap_generator.generate }
+
+    let(:ap_manifest_content) do
+      {
+        "schemas" => {
+          "widget_schema" => { "path" => "schemas/resources/widget_schema/widget_schema.exp" },
+          "gizmo_arm" => { "path" => "schemas/modules/gizmo/arm.exp" },
+          "ap_gizmo_arm" => { "path" => "schemas/applications/ap_gizmo/arm.exp" },
+          "ap_gizmo_mim" => { "path" => "schemas/applications/ap_gizmo/mim.exp" },
+        },
+      }
+    end
+    let(:ap_manifest_file) do
+      file = Tempfile.new(["schemas", ".yml"])
+      file.write(YAML.dump(ap_manifest_content))
+      file.close
+      file.path
+    end
+    let(:ap_output_dir) { Dir.mktmpdir }
+    let(:ap_generator) do
+      described_class.new(
+        ap_manifest_file,
+        ap_output_dir,
+        urn: "urn:iso:std:iso:10303:-2:ed-2:en:tech:*",
+        id: "iso10303-2-express",
+        ref: "ISO 10303-2 EXPRESS Concepts",
+      )
+    end
+
+    after do
+      FileUtils.rm_rf(ap_output_dir)
+      FileUtils.rm_f(ap_manifest_file)
+    end
+
+    it "orders resources before application protocols before modules" do
+      expect(ap_result.sections.map(&:id)).to eq(
+        %w[resources application_protocols modules],
+      )
+    end
+
+    it "groups an AP's schemas under a per-publication parent section" do
+      ap_section = ap_result.sections.find { |s| s.id == "application_protocols" }
+      publications = ap_section.children
+      expect(publications.map(&:id)).to eq(%w[ap_gizmo])
+      expect(publications.first.names["eng"])
+        .to eq("Application Protocol: AP Gizmo")
+      expect(publications.first.children.map(&:id))
+        .to eq(%w[ap_gizmo_arm ap_gizmo_mim])
+    end
+
+    it "names AP leaf sections with the application protocol prefix" do
+      ap_section = ap_result.sections.find { |s| s.id == "application_protocols" }
+      arm = ap_section.children.first.children.first
+      expect(arm.names["eng"]).to eq("Application Protocol: AP Gizmo (ARM)")
+    end
+  end
+
+  describe "generic schema profile" do
+    subject(:generic_result) { generic_generator.generate }
+
+    let(:generic_manifest_file) do
+      file = Tempfile.new(["schemas", ".yml"])
+      file.write(YAML.dump({
+                             "schemas" => {
+                               "topology_schema" => { "path" => "schemas/resources/topology_schema/topology_schema.exp" },
+                               "Activity_arm" => { "path" => "schemas/modules/activity/arm.exp" },
+                             },
+                           }))
+      file.close
+      file.path
+    end
+    let(:generic_output_dir) { Dir.mktmpdir }
+    let(:generic_generator) do
+      described_class.new(
+        generic_manifest_file,
+        generic_output_dir,
+        urn: "urn:example:std:acme:corp-model:ed-1:en:tech:*",
+        id: "acme-model",
+        ref: "ACME Corp Model",
+        profile: "generic",
+      )
+    end
+
+    after do
+      FileUtils.rm_rf(generic_output_dir)
+      FileUtils.rm_f(generic_manifest_file)
+    end
+
+    it "uses a single category regardless of STEP-style paths" do
+      expect(generic_result.sections.length).to eq(1)
+      expect(generic_result.sections.first.id).to eq("other")
+    end
+
+    it "title-cases names without stripping suffixes or adding labels" do
+      children = generic_result.sections.first.children
+      names = children.to_h { |c| [c.id, c.names["eng"]] }
+      expect(names["Activity_arm"]).to eq("Schema: Activity Arm")
+      expect(names["topology_schema"]).to eq("Schema: Topology Schema")
+    end
+  end
 end

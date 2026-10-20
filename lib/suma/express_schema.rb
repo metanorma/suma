@@ -7,47 +7,33 @@ module Suma
   class ExpressSchema
     module Type
       RESOURCE              = :resource
+      APPLICATION_PROTOCOL  = :application_protocol
       MODULE_ARM            = :module_arm
       MODULE_MIM            = :module_mim
       BUSINESS_OBJECT_MODEL = :business_object_model
       CORE_MODEL            = :core_model
       STANDALONE            = :standalone
 
-      ID_SUFFIXES = {
-        "_arm" => :MODULE_ARM,
-        "_mim" => :MODULE_MIM,
-        "_bom" => :BUSINESS_OBJECT_MODEL,
-      }.freeze
-
-      PATH_SEGMENTS = {
-        "/resources/" => :RESOURCE,
-        "/modules/" => :MODULE_ARM,
-        "/core_model/" => :CORE_MODEL,
-      }.freeze
-
-      def self.classify(id:, path:)
-        name = id&.downcase || ""
-
-        ID_SUFFIXES.each do |suffix, type|
-          return const_get(type) if name.end_with?(suffix)
-        end
-
-        path_str = path.to_s
-        PATH_SEGMENTS.each do |segment, type|
-          return const_get(type) if path_str.include?(segment)
-        end
-
-        STANDALONE
+      # Classify a schema under a schema profile (default: ISO 10303).
+      #
+      # @param id [String, nil] schema identifier
+      # @param path [String, Pathname, nil] schema file path
+      # @param profile [SchemaProfile, Symbol, String, nil] schema profile
+      # @return [Symbol] a Type constant value
+      def self.classify(id:, path:, profile: nil)
+        SchemaProfile.fetch(profile).classify(id: id, path: path)
       end
     end
 
     attr_accessor :path, :id, :parsed, :output_path, :is_standalone_file
 
-    def initialize(id:, path:, output_path:, is_standalone_file: false)
+    def initialize(id:, path:, output_path:, is_standalone_file: false,
+                   profile: nil)
       @path = Pathname.new(path).expand_path
       @id = id
       @output_path = output_path
       @is_standalone_file = is_standalone_file
+      @profile = profile
     end
 
     def type
@@ -99,7 +85,7 @@ module Suma
     private
 
     def classify
-      Type.classify(id: @id, path: @path)
+      Type.classify(id: @id, path: @path, profile: @profile)
     end
   end
 end

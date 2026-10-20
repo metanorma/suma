@@ -1,0 +1,10 @@
+---
+schemas:
+  ap_gizmo_arm:
+    path: schemas/applications/ap_gizmo/ap_gizmo_arm.exp
+  ap_gizmo_mim:
+    path: schemas/applications/ap_gizmo/ap_gizmo_mim.exp
+  gizmo_arm:
+    path: schemas/modules/gizmo/arm.exp
+  widget_schema:
+    path: schemas/resources/widget_schema/widget_schema.exp

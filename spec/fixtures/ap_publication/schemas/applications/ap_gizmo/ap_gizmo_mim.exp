@@ -1,0 +1,4 @@
+schema ap_gizmo_mim;
+  use from ap_gizmo_arm;
+  use from gizmo_arm;
+end_schema;

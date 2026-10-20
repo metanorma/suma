@@ -7,11 +7,12 @@ require "glossarist"
 module Suma
   class TermExtractor
     def initialize(schema_manifest_file, output_path, urn:,
-                   language_code: "eng")
+                   language_code: "eng", profile: nil)
       @schema_manifest_file = File.expand_path(schema_manifest_file)
       @output_path = output_path
       @language_code = language_code
       @urn = Suma::Urn.new(urn)
+      @profile = SchemaProfile.fetch(profile)
     end
 
     def call
@@ -56,7 +57,8 @@ module Suma
       raise Error, "Schema must have an associated file" unless schema.file
 
       classification = TermClassification.for_schema(id: schema.id,
-                                                      path: schema.file)
+                                                      path: schema.file,
+                                                      profile: @profile)
       collection = build_managed_concept_collection(schema, classification)
       output_data(collection)
       collection

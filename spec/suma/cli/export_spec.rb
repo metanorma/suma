@@ -282,4 +282,39 @@ RSpec.describe Suma::Cli::Export do
       end
     end
   end
+
+  describe "#export with --publication" do
+    let(:ap_manifest) do
+      File.join(__dir__, "../../fixtures/ap_publication/schemas.yaml")
+    end
+
+    it "exports the lead schema plus its USE-FROM closure into one " \
+       "publication directory" do
+      expect do
+        described_class.start([
+                                "export",
+                                "-o", output_path,
+                                "--publication", "ap_gizmo_mim",
+                                ap_manifest
+                              ])
+      end.not_to raise_error
+
+      bundle = File.join(output_path, "ap_gizmo_mim")
+      expect(Dir.children(bundle).sort).to eq(
+        %w[ap_gizmo_arm.exp ap_gizmo_mim.exp gizmo_arm.exp widget_schema.exp],
+      )
+    end
+
+    it "rejects a publication bundle over non-manifest input" do
+      exp = File.join(ap_manifest, "../schemas/applications/ap_gizmo/ap_gizmo_mim.exp")
+      expect do
+        described_class.start([
+                                "export",
+                                "-o", output_path,
+                                "--publication", "ap_gizmo_mim",
+                                File.expand_path(exp)
+                              ])
+      end.to raise_error(ArgumentError, /--publication requires/)
+    end
+  end
 end
