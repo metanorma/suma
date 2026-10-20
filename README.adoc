@@ -14,12 +14,18 @@ to build the following artifacts:
 
 == Features
 
-* EXPRESS schema management for STEP standards
+* EXPRESS schema management for STEP and other schema collections
 * Document collection building and compilation
+* Referential closure validation over the whole corpus
 * EXPRESS links validation and extraction
 * Schema listing file generation
+* OWL/Turtle projection with structural validation
+* Typed change manifests, changelogs, and dependency impact analysis
+* Glossarist terminology and hierarchical registers with edition metadata
+* Dereferenceable URN artifacts (canonical JSON + static HTML)
+* Incremental, parallel, and cached corpus builds
+* Reproducible outputs with verifiable, optionally signed provenance
 * Integration with the Metanorma ecosystem
-* Progress tracking for schema loading operations
 
 == Installation
 
@@ -37,13 +43,16 @@ $ gem install suma
 # Defaults to `suma help`
 $ suma
  Commands:
-  suma build METANORMA_SITE_MANIFEST                                  # Build collection specified in site manifest (`metanorma*.yml`)
-  suma convert-jsdai XML_FILE IMAGE_FILE OUTPUT_DIR                   # Convert JSDAI XML and image files to SVG and EXP files
-  suma extract-terms SCHEMA_MANIFEST_FILE GLOSSARIST_OUTPUT_PATH      # Extract EXPRESS entity concepts into Glossarist v3 format
-  suma generate-register SCHEMA_MANIFEST_FILE OUTPUT_PATH            # Generate hierarchical register.yaml from schema manifest
-  suma generate-schemas METANORMA_MANIFEST_FILE SCHEMA_MANIFEST_FILE  # Generate EXPRESS schema manifest file from Metanorma site manifest
-  suma help [COMMAND]                                                 # Describe available commands or one specific command
+  suma build METANORMA_SITE_MANIFEST                                  # Build collection from site manifest
+  suma check_svg_quality [PATH]                                       # Check SVG quality
+  suma compare TRIAL_SCHEMA REFERENCE_SCHEMA                          # Compare schemas; typed changes, impact
+  suma convert-jsdai XML_FILE IMAGE_FILE OUTPUT_DIR                   # Convert JSDAI XML and image files to SVG and EXP
+  suma export *FILES -o OUTPUT                                        # Export EXPRESS schemas or project them to OWL
+  suma extract-terms SCHEMA_MANIFEST_FILE GLOSSARIST_OUTPUT_PATH      # Extract entity concepts to Glossarist v3
+  suma generate-register SCHEMA_MANIFEST_FILE OUTPUT_PATH             # Generate hierarchical register.yaml
+  suma generate-schemas METANORMA_MANIFEST_FILE SCHEMA_MANIFEST_FILE  # Generate a schema manifest from a site manifest
   suma reformat EXPRESS_FILE_PATH                                     # Reformat EXPRESS files
+  suma resolve [URN] --manifest=MANIFEST -o OUTPUT                    # Emit canonical JSON + HTML for URNs
   suma validate SUBCOMMAND ...ARGS                                    # Validate express documents
 ----
 
@@ -65,6 +74,13 @@ Options:
 
 `--[no-]compile`:: Compile or skip compilation of collection (default: true)
 `--schemas-all-path=PATH`, `-s PATH`:: Generate file that contains all schemas in the collection
+`--[no-]staged`:: Memory-bounded build: compile each member in its own process, then reinflate
+`--[no-]incremental`:: Re-render only changed schemas and their transitive dependents
+`--state-file=PATH`:: Incremental build state file (default: `plain_schemas/.suma-build-state.json`)
+`--jobs=N`:: Concurrent schema export workers (document compilation stays sequential; default: 1)
+`--provenance=PATH`:: Write a provenance manifest (sha256 of inputs/outputs + toolchain versions)
+`--sign=METHOD`:: Sign the provenance manifest: `minisign` or `sigstore`
+`--sign-key=PATH`:: Signing key; minisign requires it, sigstore signs keylessly when omitted
 
 The generated `schemas-*.yaml` file name is derived from the input file name
 with the word `metanorma` replaced with `schemas`.
@@ -141,6 +157,7 @@ $ suma validate SUBCOMMAND [options]
 Subcommands:
 
 `links`:: Validate EXPRESS links
+`closure`:: Validate referential closure over the whole corpus
 
 ==== Links subcommand
 
@@ -175,6 +192,23 @@ This command:
 * Validates these links against the loaded schemas
 * Writes validation results to the `OUTPUT_FILE`
 * Provides progress bars to track schema loading and link validation
+
+==== Closure subcommand
+
+The `closure` subcommand extracts every EXPRESS-internal reference (attribute
+domains, SELECT and aggregate branches, where-rule expressions, subtype
+constraints, supertype/subtype lists, rule applies-to, and USE/REFERENCE
+interfaces) and resolves it against the corpus graph. It exits non-zero when
+any reference does not resolve, which makes it usable as a CI gate
+(`rake closure` runs it on the fixture corpus).
+
+[source,sh]
+----
+$ suma validate closure SCHEMAS_MANIFEST [DOCUMENTS_PATH] [--format terminal|json|yaml]
+----
+
+When `DOCUMENTS_PATH` is given, documentation-layer link failures are merged
+into the same report.
 
 
 === Generate schemas command
@@ -225,7 +259,7 @@ used for other EXPRESS schema collections that require term extraction for
 glossary or dictionary applications.
 
 The `suma extract-terms` command extracts terms from EXPRESS schemas and
-generates a Glossarist v2 dataset in the output directory. This command processes
+generates a Glossarist v3 dataset in the output directory. This command processes
 various types of STEP schemas and creates standardized terminology datasets
 suitable for glossary and dictionary applications.
 
@@ -239,12 +273,14 @@ Parameters:
 `SCHEMA_MANIFEST_FILE`:: Path to the schema manifest file that lists all schemas
 to process (e.g., "schemas-smrl-all.yml")
 
-`GLOSSARIST_OUTPUT_PATH`:: Path to the output directory where the Glossarist v2
+`GLOSSARIST_OUTPUT_PATH`:: Path to the output directory where the Glossarist v3
 dataset will be generated
 
 Options:
 
 `--language_code`, `-l`:: Language code for the Glossarist dataset (default: "eng")
+`--edition=N`:: Owning edition recorded on each concept
+`--language-codes=a,b`:: Additional linked localization languages (the primary language is always included)
 
 ==== Supported schema types
 
@@ -275,7 +311,7 @@ information:
 
 ==== Output format
 
-The command generates a Glossarist v2 compliant dataset with:
+The command generates a Glossarist v3 compliant dataset with:
 
 * `concept/` directory containing concept definition files in YAML
 * `localized_concept/` directory containing localized concept files in YAML
@@ -325,6 +361,13 @@ Options:
 `--urn`, `-u`:: Base URN prefix for the dataset (e.g. `urn:iso:std:iso:10303:-2:ed-2:en:tech:*`).
 The wildcard is stripped for the base URN and kept in `urnAliases`.
 *Required*.
+
+`--year=N`:: Edition year recorded on the register
+
+`--supersedes=URN`:: URN/ref of the superseded edition
+
+`--edition=N`:: Edition number, tagged as `edition:N`; every register also
+carries a `dataset:<id>` tag so sibling editions can be grouped.
 
 The URN is fully configurable — every component can be changed to match the
 dataset being exported. The general structure is:
@@ -521,6 +564,11 @@ Options:
 `--[no-]annotations`:: Include annotations (remarks/comments) in exported schemas (default: false)
 
 `--[no-]zip`:: Create ZIP archive of exported schemas (default: false)
+`--profile=PROFILE`:: Schema profile: `iso10303` (default) or `generic`
+`--publication=SCHEMA_ID`:: Export an AP publication bundle: the lead schema plus its transitive USE-FROM/REFERENCE closure
+`--format=FORMAT`:: Output format: `express` (default) or `owl`
+`--[no-]corpus`:: OWL only: emit one corpus ontology importing every schema ontology
+`--urn=URN`:: OWL only: base URN for IRIs, before the `:tech` component
 
 ==== Behavior
 
@@ -639,6 +687,65 @@ express-files/
 ----
 
 
+=== Schema profiles and AP publications
+
+Suma works with any schema collection. `Suma::SchemaProfile` declares how
+schema identifiers and paths map to types, how identifiers become display
+names, and the ordered register categories. Registered profiles:
+
+`iso10303`:: Default; STEP conventions including `/applications/` classifying as an application protocol
+`generic`:: No STEP conventions (one category for every schema)
+
+An AP publication is a lead schema bundled with the module and resource
+schemas it USEs. `--publication SCHEMA_ID` computes the transitive
+USE-FROM/REFERENCE closure and writes the bundle flat under
+`OUTPUT/<lead_id>/`. In the register, application protocols are grouped under
+a per-publication parent section.
+
+=== OWL projection
+
+`suma export --format owl` projects a parsed corpus into OWL/Turtle:
+
+* entities become `owl:Class`; `SUBTYPE OF` becomes `rdfs:subClassOf`
+* SELECT types become `owl:unionOf`; enumerations become `owl:oneOf` named individuals
+* simple type aliases become `rdfs:Datatype`
+* explicit, derived, and inverse attributes become object/datatype properties attached through named `owl:Restriction` nodes, with cardinality from optionality and aggregate bounds
+* WHERE, DERIVE, and INVERSE clauses are preserved as annotated constraints
+
+IRIs derive from the corpus URN scheme (`<base>:tech:<schema>.<element>`).
+Per-schema ontologies declare `owl:imports` for their USE-FROM/REFERENCE
+targets, and `--corpus` adds a corpus ontology importing every schema. The
+projection is validated before writing (materialization, property
+declarations, orphan classes, dangling superclasses, superclass cycles), and
+contains no blank nodes, so it is deterministic and golden-comparable.
+
+[source,sh]
+----
+$ suma export --format owl --urn urn:iso:std:iso:10303:-2:ed-2:en \
+    -o OUTPUT schemas.yaml
+$ suma export --format owl --corpus --urn urn:iso:std:iso:10303:-2:ed-2:en \
+    -o OUTPUT schemas.yaml
+----
+
+=== Resolve URNs command
+
+The `resolve` command turns URNs into static, dereferenceable artifacts: a
+canonical JSON document (sorted keys) and an HTML page per URN, written under
+a path derived from the URN itself. It resolves:
+
+* `tech:` schema and declared-element URNs from a schema manifest
+* `term:` concept URNs from Glossarist concept documents
+* the dataset URN from `register.yaml`
+
+[source,sh]
+----
+$ suma resolve URN --manifest SCHEMAS_YAML [--concepts DIR] [--register register.yaml] -o OUT
+$ suma resolve --all --manifest SCHEMAS_YAML [--concepts DIR] [--register register.yaml] -o OUT
+----
+
+`--all` also writes `index.html`, linking every artifact. No server is
+required.
+
 === Compare schemas command
 
 ==== General
@@ -667,6 +774,10 @@ Options:
 `--trial-stepmod=PATH`:: Override auto-detected trial repository root
 `--reference-stepmod=PATH`:: Override auto-detected reference repository root
 `--verbose`:: Enable verbose output
+`--typed-output=PATH`:: Write a typed change manifest (lutaml-model records with classification)
+`--[no-]changelog`:: Render a markdown changelog alongside the change manifest
+`--[no-]impact`:: Report affected schemas and AP publications using the corpus graph
+`--manifest=SCHEMAS_YAML`:: Schema manifest used for impact analysis
 
 ==== Typical workflow
 
@@ -1163,3 +1274,17 @@ Code-style rules enforced throughout `lib/suma/`:
 == Copyright and license
 
 Copyright Ribose. BSD 2-clause license.
+
+== Development and benchmarks
+
+The default gate is `rake` (specs, RuboCop, referential closure).
+
+[source,sh]
+----
+$ rake benchmark
+----
+
+`rake benchmark` builds a synthetic 1,000-schema corpus and asserts wall-time
+and peak-RSS budgets; the same benchmark runs nightly in CI. Schema export can
+run in parallel with `build --jobs N`, while Metanorma document compilation
+stays sequential and composes with staged process isolation.

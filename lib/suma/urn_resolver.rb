@@ -53,9 +53,12 @@ module Suma
       )
     end
 
-    # Write JSON and HTML for every artifact.
+    # Write JSON and HTML for every artifact, plus an index of the set.
     def write(output_directory)
       artifacts.each_key { |key| write_urn(key, output_directory) }
+      FileUtils.mkdir_p(output_directory)
+      File.write(File.join(output_directory, "index.html"),
+                 index_document, encoding: "utf-8")
       Utils.log "Wrote #{artifacts.length} URN artifacts to #{output_directory}"
     end
 
@@ -305,6 +308,26 @@ module Suma
         <body>
         <h1>#{title}</h1>
         <pre>#{escape_html(json)}</pre>
+        </body>
+        </html>
+      HTML
+    end
+
+    # A deterministic index of every resolved URN, linked to its document.
+    def index_document
+      items = artifacts.keys.sort.map do |urn|
+        href = artifact_path(urn, "html")
+        %(    <li><a href="#{escape_html(href)}">#{escape_html(urn)}</a></li>)
+      end.join("\n")
+      <<~HTML
+        <!doctype html>
+        <html lang="en">
+        <head><meta charset="utf-8"><title>Resolved URNs</title></head>
+        <body>
+        <h1>Resolved URNs</h1>
+        <ul>
+        #{items}
+        </ul>
         </body>
         </html>
       HTML
