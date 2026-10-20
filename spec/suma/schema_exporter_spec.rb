@@ -99,4 +99,31 @@ RSpec.describe Suma::SchemaExporter do
       expect(Dir.glob(File.join(output_dir, "*.exp")).any?).to be(true)
     end
   end
+
+  describe "parallel export" do
+    it "exports every schema through a bounded worker pool" do
+      paths = %w[
+        extract_terms/resources/action_schema/action_schema.exp
+        ap_publication/schemas/resources/widget_schema/widget_schema.exp
+      ].map { |relative| File.expand_path("../fixtures/#{relative}", __dir__) }
+
+      schemas = paths.map do |path|
+        Suma::ExpressSchema.new(
+          id: nil,
+          path: path,
+          output_path: output_dir,
+          is_standalone_file: true,
+        )
+      end
+
+      exporter = described_class.new(
+        schemas: schemas,
+        output_path: output_dir,
+        options: { jobs: 2 },
+      )
+      exporter.export
+
+      expect(Dir.glob(File.join(output_dir, "*.exp")).length).to eq(2)
+    end
+  end
 end

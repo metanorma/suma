@@ -8,6 +8,7 @@ module Suma
   autoload :VERSION, "suma/version"
 
   autoload :SchemaProfile,          "suma/schema_profile"
+  autoload :BuildPlan,              "suma/build_plan"
   autoload :Processor,              "suma/processor"
   autoload :Publication,            "suma/publication"
   autoload :ChangeClassification,   "suma/change_classification"
@@ -47,6 +48,7 @@ module Suma
   autoload :ThorExt,                "suma/thor_ext"
   autoload :Urn,                    "suma/urn"
   autoload :Utils,                  "suma/utils"
+  autoload :WorkerPool,             "suma/worker_pool"
 
   autoload :Cli, "suma/cli"
   autoload :Eengine, "suma/eengine"

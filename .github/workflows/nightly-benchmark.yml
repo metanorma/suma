@@ -1,0 +1,25 @@
+name: nightly-benchmark
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+      - name: Run synthetic corpus benchmark
+        run: bundle exec ruby bin/benchmark_corpus
+        env:
+          SUMA_BENCH_SCHEMAS: "1000"
+          SUMA_BENCH_MAX_SECONDS: "180"
+          SUMA_BENCH_MAX_RSS_MB: "2048"

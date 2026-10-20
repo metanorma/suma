@@ -1,0 +1,138 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Nightly scale benchmark: generates a synthetic EXPRESS corpus, then times
+# the corpus-scale operations (parse/graph, closure, OWL projection) and
+# asserts wall-time and peak-RSS budgets. Budgets are environment-tunable so
+# CI machines can be calibrated without code changes.
+
+require "suma"
+require "tmpdir"
+require "fileutils"
+require "json"
+
+module CorpusBenchmark
+  SCHEMA_COUNT = Integer(ENV.fetch("SUMA_BENCH_SCHEMAS", "1000"))
+  MAX_SECONDS = Float(ENV.fetch("SUMA_BENCH_MAX_SECONDS", "180"))
+  MAX_RSS_MB = Integer(ENV.fetch("SUMA_BENCH_MAX_RSS_MB", "2048"))
+  URN = "urn:example:benchmark:corpus:ed-1:en"
+
+  module_function
+
+  # Half resources, half modules; each module USEs one resource so the graph
+  # has interface edges (dependents are exercised by the closure walk).
+  def generate(directory)
+    resources = SCHEMA_COUNT / 2
+    FileUtils.mkdir_p(File.join(directory, "resources"))
+    FileUtils.mkdir_p(File.join(directory, "modules"))
+    manifest = { "schemas" => {} }
+
+    resources.times do |index|
+      id = format("res_%04d", index)
+      write_schema(directory, "resources", id, resource_source(id, index))
+      manifest["schemas"][id] = { "path" => "resources/#{id}.exp" }
+    end
+
+    (SCHEMA_COUNT - resources).times do |index|
+      id = format("mod_%04d", index)
+      resource = format("res_%04d", index)
+      write_schema(directory, "modules", id,
+                   module_source(id, index, resource))
+      manifest["schemas"][id] = { "path" => "modules/#{id}.exp" }
+    end
+
+    path = File.join(directory, "schemas.yaml")
+    File.write(path, YAML.dump(manifest))
+    path
+  end
+
+  def resource_source(id, index)
+    <<~EXPRESS
+      SCHEMA #{id};
+      ENTITY thing_#{format('%04d', index)};
+        name : STRING;
+        weight : REAL;
+      END_ENTITY;
+      END_SCHEMA;
+    EXPRESS
+  end
+
+  def module_source(id, index, resource)
+    <<~EXPRESS
+      SCHEMA #{id};
+      USE FROM #{resource};
+      ENTITY wrapper_#{format('%04d', index)};
+        item : thing_#{format('%04d', index)};
+      END_ENTITY;
+      END_SCHEMA;
+    EXPRESS
+  end
+
+  def write_schema(directory, kind, id, source)
+    File.write(File.join(directory, kind, "#{id}.exp"), source)
+  end
+
+  def measure
+    started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    value = yield
+    [value, Process.clock_gettime(Process::CLOCK_MONOTONIC) - started]
+  end
+
+  def peak_rss_mb
+    if File.exist?("/proc/self/status")
+      File.read("/proc/self/status")[/VmHWM:\s+(\d+)/, 1].to_i / 1024.0
+    else
+      `ps -o rss= -p #{Process.pid}`.to_i / 1024.0
+    end.round
+  end
+
+  def run
+    Dir.mktmpdir("suma-benchmark") do |directory|
+      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      manifest = generate(directory)
+
+      graph, graph_seconds = measure { Suma::CorpusGraph.from_manifest(manifest) }
+      violations, closure_seconds = measure do
+        Suma::ClosureValidator.new(graph).validate_manifest(manifest)
+      end
+      projection, owl_seconds = measure do
+        Suma::OwlProjection.new(manifest, urn: URN)
+      end
+      turtle, turtle_seconds = measure { projection.to_turtle }
+      total = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
+      rss = peak_rss_mb
+
+      report = {
+        schemas: SCHEMA_COUNT,
+        graph_seconds: graph_seconds.round(2),
+        closure_seconds: closure_seconds.round(2),
+        owl_seconds: owl_seconds.round(2),
+        turtle_seconds: turtle_seconds.round(2),
+        total_seconds: total.round(2),
+        peak_rss_mb: rss,
+        closure_violations: violations.length,
+        turtle_bytes: turtle.bytesize,
+        budgets: { max_seconds: MAX_SECONDS, max_rss_mb: MAX_RSS_MB },
+      }
+      puts JSON.pretty_generate(report)
+
+      failures = []
+      unless violations.empty?
+        failures << "#{violations.length} closure violations"
+      end
+      if total > MAX_SECONDS
+        failures << "wall time #{total.round(2)}s > #{MAX_SECONDS}s"
+      end
+      if rss > MAX_RSS_MB
+        failures << "peak RSS #{rss}MB > #{MAX_RSS_MB}MB"
+      end
+      unless failures.empty?
+        warn "benchmark FAILED: #{failures.join('; ')}"
+        exit 1
+      end
+      puts "benchmark passed"
+    end
+  end
+end
+
+CorpusBenchmark.run if $PROGRAM_NAME == __FILE__

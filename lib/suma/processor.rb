@@ -11,7 +11,8 @@ module Suma
                 :compile_flag
 
     def initialize(metanorma_yaml_path:, schemas_all_path:, compile: true,
-                   output_directory: "_site", staged: false)
+                   output_directory: "_site", staged: false,
+                   incremental: false, state_file: nil, jobs: 1)
       @metanorma_yaml_path = metanorma_yaml_path
       @schemas_all_path = schemas_all_path
       @compile_flag = compile
@@ -19,6 +20,9 @@ module Suma
       # Opt-in memory-bounded staged build (metanorma/suma#94); the default
       # single-process build below is unchanged when false.
       @staged = staged
+      @incremental = incremental
+      @state_file = state_file
+      @jobs = jobs
     end
 
     def run
@@ -60,6 +64,12 @@ module Suma
         manifest: collection_config.manifest,
         output_path_docs: "schema_docs",
         output_path_schemas: "plain_schemas",
+        options: {
+          annotations: true,
+          incremental: @incremental,
+          state_file: @state_file,
+          jobs: @jobs,
+        },
       )
 
       col.compile

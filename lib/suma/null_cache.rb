@@ -7,5 +7,9 @@ module Suma
     def fetch(*, **) = nil
 
     def store(*, **) = nil
+
+    def fetch_parsed(*) = nil
+
+    def store_parsed(*, **) = nil
   end
 end

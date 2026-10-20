@@ -21,6 +21,21 @@ module Suma
 
       desc "build METANORMA_SITE_MANIFEST",
            "Build collection specified in site manifest (`metanorma*.yml`)"
+      # Mirrors so Core accepts the switches Cli::Build reparses; the inner
+      # class owns their declarations.
+      option :compile, type: :boolean, default: true,
+                       desc: "Compile or skip compile of collection"
+      option :schemas_all_path, type: :string, aliases: "-s",
+                                desc: "Generate file that contains all schemas " \
+                                      "in the collection."
+      option :staged, type: :boolean, default: false,
+                      desc: "Memory-bounded staged build"
+      option :incremental, type: :boolean, default: false,
+                           desc: "Re-render only changed schemas and dependents"
+      option :state_file, type: :string,
+                          desc: "Path to the incremental build state file"
+      option :jobs, type: :numeric, default: 1,
+                    desc: "Concurrent schema export workers"
       def build(_site_manifest)
         Cli::Build.start
       end

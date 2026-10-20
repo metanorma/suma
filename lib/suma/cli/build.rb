@@ -16,6 +16,15 @@ module Suma
                       desc: "Memory-bounded staged build: compile each member in " \
                             "its own process (sequential) and reinflate. For large " \
                             "collections that OOM a single-process build (suma#94)."
+      option :incremental, type: :boolean, default: false,
+                           desc: "Re-render only changed schemas and their " \
+                                 "transitive dependents (state file defaults " \
+                                 "to plain_schemas/.suma-build-state.json)"
+      option :state_file, type: :string,
+                          desc: "Path to the incremental build state file"
+      option :jobs, type: :numeric, default: 1,
+                    desc: "Concurrent schema export workers (document " \
+                          "compilation remains sequential)"
 
       def build(metanorma_site_manifest)
         unless File.exist?(metanorma_site_manifest)
@@ -39,6 +48,9 @@ module Suma
           compile: options[:compile],
           output_directory: "_site",
           staged: options[:staged],
+          incremental: options[:incremental],
+          state_file: options[:state_file],
+          jobs: options[:jobs],
         ).run
       end
 

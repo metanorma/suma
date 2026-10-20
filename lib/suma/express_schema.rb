@@ -28,12 +28,13 @@ module Suma
     attr_accessor :path, :id, :parsed, :output_path, :is_standalone_file
 
     def initialize(id:, path:, output_path:, is_standalone_file: false,
-                   profile: nil)
+                   profile: nil, cache: nil)
       @path = Pathname.new(path).expand_path
       @id = id
       @output_path = output_path
       @is_standalone_file = is_standalone_file
       @profile = profile
+      @cache = cache
     end
 
     def type
@@ -43,7 +44,8 @@ module Suma
     def parsed
       return @parsed if @parsed
 
-      @parsed = Expressir::Express::Parser.from_file(@path.to_s)
+      source = File.read(@path.to_s, encoding: "UTF-8")
+      @parsed = @cache&.fetch_parsed(source) || parse_and_cache(source)
       Utils.log "Loaded EXPRESS schema: #{path}"
       @id = @parsed.schemas.first.id
       @parsed
@@ -83,6 +85,12 @@ module Suma
     end
 
     private
+
+    def parse_and_cache(source)
+      repository = Expressir::Express::Parser.from_file(@path.to_s)
+      @cache&.store_parsed(source, repository)
+      repository
+    end
 
     def classify
       Type.classify(id: @id, path: @path, profile: @profile)
