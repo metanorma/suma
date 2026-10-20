@@ -58,4 +58,27 @@ RSpec.describe Suma::Cli do
       end.to raise_error(Errno::ENOENT)
     end
   end
+
+  describe "generate-register command" do
+    it "passes edition metadata through to the register" do
+      Suma::Cli::Core.start([
+                              "generate-register",
+                              "extract_terms/schemas-smrl-all.yml",
+                              "register-out",
+                              "-u", "urn:iso:std:iso:10303:-2:ed-3:en:tech:*",
+                              "--id", "iso10303-2-express",
+                              "--ref", "ISO 10303-2 EXPRESS Concepts",
+                              "--year", "2026",
+                              "--supersedes", "urn:iso:std:iso:10303:-2:ed-2",
+                              "--edition", "3"
+                            ])
+
+      register = Glossarist::DatasetRegister.from_file(
+        "register-out/register.yaml",
+      )
+      expect(register.year).to eq(2026)
+      expect(register.supersedes).to eq("urn:iso:std:iso:10303:-2:ed-2")
+      expect(register.tags).to include("edition:3")
+    end
+  end
 end
