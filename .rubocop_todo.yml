@@ -135,6 +135,8 @@ Metrics/AbcSize:
     - 'lib/suma/corpus_graph.rb'
     - 'lib/suma/change_manifest.rb'
     - 'lib/suma/cli/generate_register.rb'
+    - 'lib/suma/owl_projection.rb'
+    - 'lib/suma/cli/export.rb'
 
 # Offense count: 2
 # Configuration parameters: CountComments, Max, CountAsOne, AllowedMethods, AllowedPatterns, inherit_mode.
@@ -156,6 +158,7 @@ Metrics/CyclomaticComplexity:
     - 'lib/suma/svg_quality/formatters/terminal_formatter.rb'
     - 'lib/suma/thor_ext.rb'
     - 'lib/suma/closure_validator.rb'
+    - 'lib/suma/owl_projection.rb'
 
 # Offense count: 32
 # Configuration parameters: CountComments, Max, CountAsOne, AllowedMethods, AllowedPatterns.
@@ -180,6 +183,8 @@ Metrics/MethodLength:
     - 'lib/suma/closure_validator.rb'
     - 'lib/suma/cli/validate.rb'
     - 'lib/suma/cli/generate_register.rb'
+    - 'lib/suma/owl_projection.rb'
+    - 'lib/suma/cli/export.rb'
 
 # Offense count: 3
 # Configuration parameters: Max, CountKeywordArgs, MaxOptionalParameters.
@@ -199,6 +204,7 @@ Metrics/PerceivedComplexity:
     - 'lib/suma/schema_comparer.rb'
     - 'lib/suma/svg_quality/formatters/terminal_formatter.rb'
     - 'lib/suma/closure_validator.rb'
+    - 'lib/suma/owl_projection.rb'
 
 # Offense count: 1
 # Configuration parameters: Mode, AllowedMethods, AllowedPatterns, AllowBangMethods, WaywardPredicates.
@@ -245,6 +251,7 @@ RSpec/ExampleLength:
     - 'spec/suma/closure_validator_spec.rb'
     - 'spec/suma/collection_manifest_spec.rb'
     - 'spec/suma/corpus_graph_spec.rb'
+    - 'spec/suma/owl_projection_spec.rb'
     - 'spec/suma/schema_profile_spec.rb'
     - 'spec/suma/eengine_converter_spec.rb'
     - 'spec/suma/express_reformatter_spec.rb'
@@ -256,6 +263,7 @@ RSpec/ExampleLength:
     - 'spec/suma/manifest_traverser_spec.rb'
     - 'spec/suma/note_processor_spec.rb'
     - 'spec/suma/publication_spec.rb'
+    - 'spec/suma/owl_projection_spec.rb'
     - 'spec/suma/processor_spec.rb'
     - 'spec/suma/register_manifest_generator_spec.rb'
     - 'spec/suma/schema_category_spec.rb'
@@ -313,6 +321,7 @@ RSpec/MultipleExpectations:
     - 'spec/suma/closure_validator_spec.rb'
     - 'spec/suma/collection_manifest_spec.rb'
     - 'spec/suma/corpus_graph_spec.rb'
+    - 'spec/suma/owl_projection_spec.rb'
     - 'spec/suma/schema_profile_spec.rb'
     - 'spec/suma/eengine_converter_spec.rb'
     - 'spec/suma/eengine_spec.rb'
@@ -325,6 +334,7 @@ RSpec/MultipleExpectations:
     - 'spec/suma/manifest_traverser_spec.rb'
     - 'spec/suma/note_processor_spec.rb'
     - 'spec/suma/publication_spec.rb'
+    - 'spec/suma/owl_projection_spec.rb'
     - 'spec/suma/processor_spec.rb'
     - 'spec/suma/register_manifest_generator_spec.rb'
     - 'spec/suma/schema_category_spec.rb'
@@ -368,3 +378,4 @@ RSpec/StubbedMock:
 RSpec/MultipleMemoizedHelpers:
   Exclude:
     - 'spec/suma/register_manifest_generator_spec.rb'
+    - 'spec/suma/owl_projection_spec.rb'

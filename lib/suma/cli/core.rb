@@ -115,6 +115,15 @@ module Suma
                                  "input only)"
       option :profile, type: :string, default: "iso10303",
                        desc: "Corpus profile (iso10303 or generic)"
+      option :format, type: :string, default: "express", banner: "FORMAT",
+                      desc: "Output format: express (default) or owl"
+      option :corpus, type: :boolean, default: false,
+                      desc: "OWL only: emit one ontology for the whole " \
+                            "manifest instead of one per schema"
+      option :urn, type: :string, banner: "URN",
+                   desc: "OWL only: base URN for IRIs, before the " \
+                         ":tech component " \
+                         "(e.g. urn:iso:std:iso:10303:-2:ed-2:en)"
       def export(*_files)
         Cli::Export.start
       end

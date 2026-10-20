@@ -1,0 +1,4 @@
+---
+schemas:
+  broken_schema:
+    path: broken.exp

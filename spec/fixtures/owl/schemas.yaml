@@ -1,0 +1,4 @@
+---
+schemas:
+  example_schema:
+    path: example_schema.exp
