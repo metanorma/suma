@@ -14,7 +14,6 @@ module Suma
   # moved with its build root. {.verify} recomputes the digests independently.
   class Provenance
     SECTIONS = %w[inputs outputs].freeze
-    SIGNING_METHODS = %w[minisign sigstore].freeze
 
     # Sign a provenance manifest with an external tool.
     #
@@ -27,15 +26,34 @@ module Suma
     # @param key [String, nil] secret key path (minisign requires it)
     # @return [String] signature artifact path
     def self.sign(path, method:, key: nil)
+      binary, argv, signature = signing_command(
+        method: method, path: path, key: key,
+      )
+      sign_with(binary, argv)
+      signature
+    end
+
+    # The external command and signature path for a signing method. Pure
+    # apart from filesystem-free validation; exposed for cross-platform specs.
+    #
+    # @return [Array(String, Array<String>, String)] binary, argv, signature
+    def self.signing_command(method:, path:, key: nil)
       case method.to_s
       when "minisign"
+        unless key
+          raise ArgumentError, "minisign signing requires a secret key"
+        end
+
         signature = "#{path}.minisig"
-        sign_with("minisign", minisign_argv(path, key))
-        signature
+        ["minisign", ["minisign", "-S", "-W", "-s", key, "-m", path,
+                      "-x", signature], signature]
       when "sigstore"
         signature = "#{path}.bundle"
-        sign_with("cosign", cosign_argv(path, key))
-        signature
+        argv = ["cosign", "sign-blob", "--yes",
+                "--bundle", signature]
+        argv += ["--key", key] if key
+        argv << path
+        ["cosign", argv, signature]
       else
         raise ArgumentError, "unsupported signing method: #{method}"
       end
@@ -48,20 +66,6 @@ module Suma
       when "sigstore" then executable?("cosign")
       else false
       end
-    end
-
-    def self.minisign_argv(path, key)
-      raise ArgumentError, "minisign signing requires a secret key" unless key
-
-      ["minisign", "-S", "-W", "-s", key, "-m", path,
-       "-x", "#{path}.minisig"]
-    end
-
-    def self.cosign_argv(path, key)
-      argv = ["cosign", "sign-blob", "--yes",
-              "--bundle", "#{path}.bundle"]
-      argv += ["--key", key] if key
-      argv << path
     end
 
     def self.sign_with(binary, argv)
@@ -150,7 +154,6 @@ module Suma
       path.to_s
     end
 
-    private_class_method :optional_versions, :minisign_argv, :cosign_argv,
-                         :sign_with, :executable?
+    private_class_method :optional_versions, :sign_with, :executable?
   end
 end
