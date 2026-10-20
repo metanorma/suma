@@ -42,8 +42,10 @@ module Suma
     # @param ref [String] human-readable reference label
     # @param language_code [String] language for section names
     # @param owner [String] dataset owner organisation
+    # @param profile [SchemaProfile, Symbol, String, nil] schema profile
+    #   governing classification, naming, and category ordering
     def initialize(schema_manifest_file, output_path, urn:, id:, ref:,
-                   language_code: "eng", owner: DEFAULT_OWNER)
+                   language_code: "eng", owner: DEFAULT_OWNER, profile: nil)
       @schema_manifest_file = File.expand_path(schema_manifest_file)
       @output_path = output_path
       @urn = Suma::Urn.new(urn)
@@ -51,6 +53,7 @@ module Suma
       @ref = ref
       @language_code = language_code
       @owner = owner
+      @profile = SchemaProfile.fetch(profile)
     end
 
     # Generate and write register.yaml.
@@ -122,27 +125,74 @@ module Suma
       )
     end
 
-    # Build a list of top-level sections, one per category, in
-    # SchemaCategory::ALL declaration order. Categories with no
-    # schemas are omitted.
+    # Build a list of top-level sections, one per category, in the
+    # schema profile's category order. Categories with no schemas are
+    # omitted.
     #
     # @param schemas [Array<Expressir::SchemaManifestEntry>]
     # @return [Array<Glossarist::Section>]
     def build_sections(schemas)
       groups = schemas.group_by do |s|
-        SchemaCategory.for_schema(id: s.id, path: s.path)
+        SchemaCategory.for_schema(id: s.id, path: s.path, profile: @profile)
       end
 
-      SchemaCategory::ALL.filter_map do |category|
+      SchemaCategory.for_profile(@profile).filter_map do |category|
         children = groups[category] || []
         next if children.empty?
 
         Glossarist::Section.new(
           id: category.id,
           names: { @language_code => category.label },
-          children: children.map { |s| build_section(s) },
+          children: section_children(category, children),
         )
       end
+    end
+
+    # Application protocols are grouped one level deeper: the schemas of
+    # one AP publication (its `_arm`/`_mim` pair) become the children of
+    # a per-AP parent section, so the register mirrors the publication
+    # bundling.
+    #
+    # @param category [SchemaCategory]
+    # @param schemas [Array<Expressir::SchemaManifestEntry>]
+    # @return [Array<Glossarist::Section>]
+    def section_children(category, schemas)
+      if category == SchemaCategory::APPLICATION_PROTOCOLS
+        build_ap_publication_sections(schemas)
+      else
+        schemas.map { |s| build_section(s) }
+      end
+    end
+
+    # Build one parent section per AP publication, keyed by the AP's
+    # base identity (the schema id with its ARM/MIM suffix stripped).
+    #
+    # @param schemas [Array<Expressir::SchemaManifestEntry>]
+    # @return [Array<Glossarist::Section>]
+    def build_ap_publication_sections(schemas)
+      schemas.group_by { |s| ap_base_id(s.id) }.sort_by { |base, _| base }
+        .map do |base, members|
+        Glossarist::Section.new(
+          id: base,
+          names: {
+            @language_code => "Application Protocol: " \
+                              "#{SchemaNaming.display_name(base, profile: @profile)}",
+          },
+          children: members.sort_by { |s| s.id.downcase }
+            .map { |s| build_section(s) },
+        )
+      end
+    end
+
+    # Strip the ARM/MIM suffix to get the AP publication's base identity.
+    #
+    # @param id [String]
+    # @return [String]
+    def ap_base_id(id)
+      %w[_arm _mim].each do |suffix|
+        return id.delete_suffix(suffix) if id.downcase.end_with?(suffix)
+      end
+      id
     end
 
     # Build a single leaf section from a schema descriptor.
@@ -154,7 +204,7 @@ module Suma
         id: schema.id,
         names: {
           @language_code => SchemaNaming.prefixed_name(
-            schema.id, path: schema.path
+            schema.id, path: schema.path, profile: @profile
           ),
         },
       )

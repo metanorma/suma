@@ -8,14 +8,17 @@ RSpec.describe Suma::SchemaCategory do
       expect(described_class::ALL).to be_frozen
     end
 
-    it "is ordered resources → modules → business_object_models → core_model → other" do
+    it "is ordered resources → application_protocols → modules → " \
+       "business_object_models → core_model → other" do
       expect(described_class::ALL.map(&:id)).to eq(
-        %w[resources modules business_object_models core_model other],
+        %w[resources application_protocols modules
+           business_object_models core_model other],
       )
     end
 
     it "contains every category defined as a constant" do
-      constants = %i[RESOURCES MODULES BUSINESS_OBJECT_MODELS CORE_MODEL OTHER]
+      constants = %i[RESOURCES APPLICATION_PROTOCOLS MODULES
+                     BUSINESS_OBJECT_MODELS CORE_MODEL OTHER]
       constant_categories = constants.map { |c| described_class.const_get(c) }
       expect(described_class::ALL).to eq(constant_categories)
     end

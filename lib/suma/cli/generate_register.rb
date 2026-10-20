@@ -17,6 +17,8 @@ module Suma
                    desc: "Human-readable reference label"
       option :owner, type: :string, default: Suma::RegisterManifestGenerator::DEFAULT_OWNER,
                      desc: "Owner of the dataset (e.g. 'ISO/TC 184/SC 4')"
+      option :profile, type: :string, default: "iso10303",
+                       desc: "Corpus profile (iso10303 or generic)"
 
       def generate_register(schema_manifest_file, output_path)
         RegisterManifestGenerator.new(
@@ -27,6 +29,7 @@ module Suma
           ref: options[:ref],
           language_code: options[:language_code],
           owner: options[:owner],
+          profile: options[:profile],
         ).generate
       end
     end

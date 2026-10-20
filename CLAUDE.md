@@ -24,6 +24,7 @@ rspec spec/path/to_spec.rb:42  # Run a single test at line 42
 ```bash
 exe/suma build METANORMA_YAML                          # Build collection from site manifest
 exe/suma export -o OUTPUT_DIR schema1.yml schema2.exp  # Export schemas (YAML manifest or .exp files)
+exe/suma export -o OUTPUT_DIR --publication AP_LEADER_ID schemas.yaml  # Export an AP publication bundle (lead + USE-FROM closure)
 exe/suma compare TRIAL_SCHEMA REFERENCE_SCHEMA -v VER  # Compare schemas, generate .changes.yaml
 exe/suma reformat PATH                                  # Reformat EXP files (use -r for recursive)
 exe/suma generate-schemas METANORMA_YAML SCHEMAS_YAML  # Generate schema manifest from site manifest
@@ -31,6 +32,26 @@ exe/suma extract-terms SCHEMA_YAML GLOSSARIST_DIR -u URN   # Extract EXPRESS ent
 exe/suma generate-register SCHEMA_YAML OUT_DIR -u URN --id ID --ref REF  # Generate hierarchical register.yaml from schema manifest
 exe/suma validate links SCHEMAS_FILE DOCS_PATH          # Validate EXPRESS cross-reference links
 ```
+
+## Schema profiles
+
+Suma works with any schema collection. `Suma::SchemaProfile` declares how schema
+identifiers and paths map to types (`ExpressSchema::Type`), how
+identifiers become display names (`SchemaNaming`), and the ordered
+register categories (`SchemaCategory`). Registered profiles: `iso10303`
+(default; STEP conventions incl. `/applications/` → application
+protocol) and `generic` (no STEP conventions). The CLI takes
+`--profile` on `export`, `extract-terms`, and `generate-register`.
+
+## ISO 10303 AP publications
+
+An AP publication is a lead schema (the AP's ARM/MIM) bundled with the
+module/resource schemas it USEs. `Suma::Publication` computes the
+transitive USE-FROM/REFERENCE closure from the parsed EXPRESS interfaces
+and resolves it against a schema manifest; `export --publication ID`
+writes the bundle flat under `<output>/<lead_id>/`. In the register,
+the "Application Protocols" category groups each AP's ARM/MIM under a
+per-publication parent section.
 
 ## Architecture
 

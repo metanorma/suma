@@ -127,4 +127,31 @@ RSpec.describe Suma::SchemaNaming do
       end
     end
   end
+
+  describe ".display_name with application protocol identifiers" do
+    {
+      "ap_gizmo" => "AP Gizmo",
+      "ap_gizmo_arm" => "AP Gizmo (ARM)",
+      "ap242_managed_model_based_3d_engineering_mim" =>
+        "AP242 Managed Model Based 3D Engineering (MIM)",
+    }.each do |input, expected|
+      it "names #{input} as #{expected}" do
+        expect(described_class.display_name(input)).to eq(expected)
+      end
+    end
+  end
+
+  describe "generic schema profile" do
+    it "strips no suffixes and applies no acronym handling" do
+      expect(described_class.display_name("Activity_arm", profile: "generic"))
+        .to eq("Activity Arm")
+      expect(described_class.display_name("aic_csg", profile: "generic"))
+        .to eq("Aic Csg")
+    end
+
+    it "prefixes with the generic category" do
+      expect(described_class.prefixed_name("activity_arm", profile: "generic"))
+        .to eq("Schema: Activity Arm")
+    end
+  end
 end

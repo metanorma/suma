@@ -36,6 +36,12 @@ module Suma
         entity_term: "express-language.entity_data_type",
         entity_display: "entity data type",
       ),
+      ExpressSchema::Type::APPLICATION_PROTOCOL => new(
+        type: ExpressSchema::Type::APPLICATION_PROTOCOL,
+        domain_label: "application protocol",
+        entity_term: "express-language.entity_data_type",
+        entity_display: "entity data type",
+      ),
       ExpressSchema::Type::MODULE_ARM => new(
         type: ExpressSchema::Type::MODULE_ARM,
         domain_label: "application module",
@@ -68,8 +74,9 @@ module Suma
       ),
     }.freeze
 
-    def self.for_schema(id:, path:)
-      type = ExpressSchema::Type.classify(id: id, path: path)
+    def self.for_schema(id:, path:, profile: nil)
+      type = ExpressSchema::Type.classify(id: id, path: path,
+                                          profile: profile)
       BY_TYPE.fetch(type) do |t|
         raise Error, "[suma] no term classification for type #{t.inspect}"
       end

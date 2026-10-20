@@ -1,0 +1,3 @@
+schema ap_gizmo_arm;
+  use from widget_schema;
+end_schema;

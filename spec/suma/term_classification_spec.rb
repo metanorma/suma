@@ -12,6 +12,7 @@ RSpec.describe Suma::TermClassification do
     it "covers every ExpressSchema::Type value exactly once" do
       type_values = [
         Suma::ExpressSchema::Type::RESOURCE,
+        Suma::ExpressSchema::Type::APPLICATION_PROTOCOL,
         Suma::ExpressSchema::Type::MODULE_ARM,
         Suma::ExpressSchema::Type::MODULE_MIM,
         Suma::ExpressSchema::Type::BUSINESS_OBJECT_MODEL,
@@ -36,6 +37,12 @@ RSpec.describe Suma::TermClassification do
       expect(arm.domain_label).to eq("application module")
       expect(arm.entity_term).to eq("general.application_object")
       expect(arm.entity_display).to eq("application object")
+    end
+
+    it "classifies application protocol as application-protocol domain" do
+      ap = described_class::BY_TYPE[Suma::ExpressSchema::Type::APPLICATION_PROTOCOL]
+      expect(ap.domain_label).to eq("application protocol")
+      expect(ap.entity_display).to eq("entity data type")
     end
 
     it "classifies module ARM as application module and application object" do

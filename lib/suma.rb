@@ -7,7 +7,9 @@ require "fileutils"
 module Suma
   autoload :VERSION, "suma/version"
 
+  autoload :SchemaProfile,          "suma/schema_profile"
   autoload :Processor,              "suma/processor"
+  autoload :Publication,            "suma/publication"
   autoload :CollectionConfig,       "suma/collection_config"
   autoload :CollectionManifest,     "suma/collection_manifest"
   autoload :EengineConverter,       "suma/eengine_converter"
