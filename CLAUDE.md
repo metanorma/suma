@@ -26,6 +26,7 @@ exe/suma build METANORMA_YAML                          # Build collection from s
 exe/suma build METANORMA_YAML --incremental --jobs 4   # Re-render changed schemas + dependents; parallel export
 SUMA_SCHEMA_CACHE_DIR=.suma-cache exe/suma build METANORMA_YAML  # Reuse parsed models/outputs across builds
 rake benchmark                                         # 1,000-schema synthetic corpus budget check
+exe/suma build METANORMA_YAML --provenance provenance.json  # sha256 of inputs/outputs + toolchain
 exe/suma export -o OUTPUT_DIR schema1.yml schema2.exp  # Export schemas (YAML manifest or .exp files)
 exe/suma export -o OUTPUT_DIR --publication AP_LEADER_ID schemas.yaml  # Export an AP publication bundle (lead + USE-FROM closure)
 exe/suma export --format owl -o OUT --urn BASE schemas.yaml  # Project the corpus to OWL/Turtle (one file per schema; add --corpus for a corpus ontology)
@@ -97,6 +98,7 @@ per-publication parent section.
 - **`BuildPlan`** — incremental-build decision: hashes every schema source, diffs against the persisted state, and expands changed schemas to their transitive dependents through `CorpusGraph`. State defaults to `plain_schemas/.suma-build-state.json`; `SchemaCollection#rebuild_targets` is the build-facing query
 - **`WorkerPool`** — bounded worker pool for independent per-schema work. Schema export runs in the pool (`build --jobs N`); Metanorma document compilation stays sequential and composes with `StagedCollectionBuilder`'s process isolation
 - **`UrnResolver`** — S4 dereferenceable identity: resolves `tech:` schema/element URNs from a manifest, `term:` concept URNs from Glossarist documents, and the dataset URN from `register.yaml`; emits canonical JSON plus a static HTML document per URN at a path derived from the URN itself. Every URN the register emits resolves against the artifact set
+- **`Provenance`** — S5 build provenance: sha256 of every input and output (files or directory trees) plus Ruby/Expressir/Suma toolchain versions, written as canonical JSON by `build --provenance FILE`. `Provenance.verify` recomputes the digests independently; `bin/release_provenance` runs the same check for a built gem in the release workflow
 - **`LinkValidator`** — validates EXPRESS cross-reference links against a `SchemaIndex`; returns `LinkValidationResult` structs for unresolved links
 
 ### CLI structure

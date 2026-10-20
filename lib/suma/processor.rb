@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "metanorma"
+require "expressir"
 
 module Suma
   class Processor
@@ -12,7 +13,8 @@ module Suma
 
     def initialize(metanorma_yaml_path:, schemas_all_path:, compile: true,
                    output_directory: "_site", staged: false,
-                   incremental: false, state_file: nil, jobs: 1)
+                   incremental: false, state_file: nil, jobs: 1,
+                   provenance_file: nil)
       @metanorma_yaml_path = metanorma_yaml_path
       @schemas_all_path = schemas_all_path
       @compile_flag = compile
@@ -23,6 +25,7 @@ module Suma
       @incremental = incremental
       @state_file = state_file
       @jobs = jobs
+      @provenance_file = provenance_file
     end
 
     def run
@@ -30,16 +33,44 @@ module Suma
 
       collection_config = export_schema_config
 
-      return nil unless @compile_flag
+      if @compile_flag
+        Utils.log "Compiling schema collection..."
+        compile_schema(schemas_all_path, collection_config)
 
-      Utils.log "Compiling schema collection..."
-      compile_schema(schemas_all_path, collection_config)
+        Utils.log "Compiling complete collection..."
+        compile_collection(collection_config, output_directory)
+      end
 
-      Utils.log "Compiling complete collection..."
-      compile_collection(collection_config, output_directory)
+      write_provenance
+      nil
     end
 
     private
+
+    def write_provenance
+      return unless @provenance_file
+
+      Provenance.write(
+        @provenance_file,
+        inputs: provenance_inputs,
+        outputs: provenance_outputs,
+      )
+      Utils.log "Wrote build provenance: #{@provenance_file}"
+    end
+
+    def provenance_inputs
+      [@metanorma_yaml_path, @schemas_all_path] + schema_source_paths
+    end
+
+    def schema_source_paths
+      manifest = Expressir::SchemaManifest.from_file(@schemas_all_path)
+      manifest.schemas.map { |entry| entry.path.to_s }
+    end
+
+    def provenance_outputs
+      [COLLECTION_OUTPUT_PATH, "plain_schemas", "schema_docs",
+       @output_directory]
+    end
 
     def export_schema_config
       site_config = Suma::SiteConfig::Config.from_file(metanorma_yaml_path)

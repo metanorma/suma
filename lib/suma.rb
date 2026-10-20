@@ -10,6 +10,7 @@ module Suma
   autoload :SchemaProfile,          "suma/schema_profile"
   autoload :BuildPlan,              "suma/build_plan"
   autoload :Processor,              "suma/processor"
+  autoload :Provenance,             "suma/provenance"
   autoload :Publication,            "suma/publication"
   autoload :ChangeClassification,   "suma/change_classification"
   autoload :ChangeImpact,           "suma/change_impact"

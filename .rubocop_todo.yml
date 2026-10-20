@@ -118,6 +118,7 @@ Metrics/AbcSize:
   Exclude:
     - 'bin/benchmark_corpus'
     - 'lib/suma/worker_pool.rb'
+    - 'spec/suma/reproducibility_spec.rb'
     - 'lib/suma/cli/resolve.rb'
     - 'lib/suma/urn_resolver.rb'
     - 'lib/suma/cli/check_svg_quality.rb'
@@ -174,6 +175,7 @@ Metrics/MethodLength:
     - 'bin/benchmark_corpus'
     - 'lib/suma/cli/build.rb'
     - 'lib/suma/worker_pool.rb'
+    - 'lib/suma/provenance.rb'
     - 'lib/suma/cli/resolve.rb'
     - 'lib/suma/urn_resolver.rb'
     - 'spec/**/*'
@@ -261,6 +263,8 @@ RSpec/ExampleLength:
     - 'spec/suma/worker_pool_spec.rb'
     - 'spec/suma/schema_collection_rebuild_targets_spec.rb'
     - 'spec/suma/build_plan_spec.rb'
+    - 'spec/suma/reproducibility_spec.rb'
+    - 'spec/suma/provenance_spec.rb'
     - 'spec/suma/term_extractor_spec.rb'
     - 'spec/suma/cli/resolve_spec.rb'
     - 'spec/suma/urn_resolver_spec.rb'
@@ -336,6 +340,8 @@ RSpec/MultipleExpectations:
   Exclude:
     - 'spec/suma/schema_cache_spec.rb'
     - 'spec/suma/worker_pool_spec.rb'
+    - 'spec/suma/reproducibility_spec.rb'
+    - 'spec/suma/provenance_spec.rb'
     - 'spec/suma/term_extractor_spec.rb'
     - 'spec/suma/cli/resolve_spec.rb'
     - 'spec/suma/urn_resolver_spec.rb'
@@ -391,6 +397,10 @@ RSpec/NestedGroups:
 # Offense count: 1
 # Configuration parameters: CustomTransform, IgnoreMethods, IgnoreMetadata, InflectorPath, EnforcedInflector.
 # SupportedInflectors: default, active_support
+RSpec/DescribeClass:
+  Exclude:
+    - 'spec/suma/reproducibility_spec.rb'
+
 RSpec/SpecFilePathFormat:
   Exclude:
     - '**/spec/routing/**/*'

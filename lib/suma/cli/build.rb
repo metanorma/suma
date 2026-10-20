@@ -25,6 +25,9 @@ module Suma
       option :jobs, type: :numeric, default: 1,
                     desc: "Concurrent schema export workers (document " \
                           "compilation remains sequential)"
+      option :provenance, type: :string,
+                          desc: "Write a provenance manifest (sha256 of inputs " \
+                                "and outputs + toolchain versions) to this path"
 
       def build(metanorma_site_manifest)
         unless File.exist?(metanorma_site_manifest)
@@ -51,6 +54,7 @@ module Suma
           incremental: options[:incremental],
           state_file: options[:state_file],
           jobs: options[:jobs],
+          provenance_file: options[:provenance],
         ).run
       end
 

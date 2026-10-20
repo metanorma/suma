@@ -1,0 +1,29 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Emit provenance for a release build: the built gem's sha256 plus the
+# dependency lockfile and toolchain versions. Run after `gem build`.
+
+require "suma"
+
+ROOT = File.expand_path("..", __dir__)
+gem_file = Dir[File.join(ROOT, "*.gem")].max
+abort "release_provenance: no built gem found in #{ROOT}" unless gem_file
+
+manifest_path = File.join(Dir.pwd, "provenance.json")
+Suma::Provenance.write(
+  manifest_path,
+  inputs: [
+    File.join(ROOT, "Gemfile.lock"),
+    File.join(ROOT, "suma.gemspec"),
+  ],
+  outputs: [gem_file],
+)
+
+problems = Suma::Provenance.verify(manifest_path)
+unless problems.empty?
+  warn "release_provenance: verification failed: #{problems.join('; ')}"
+  exit 1
+end
+
+puts "Wrote #{manifest_path} (#{File.basename(gem_file)})"
