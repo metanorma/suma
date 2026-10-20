@@ -415,6 +415,7 @@ RSpec/StubbedMock:
 # Configuration parameters: Max.
 RSpec/MultipleMemoizedHelpers:
   Exclude:
+    - 'spec/suma/provenance_spec.rb'
     - 'spec/suma/worker_pool_spec.rb'
     - 'spec/suma/schema_cache_spec.rb'
     - 'spec/suma/urn_resolver_spec.rb'

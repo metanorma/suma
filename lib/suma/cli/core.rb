@@ -38,6 +38,10 @@ module Suma
                     desc: "Concurrent schema export workers"
       option :provenance, type: :string,
                           desc: "Write a build provenance manifest"
+      option :sign, type: :string, banner: "METHOD",
+                    desc: "Sign the provenance manifest: minisign or sigstore"
+      option :sign_key, type: :string,
+                        desc: "Signing key (sigstore signs keylessly when omitted)"
       def build(_site_manifest)
         Cli::Build.start
       end

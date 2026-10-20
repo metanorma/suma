@@ -14,6 +14,70 @@ module Suma
   # moved with its build root. {.verify} recomputes the digests independently.
   class Provenance
     SECTIONS = %w[inputs outputs].freeze
+    SIGNING_METHODS = %w[minisign sigstore].freeze
+
+    # Sign a provenance manifest with an external tool.
+    #
+    # Optional by design: callers invoke this only when signing is requested.
+    # minisign uses a secret key (`key:`), sigstore/cosign signs with a key or
+    # keylessly when no key is given (ambient OIDC, e.g. GitHub Actions).
+    #
+    # @param path [String] provenance manifest
+    # @param method [String] minisign or sigstore
+    # @param key [String, nil] secret key path (minisign requires it)
+    # @return [String] signature artifact path
+    def self.sign(path, method:, key: nil)
+      case method.to_s
+      when "minisign"
+        signature = "#{path}.minisig"
+        sign_with("minisign", minisign_argv(path, key))
+        signature
+      when "sigstore"
+        signature = "#{path}.bundle"
+        sign_with("cosign", cosign_argv(path, key))
+        signature
+      else
+        raise ArgumentError, "unsupported signing method: #{method}"
+      end
+    end
+
+    # @return [Boolean] whether the signing tool is on PATH
+    def self.signing_available?(method)
+      case method.to_s
+      when "minisign" then executable?("minisign")
+      when "sigstore" then executable?("cosign")
+      else false
+      end
+    end
+
+    def self.minisign_argv(path, key)
+      raise ArgumentError, "minisign signing requires a secret key" unless key
+
+      ["minisign", "-S", "-W", "-s", key, "-m", path,
+       "-x", "#{path}.minisig"]
+    end
+
+    def self.cosign_argv(path, key)
+      argv = ["cosign", "sign-blob", "--yes",
+              "--bundle", "#{path}.bundle"]
+      argv += ["--key", key] if key
+      argv << path
+    end
+
+    def self.sign_with(binary, argv)
+      unless executable?(binary)
+        raise Error, "#{binary} is not available on PATH"
+      end
+      return if system(*argv)
+
+      raise Error, "#{binary} signing failed: #{argv.join(' ')}"
+    end
+
+    def self.executable?(binary)
+      ENV.fetch("PATH", "").split(File::PATH_SEPARATOR).any? do |directory|
+        File.executable?(File.join(directory, binary))
+      end
+    end
 
     # @return [Hash] toolchain versions that determine output bytes
     def self.toolchain
@@ -86,6 +150,7 @@ module Suma
       path.to_s
     end
 
-    private_class_method :optional_versions
+    private_class_method :optional_versions, :minisign_argv, :cosign_argv,
+                         :sign_with, :executable?
   end
 end

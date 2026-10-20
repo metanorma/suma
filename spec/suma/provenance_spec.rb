@@ -83,4 +83,103 @@ RSpec.describe Suma::Provenance do
         .to include(a_string_matching(/\Ainputs: missing/))
     end
   end
+
+  describe "signing" do
+    let(:sign_dir) { Dir.mktmpdir("suma_sign") }
+    let(:sign_manifest) { File.join(sign_dir, "provenance.json") }
+    let(:argv_file) { File.join(sign_dir, "argv.txt") }
+
+    before { File.write(sign_manifest, "{}\n") }
+
+    after { FileUtils.rm_rf(sign_dir) }
+
+    def fake_binary(name, script)
+      path = File.join(sign_dir, name)
+      File.write(path, "#!/bin/sh\n#{script}\n")
+      File.chmod(0o755, path)
+      path
+    end
+
+    def with_path(directory)
+      original = ENV.fetch("PATH", "")
+      ENV["PATH"] = "#{directory}#{File::PATH_SEPARATOR}#{original}"
+      yield
+    ensure
+      ENV["PATH"] = original
+    end
+
+    it "signs with minisign and requires a secret key" do
+      fake_binary("minisign", <<~SH)
+        sig=""
+        prev=""
+        for arg in "$@"; do
+          [ "$prev" = "-x" ] && sig="$arg"
+          prev="$arg"
+        done
+        echo signed > "$sig"
+      SH
+      key = File.join(sign_dir, "minisign.key")
+      File.write(key, "secret")
+
+      with_path(sign_dir) do
+        expect(described_class.sign(sign_manifest, method: "minisign",
+                                                   key: key))
+          .to eq("#{sign_manifest}.minisig")
+      end
+      expect(File).to exist("#{sign_manifest}.minisig")
+      expect { described_class.sign(sign_manifest, method: "minisign") }
+        .to raise_error(ArgumentError, /secret key/)
+    end
+
+    it "signs with sigstore, keylessly or with a key" do
+      fake_binary("cosign", <<~SH)
+        bundle=""
+        prev=""
+        for arg in "$@"; do
+          [ "$prev" = "--bundle" ] && bundle="$arg"
+          prev="$arg"
+        done
+        printf '%s\n' "$@" > "#{argv_file}"
+        echo bundle > "$bundle"
+      SH
+
+      with_path(sign_dir) do
+        expect(described_class.sign(sign_manifest, method: "sigstore"))
+          .to eq("#{sign_manifest}.bundle")
+      end
+      keyless_args = File.read(argv_file).lines.map(&:chomp)
+      expect(keyless_args).to include("sign-blob", "--yes", sign_manifest)
+      expect(keyless_args).not_to include("--key")
+
+      with_path(sign_dir) do
+        described_class.sign(sign_manifest, method: "sigstore",
+                                            key: "signing.key")
+      end
+      keyed_args = File.read(argv_file).lines.map(&:chomp)
+      expect(keyed_args).to include("--key", "signing.key")
+    end
+
+    it "rejects unsupported signing methods" do
+      expect { described_class.sign(sign_manifest, method: "pgp") }
+        .to raise_error(ArgumentError, /unsupported signing method/)
+    end
+
+    it "reports tool availability from PATH" do
+      empty = File.join(sign_dir, "empty")
+      FileUtils.mkdir_p(empty)
+      original = ENV.fetch("PATH", "")
+      begin
+        ENV["PATH"] = empty
+        expect(described_class.signing_available?("sigstore")).to be false
+      ensure
+        ENV["PATH"] = original
+      end
+
+      fake_binary("cosign", "exit 0")
+      with_path(sign_dir) do
+        expect(described_class.signing_available?("sigstore")).to be true
+      end
+      expect(described_class.signing_available?("pgp")).to be false
+    end
+  end
 end

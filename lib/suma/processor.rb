@@ -14,7 +14,7 @@ module Suma
     def initialize(metanorma_yaml_path:, schemas_all_path:, compile: true,
                    output_directory: "_site", staged: false,
                    incremental: false, state_file: nil, jobs: 1,
-                   provenance_file: nil)
+                   provenance_file: nil, sign_method: nil, sign_key: nil)
       @metanorma_yaml_path = metanorma_yaml_path
       @schemas_all_path = schemas_all_path
       @compile_flag = compile
@@ -26,6 +26,8 @@ module Suma
       @state_file = state_file
       @jobs = jobs
       @provenance_file = provenance_file
+      @sign_method = sign_method
+      @sign_key = sign_key
     end
 
     def run
@@ -55,6 +57,12 @@ module Suma
         inputs: provenance_inputs,
         outputs: provenance_outputs,
       )
+      if @sign_method
+        signature = Provenance.sign(
+          @provenance_file, method: @sign_method, key: @sign_key
+        )
+        Utils.log "Signed build provenance (#{@sign_method}): #{signature}"
+      end
       Utils.log "Wrote build provenance: #{@provenance_file}"
     end
 
