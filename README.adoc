@@ -733,7 +733,7 @@ The `resolve` command turns URNs into static, dereferenceable artifacts: a
 canonical JSON document (sorted keys) and an HTML page per URN, written under
 a path derived from the URN itself. It resolves:
 
-* `tech:` schema and declared-element URNs from a schema manifest
+* `tech:` schema, declared-element, and attribute (OWL property) URNs from a schema manifest
 * `term:` concept URNs from Glossarist concept documents
 * the dataset URN from `register.yaml`
 
