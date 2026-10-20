@@ -12,6 +12,7 @@ module Suma
     autoload :GenerateRegister, "suma/cli/generate_register"
     autoload :GenerateSchemas,  "suma/cli/generate_schemas"
     autoload :Reformat,         "suma/cli/reformat"
+    autoload :Resolve,          "suma/cli/resolve"
     autoload :Validate,         "suma/cli/validate"
     autoload :ValidateLinks,    "suma/cli/validate_links"
   end

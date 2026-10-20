@@ -15,6 +15,12 @@ module Suma
                          "(used for section references)"
       option :profile, type: :string, default: "iso10303",
                        desc: "Corpus profile (iso10303 or generic)"
+      option :edition, type: :numeric,
+                       desc: "Owning edition recorded on each concept"
+      option :language_codes, type: :array,
+                              desc: "Additional linked localization " \
+                                    "languages (the primary language is " \
+                                    "always included)"
 
       def extract_terms(schema_manifest_file, output_path)
         TermExtractor.new(
@@ -23,6 +29,8 @@ module Suma
           language_code: options[:language_code],
           urn: options[:urn],
           profile: options[:profile],
+          edition: options[:edition],
+          language_codes: options[:language_codes],
         ).call
       end
     end

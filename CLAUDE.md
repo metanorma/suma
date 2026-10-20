@@ -34,6 +34,9 @@ exe/suma compare ... -v VER --typed-output FILE --changelog --impact --manifest 
 exe/suma reformat PATH                                  # Reformat EXP files (use -r for recursive)
 exe/suma generate-schemas METANORMA_YAML SCHEMAS_YAML  # Generate schema manifest from site manifest
 exe/suma extract-terms SCHEMA_YAML GLOSSARIST_DIR -u URN   # Extract EXPRESS entity concepts to Glossarist v3 format
+exe/suma extract-terms ... --edition 3 --language-codes fra deu  # Provenance + linked localizations
+exe/suma resolve URN --manifest SCHEMAS_YAML --concepts DIR --register register.yaml -o OUT  # Emit canonical JSON + HTML
+exe/suma resolve --all --manifest SCHEMAS_YAML --concepts DIR --register register.yaml -o OUT  # Emit every URN artifact
 exe/suma generate-register SCHEMA_YAML OUT_DIR -u URN --id ID --ref REF  # Generate hierarchical register.yaml from schema manifest
 exe/suma validate links SCHEMAS_FILE DOCS_PATH          # Validate EXPRESS cross-reference links
 exe/suma validate closure SCHEMAS_MANIFEST [DOCUMENTS_PATH]  # Referential closure: every reference resolves (exit 1 on violations)
@@ -93,6 +96,7 @@ per-publication parent section.
 - **`SchemaCache`** — content-addressed on-disk store for generated `.exp` output and parsed Expressir repositories. Keys compose source bytes with the Expressir version (plus Suma/Marshal versions for parsed entries), so a hit is equivalent to a fresh build. Enabled by `SUMA_SCHEMA_CACHE_DIR`; hit/miss counters expose parse reuse. **`NullCache`** is the disabled-mode null object
 - **`BuildPlan`** — incremental-build decision: hashes every schema source, diffs against the persisted state, and expands changed schemas to their transitive dependents through `CorpusGraph`. State defaults to `plain_schemas/.suma-build-state.json`; `SchemaCollection#rebuild_targets` is the build-facing query
 - **`WorkerPool`** — bounded worker pool for independent per-schema work. Schema export runs in the pool (`build --jobs N`); Metanorma document compilation stays sequential and composes with `StagedCollectionBuilder`'s process isolation
+- **`UrnResolver`** — S4 dereferenceable identity: resolves `tech:` schema/element URNs from a manifest, `term:` concept URNs from Glossarist documents, and the dataset URN from `register.yaml`; emits canonical JSON plus a static HTML document per URN at a path derived from the URN itself. Every URN the register emits resolves against the artifact set
 - **`LinkValidator`** — validates EXPRESS cross-reference links against a `SchemaIndex`; returns `LinkValidationResult` structs for unresolved links
 
 ### CLI structure
@@ -108,6 +112,8 @@ The `extract-terms` command reads an EXPRESS schema manifest, parses each `.exp`
 - Entity remarks processed into notes (first-sentence extraction, redundant note removal, invalid reference filtering)
 - Domain classification via `ExpressSchema::Type` (resource vs application module)
 - Section references for hierarchical grouping
+- Provenance on every concept: the source schema citation, the entity URN under `sourced_from`, and the owning edition/version
+- Linked localizations: `--language-codes` emits additional `localizations` of the same managed concept (same stable UUID, per-language localized UUIDs); the text is the source-language content until translations are supplied
 
 The `generate-register` command reads the same schema manifest and emits `register.yaml` with hierarchical sections:
 - Top-level groups: Resources (133) before Application Modules (1123)

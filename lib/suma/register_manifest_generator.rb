@@ -135,10 +135,12 @@ module Suma
       )
     end
 
-    # Edition metadata for the register: the edition number is carried as
-    # a tag so consumers can group editions of one dataset.
+    # Edition metadata for the register: the dataset tag groups sibling
+    # editions, and the edition number groups nothing on its own.
     def edition_tags
-      @edition ? ["edition:#{@edition}"] : []
+      tags = ["dataset:#{@id}"]
+      tags << "edition:#{@edition}" if @edition
+      tags
     end
 
     # Build a list of top-level sections, one per category, in the

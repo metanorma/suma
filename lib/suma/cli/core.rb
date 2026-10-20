@@ -60,12 +60,18 @@ module Suma
                          "(used for section references)"
       option :language_code, type: :string, default: "eng", aliases: "-l",
                              desc: "Language code for the Glossarist"
+      option :edition, type: :numeric,
+                       desc: "Owning edition recorded on each concept"
+      option :language_codes, type: :array,
+                              desc: "Additional linked localization languages"
       def extract_terms(schema_manifest_file, glossarist_output_path)
         TermExtractor.new(
           schema_manifest_file,
           glossarist_output_path,
           urn: options[:urn],
           language_code: options[:language_code],
+          edition: options[:edition],
+          language_codes: options[:language_codes],
         ).call
       end
 
@@ -151,6 +157,9 @@ module Suma
 
       desc "validate SUBCOMMAND ...ARGS", "Validate express documents"
       subcommand "validate", Cli::Validate
+
+      desc "resolve URN", "Resolve URNs to canonical JSON + HTML artifacts"
+      subcommand "resolve", Cli::Resolve
 
       desc "check_svg_quality [PATH]",
            "Check SVG quality and sort by severity (critical files first)"

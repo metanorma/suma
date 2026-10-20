@@ -47,6 +47,7 @@ module Suma
   autoload :TermExtractor,          "suma/term_extractor"
   autoload :ThorExt,                "suma/thor_ext"
   autoload :Urn,                    "suma/urn"
+  autoload :UrnResolver,            "suma/urn_resolver"
   autoload :Utils,                  "suma/utils"
   autoload :WorkerPool,             "suma/worker_pool"
 
