@@ -1,2 +1,10 @@
 schema widget_schema;
-end_schema;
+
+TYPE widget_name = STRING;
+END_TYPE;
+
+ENTITY widget;
+  label : widget_name;
+END_ENTITY;
+
+END_SCHEMA;

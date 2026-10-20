@@ -1,0 +1,12 @@
+---
+schemas:
+  ap_gizmo_arm:
+    path: ../ap_publication/schemas/applications/ap_gizmo/ap_gizmo_arm.exp
+  ap_gizmo_mim:
+    path: ../ap_publication/schemas/applications/ap_gizmo/ap_gizmo_mim.exp
+  gizmo_arm:
+    path: ../ap_publication/schemas/modules/gizmo/arm.exp
+  widget_schema:
+    path: ../ap_publication/schemas/resources/widget_schema/widget_schema.exp
+  broken_schema:
+    path: broken.exp

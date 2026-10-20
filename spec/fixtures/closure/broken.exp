@@ -1,0 +1,14 @@
+SCHEMA broken_schema;
+  USE FROM missing_interface;
+
+TYPE broken_select = SELECT (nonexistent_type);
+END_TYPE;
+
+ENTITY broken_entity
+  SUBTYPE OF (no_such_parent);
+  field : phantom_type;
+  WHERE
+    sane : missing_attribute > 0.0;
+END_ENTITY;
+
+END_SCHEMA;

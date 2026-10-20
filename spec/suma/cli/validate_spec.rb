@@ -70,4 +70,35 @@ RSpec.describe Suma::Cli::Validate do
       )
     end
   end
+
+  describe "#closure" do
+    let(:good_manifest) do
+      File.expand_path("../../fixtures/ap_publication/schemas.yaml", __dir__)
+    end
+    let(:broken_manifest) do
+      File.expand_path("../../fixtures/closure/schemas.yaml", __dir__)
+    end
+
+    def run_closure(manifest)
+      described_class.new([]).closure(manifest)
+    end
+
+    it "succeeds silently on a closed corpus" do
+      expect { run_closure(good_manifest) }
+        .to output(/Referential closure OK/).to_stdout
+    end
+
+    it "fails on a broken corpus, listing every violation" do
+      expect { run_closure(broken_manifest) }
+        .to raise_error(Thor::Error, /5 unresolved reference/)
+        .and output(/\[interface\].*missing_interface/)
+        .to_stdout
+    end
+
+    it "emits machine-readable JSON" do
+      cli = described_class.new([], { "format" => "json" })
+      expect { cli.closure(good_manifest) }
+        .to output(/"violations":\[\]/).to_stdout
+    end
+  end
 end

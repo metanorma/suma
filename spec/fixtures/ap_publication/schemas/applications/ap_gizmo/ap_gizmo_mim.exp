@@ -1,4 +1,10 @@
 schema ap_gizmo_mim;
-  use from ap_gizmo_arm;
-  use from gizmo_arm;
-end_schema;
+  USE FROM ap_gizmo_arm;
+  USE FROM gizmo_arm;
+
+ENTITY ap_gizmo_mapping
+  SUBTYPE OF (ap_gizmo);
+  mapped : calibrated_gizmo;
+END_ENTITY;
+
+END_SCHEMA;
