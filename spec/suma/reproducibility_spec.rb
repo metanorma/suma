@@ -30,6 +30,10 @@ RSpec.describe "reproducible outputs" do
       concepts_dir: concepts,
       register_file: File.join(register, "register.yaml"),
     ).write(artifacts)
+    File.write(
+      File.join(root, "corpus.ttl"),
+      Suma::OwlProjection.new(manifest, urn: urn_base).to_turtle,
+    )
   end
 
   def files(root)
