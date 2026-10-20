@@ -36,6 +36,8 @@ module Suma
                           desc: "Path to the incremental build state file"
       option :jobs, type: :numeric, default: 1,
                     desc: "Concurrent schema export workers"
+      option :provenance, type: :string,
+                          desc: "Write a build provenance manifest"
       def build(_site_manifest)
         Cli::Build.start
       end

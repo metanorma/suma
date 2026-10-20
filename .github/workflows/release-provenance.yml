@@ -1,0 +1,31 @@
+name: release-provenance
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  provenance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+      - name: Build gem
+        run: gem build suma.gemspec
+      - name: Write and verify provenance
+        run: bundle exec ruby bin/release_provenance
+      - name: Independent sha256 pass
+        run: sha256sum *.gem
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-provenance
+          path: provenance.json
