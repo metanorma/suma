@@ -418,6 +418,22 @@ RSpec.describe Suma::RegisterManifestGenerator do
       expect(result.tags).to include("edition:3")
     end
 
+    it "tags every edition with its dataset identity for sibling discovery" do
+      expect(result.tags).to include("dataset:iso10303-2-express")
+
+      prior = described_class.new(
+        manifest_file,
+        Dir.mktmpdir,
+        urn: "urn:iso:std:iso:10303:-2:ed-2:en:tech:*",
+        id: "iso10303-2-express",
+        ref: "ISO 10303-2 EXPRESS Concepts",
+        year: 2024,
+        edition: 2,
+      ).generate
+      expect(prior.tags).to include("dataset:iso10303-2-express")
+      expect(prior.tags).to include("edition:2")
+    end
+
     it "omits edition metadata when not given" do
       plain = described_class.new(
         manifest_file,
@@ -426,7 +442,7 @@ RSpec.describe Suma::RegisterManifestGenerator do
         id: "x", ref: "X"
       ).generate
       expect(plain.year).to be_nil
-      expect(plain.tags).to eq([])
+      expect(plain.tags).to eq(["dataset:x"])
     end
   end
 end

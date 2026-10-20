@@ -7,12 +7,15 @@ require "glossarist"
 module Suma
   class TermExtractor
     def initialize(schema_manifest_file, output_path, urn:,
-                   language_code: "eng", profile: nil)
+                   language_code: "eng", profile: nil, edition: nil,
+                   language_codes: nil)
       @schema_manifest_file = File.expand_path(schema_manifest_file)
       @output_path = output_path
       @language_code = language_code
+      @language_codes = normalize_languages(language_code, language_codes)
       @urn = Suma::Urn.new(urn)
       @profile = SchemaProfile.fetch(profile)
+      @edition = edition
     end
 
     def call
@@ -23,6 +26,12 @@ module Suma
     end
 
     private
+
+    # The primary language is always first; additional languages produce
+    # linked localizations of the same managed concept.
+    def normalize_languages(primary, extra)
+      ([primary] + Array(extra).map(&:to_s)).map(&:to_s).uniq
+    end
 
     def validate_inputs
       unless File.exist?(@schema_manifest_file)
@@ -82,30 +91,12 @@ module Suma
     end
 
     def build_managed_concept_collection(schema, classification)
-      source_ref = get_source_ref(schema)
       section_ref = get_section_ref(schema)
 
       Glossarist::ManagedConceptCollection.new.tap do |collection|
         schema.entities.each do |entity|
-          localized_concept_id = Glossarist::Utilities::UUID.uuid_v5(
-            Glossarist::Utilities::UUID::OID_NAMESPACE,
-            "#{schema.id}.#{entity.id}-#{@language_code}",
-          )
-
-          localized_concept = build_localized_concept(
-            schema: schema,
-            entity: entity,
-            source_ref: source_ref,
-            uuid: localized_concept_id,
-            classification: classification,
-          )
-
-          managed_data = Glossarist::V3::ManagedConceptData.new.tap do |data|
-            data.id = "#{schema.id}.#{entity.id}"
-            data.localizations.store(@language_code, localized_concept)
-            data.localized_concepts = { @language_code => localized_concept_id }
-            data.domains = [section_ref] if section_ref
-          end
+          managed_data = build_managed_data(schema, entity, section_ref,
+                                            classification)
 
           managed_concept = Glossarist::V3::ManagedConcept.new.tap do |concept|
             concept.id = managed_data.id
@@ -122,16 +113,45 @@ module Suma
       end
     end
 
-    def build_localized_concept(schema:, entity:, source_ref:, uuid:,
+    def build_managed_data(schema, entity, section_ref, classification)
+      Glossarist::V3::ManagedConceptData.new.tap do |data|
+        data.id = "#{schema.id}.#{entity.id}"
+        data.localized_concepts = {}
+
+        @language_codes.each do |language|
+          localized_id = localized_concept_id(schema, entity, language)
+          localized = build_localized_concept(
+            schema: schema,
+            entity: entity,
+            language: language,
+            uuid: localized_id,
+            classification: classification,
+          )
+          data.localizations.store(language, localized)
+          data.localized_concepts[language] = localized_id
+        end
+
+        data.domains = [section_ref] if section_ref
+      end
+    end
+
+    def localized_concept_id(schema, entity, language)
+      Glossarist::Utilities::UUID.uuid_v5(
+        Glossarist::Utilities::UUID::OID_NAMESPACE,
+        "#{schema.id}.#{entity.id}-#{language}",
+      )
+    end
+
+    def build_localized_concept(schema:, entity:, language:, uuid:,
                                 classification:)
       schema_domain = classification.domain_for(schema.id)
 
       localized_concept_data = Glossarist::V3::ConceptData.new.tap do |data|
         data.terms = get_entity_terms(entity)
         data.definition = get_entity_definitions(entity, schema, classification)
-        data.language_code = @language_code
+        data.language_code = language
         data.domain = schema_domain
-        data.sources = [source_ref] if source_ref
+        data.sources = [build_source_ref(schema, entity)]
 
         notes = NoteProcessor.call(
           entity.remarks,
@@ -177,26 +197,45 @@ module Suma
       )
     end
 
-    def get_source_ref(schema)
+    # Provenance: the schema is the authoritative source, the entity URN is
+    # what the concept is about, and the edition/version identifies the
+    # owning release.
+    def build_source_ref(schema, entity)
       ref = Glossarist::Citation::Ref.new
       ref.source = schema_urn(schema)
-
-      build_custom_locality(schema).each do |cl|
-        case cl.name
-        when "version" then ref.version = cl.value
-        end
-      end
+      ref.version = edition_label(schema)
 
       origin = Glossarist::V3::Citation.new
       origin.ref = ref
-      Glossarist::V3::ConceptSource.new(id: schema.id, type: "authoritative",
-                                        origin: origin)
+      Glossarist::V3::ConceptSource.new(
+        id: schema.id,
+        type: "authoritative",
+        origin: origin,
+        sourced_from: [entity_citation(schema, entity)],
+      )
+    end
+
+    def entity_citation(schema, entity)
+      ref = Glossarist::Citation::Ref.new
+      ref.source = express_entity_urn("#{schema.id}.#{entity.id}")
+      ref.version = edition_label(schema)
+
+      Glossarist::V3::Citation.new.tap { |citation| citation.ref = ref }
+    end
+
+    def edition_label(schema)
+      return @edition.to_s if @edition
+
+      build_custom_locality(schema)
+        .find { |locality| locality.name == "version" }&.value
     end
 
     def build_custom_locality(schema)
       localities = []
 
-      version_item = schema.version.items.detect { |i| i.name == "version" }
+      version_item = Array(schema.version&.items).detect do |item|
+        item.name == "version"
+      end
       if version_item
         localities << Glossarist::CustomLocality.new(name: "version",
                                                      value: version_item.value)

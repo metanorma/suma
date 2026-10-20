@@ -97,4 +97,64 @@ RSpec.describe Suma::TermExtractor do
       expect { extractor.call }.to raise_error(StandardError)
     end
   end
+
+  describe "provenance" do
+    let(:urn_base) { "urn:iso:std:iso:10303:-2:ed-2:en" }
+
+    it "records the schema, entity URN, and edition on each concept" do
+      extractor = described_class.new(
+        schema_manifest_file, test_output_path, urn: urn_base, edition: 3
+      )
+      concept = extractor.call.first.managed_concepts.first
+      source = concept.localization("eng").data.sources.first
+
+      expect(source.origin.ref.source)
+        .to eq("#{urn_base}:tech:Activity_arm")
+      expect(source.origin.ref.version).to eq("3")
+      expect(source.sourced_from.first.ref.source)
+        .to eq("#{urn_base}:tech:#{concept.data.id}")
+      expect(source.sourced_from.first.ref.version).to eq("3")
+    end
+  end
+
+  describe "multilingual linkage" do
+    let(:urn_base) { "urn:iso:std:iso:10303:-2:ed-2:en" }
+
+    it "stores linked localizations under one managed concept" do
+      extractor = described_class.new(
+        schema_manifest_file, test_output_path, urn: urn_base,
+                                                language_codes: %w[fra deu]
+      )
+      concept = extractor.call.first.managed_concepts.first
+
+      expect(concept.data.localizations.keys)
+        .to contain_exactly("eng", "fra", "deu")
+      localized_ids = concept.data.localized_concepts
+      expect(localized_ids.keys).to contain_exactly("eng", "fra", "deu")
+      expect(localized_ids.values.uniq.length).to eq(3)
+
+      english = concept.localization("eng").data
+      french = concept.localization("fra").data
+      expect(french.language_code).to eq("fra")
+      expect(french.terms.first.designation)
+        .to eq(english.terms.first.designation)
+      expect(french.definition.first.content)
+        .to eq(english.definition.first.content)
+    end
+
+    it "writes all localizations to one document" do
+      extractor = described_class.new(
+        schema_manifest_file, test_output_path, urn: urn_base,
+                                                language_codes: %w[fra]
+      )
+      extractor.call
+      document = Glossarist::V3::ConceptDocument.from_yamls(
+        File.read(Dir[File.join(test_output_path, "*.yaml")].first),
+      )
+      expect(document.concept.data.localized_concepts.keys)
+        .to contain_exactly("eng", "fra")
+      expect(document.localizations.map { |l| l.data.language_code })
+        .to contain_exactly("eng", "fra")
+    end
+  end
 end

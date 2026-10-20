@@ -118,6 +118,8 @@ Metrics/AbcSize:
   Exclude:
     - 'bin/benchmark_corpus'
     - 'lib/suma/worker_pool.rb'
+    - 'lib/suma/cli/resolve.rb'
+    - 'lib/suma/urn_resolver.rb'
     - 'lib/suma/cli/check_svg_quality.rb'
     - 'lib/suma/cli/core.rb'
     - 'lib/suma/jsdai/figure.rb'
@@ -153,6 +155,7 @@ Metrics/BlockLength:
 Metrics/CyclomaticComplexity:
   Exclude:
     - 'lib/suma/worker_pool.rb'
+    - 'lib/suma/urn_resolver.rb'
     - 'lib/suma/cli/check_svg_quality.rb'
     - 'lib/suma/eengine/wrapper.rb'
     - 'lib/suma/express_schema.rb'
@@ -171,6 +174,8 @@ Metrics/MethodLength:
     - 'bin/benchmark_corpus'
     - 'lib/suma/cli/build.rb'
     - 'lib/suma/worker_pool.rb'
+    - 'lib/suma/cli/resolve.rb'
+    - 'lib/suma/urn_resolver.rb'
     - 'spec/**/*'
     - 'lib/suma/cli/check_svg_quality.rb'
     - 'lib/suma/cli/core.rb'
@@ -199,6 +204,7 @@ Metrics/ParameterLists:
   Exclude:
     - 'lib/suma/processor.rb'
     - 'lib/suma/express_schema.rb'
+    - 'lib/suma/term_extractor.rb'
     - 'lib/suma/cli/check_svg_quality.rb'
     - 'lib/suma/link_validator.rb'
     - 'lib/suma/register_manifest_generator.rb'
@@ -255,6 +261,9 @@ RSpec/ExampleLength:
     - 'spec/suma/worker_pool_spec.rb'
     - 'spec/suma/schema_collection_rebuild_targets_spec.rb'
     - 'spec/suma/build_plan_spec.rb'
+    - 'spec/suma/term_extractor_spec.rb'
+    - 'spec/suma/cli/resolve_spec.rb'
+    - 'spec/suma/urn_resolver_spec.rb'
     - 'spec/suma/cli/export_spec.rb'
     - 'spec/suma/cli/extract_terms_spec.rb'
     - 'spec/suma/cli/generate_register_spec.rb'
@@ -327,6 +336,9 @@ RSpec/MultipleExpectations:
   Exclude:
     - 'spec/suma/schema_cache_spec.rb'
     - 'spec/suma/worker_pool_spec.rb'
+    - 'spec/suma/term_extractor_spec.rb'
+    - 'spec/suma/cli/resolve_spec.rb'
+    - 'spec/suma/urn_resolver_spec.rb'
     - 'spec/suma/cli/build_spec.rb'
     - 'spec/suma/cli/export_spec.rb'
     - 'spec/suma/cli/expressir_spec.rb'
@@ -395,5 +407,6 @@ RSpec/MultipleMemoizedHelpers:
   Exclude:
     - 'spec/suma/worker_pool_spec.rb'
     - 'spec/suma/schema_cache_spec.rb'
+    - 'spec/suma/urn_resolver_spec.rb'
     - 'spec/suma/register_manifest_generator_spec.rb'
     - 'spec/suma/owl_projection_spec.rb'
