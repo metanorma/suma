@@ -1,8 +1,11 @@
 name: release-provenance
 
 on:
-  release:
-    types: [published]
+  # Tag pushes reliably fan out (the release workflow pushes v* tags with a
+  # PAT); release-published events created by CI tokens may not.
+  push:
+    tags:
+      - "v*"
   workflow_dispatch:
 
 permissions:
