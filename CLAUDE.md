@@ -25,6 +25,7 @@ rspec spec/path/to_spec.rb:42  # Run a single test at line 42
 exe/suma build METANORMA_YAML                          # Build collection from site manifest
 exe/suma export -o OUTPUT_DIR schema1.yml schema2.exp  # Export schemas (YAML manifest or .exp files)
 exe/suma export -o OUTPUT_DIR --publication AP_LEADER_ID schemas.yaml  # Export an AP publication bundle (lead + USE-FROM closure)
+exe/suma export --format owl -o OUT --urn BASE schemas.yaml  # Project the corpus to OWL/Turtle (one file per schema; add --corpus for a corpus ontology)
 exe/suma compare TRIAL_SCHEMA REFERENCE_SCHEMA -v VER  # Compare schemas, generate .changes.yaml
 exe/suma compare ... -v VER --typed-output FILE --changelog --impact --manifest SCHEMAS_YAML  # Typed change manifest, changelog, impact analysis
 exe/suma reformat PATH                                  # Reformat EXP files (use -r for recursive)
@@ -85,6 +86,7 @@ per-publication parent section.
 - **`ChangeClassification` / `ChangeManifest` / `ChangeImpact`** — S3 typed change ontology: eengine actions are classified (additive/compatible/breaking/editorial), the typed manifest (`change-entry` records via lutaml-model) is emitted alongside `.changes.yaml` with a markdown changelog, and impact analysis walks `CorpusGraph#dependents_of` to report affected schemas and AP publications
 - **`CorpusGraph`** — the declared-element graph of a whole schema collection: schemas, declared elements, USE/REFERENCE interface edges; the resolution substrate for `ClosureValidator` (and later change-impact/incremental builds)
 - **`ClosureValidator`** — S1 referential closure: extracts every EXPRESS-internal reference (attribute domains, SELECT/aggregate branches, where-rule expressions, subtype constraints, supertype/subtype lists, rule applies-to, interfaces) and resolves it against a `CorpusGraph`; zero violations is the corpus well-formedness gate (`rake closure`)
+- **`OwlProjection`** — S2 formal semantics: projects a parsed corpus into OWL/Turtle. Entities → `owl:Class`; `SUBTYPE OF` → `rdfs:subClassOf`; SELECT → `owl:unionOf`; enums → `owl:oneOf` named individuals; simple type aliases → `rdfs:Datatype`; explicit/derived/inverse attributes → object/datatype properties attached through named `owl:Restriction` nodes (cardinality from optionality and aggregate bounds); WHERE rules and DERIVE/INVERSE clauses → annotated (`rdfs:comment`) constraints. IRIs come from `Urn` (`<base>:tech:<schema>.<element>`), per-schema ontologies declare `owl:imports` for their `USE FROM`/`REFERENCE` targets, and the corpus ontology imports every schema. `#validate` checks materialization, property declarations, orphan classes, and superclass acyclicity. Output contains no blank nodes, so projections are deterministic and golden-comparable
 - **`LinkValidator`** — validates EXPRESS cross-reference links against a `SchemaIndex`; returns `LinkValidationResult` structs for unresolved links
 
 ### CLI structure
@@ -112,6 +114,7 @@ The `generate-register` command reads the same schema manifest and emits `regist
 - **metanorma** — document compilation (`.adoc` → XML/HTML/PDF)
 - **lutaml-model** — YAML/XML model serialization (used in `SiteConfig`, `CollectionConfig`)
 - **glossarist** — term extraction output format
+- **rdf / rdf-turtle** — OWL projection serialization (already required through glossarist; no direct gemspec entry)
 - **eengine** (optional, external binary) — schema comparison via `Eengine::Wrapper`
 
 ### Schema comparison flow

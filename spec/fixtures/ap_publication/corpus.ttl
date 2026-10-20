@@ -1,0 +1,134 @@
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:iso:std:iso:10303:-2:ed-2:en> a owl:Ontology;
+  owl:imports <urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_arm>,
+    <urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_mim>,
+    <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm>,
+    <urn:iso:std:iso:10303:-2:ed-2:en:tech:widget_schema> .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_arm.ap_gizmo.base> a owl:ObjectProperty;
+  rdfs:label "base";
+  rdfs:domain <urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_arm.ap_gizmo>;
+  rdfs:range <urn:iso:std:iso:10303:-2:ed-2:en:tech:widget_schema.widget> .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_arm.ap_gizmo.base.restriction> a owl:Restriction;
+  owl:cardinality "1"^^xsd:nonNegativeInteger;
+  owl:onProperty <urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_arm.ap_gizmo.base> .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_arm.ap_gizmo.state> a owl:ObjectProperty;
+  rdfs:label "state";
+  rdfs:domain <urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_arm.ap_gizmo>;
+  rdfs:range <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo_state> .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_arm.ap_gizmo.state.restriction> a owl:Restriction;
+  owl:cardinality "1"^^xsd:nonNegativeInteger;
+  owl:onProperty <urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_arm.ap_gizmo.state> .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_mim.ap_gizmo_mapping> a owl:Class;
+  rdfs:label "ap_gizmo_mapping";
+  rdfs:isDefinedBy <urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_mim>;
+  rdfs:subClassOf <urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_arm.ap_gizmo>,
+    <urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_mim.ap_gizmo_mapping.mapped.restriction> .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_mim.ap_gizmo_mapping.mapped> a owl:ObjectProperty;
+  rdfs:label "mapped";
+  rdfs:domain <urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_mim.ap_gizmo_mapping>;
+  rdfs:range <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.calibrated_gizmo> .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_mim.ap_gizmo_mapping.mapped.restriction> a owl:Restriction;
+  owl:cardinality "1"^^xsd:nonNegativeInteger;
+  owl:onProperty <urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_mim.ap_gizmo_mapping.mapped> .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.calibrated_gizmo.calibration_factor> a owl:DatatypeProperty;
+  rdfs:label "calibration_factor";
+  rdfs:domain <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.calibrated_gizmo>;
+  rdfs:range xsd:double .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.calibrated_gizmo.calibration_factor.restriction> a owl:Restriction;
+  owl:cardinality "1"^^xsd:nonNegativeInteger;
+  owl:onProperty <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.calibrated_gizmo.calibration_factor> .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo.designation> a owl:DatatypeProperty;
+  rdfs:label "designation";
+  rdfs:domain <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo>;
+  rdfs:range xsd:string .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo.designation.restriction> a owl:Restriction;
+  owl:cardinality "1"^^xsd:nonNegativeInteger;
+  owl:onProperty <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo.designation> .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo.state> a owl:ObjectProperty;
+  rdfs:label "state";
+  rdfs:domain <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo>;
+  rdfs:range <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo_state> .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo.state.restriction> a owl:Restriction;
+  owl:cardinality "1"^^xsd:nonNegativeInteger;
+  owl:onProperty <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo.state> .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo_state.idle> a owl:NamedIndividual,
+    <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo_state>;
+  rdfs:label "idle" .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo_state.members.0> rdf:first <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo_state.idle>;
+  rdf:rest <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo_state.members.1> .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo_state.members.1> rdf:first <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo_state.spinning>;
+  rdf:rest <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo_state.members.2> .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo_state.members.2> rdf:first <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo_state.stopped>;
+  rdf:rest () .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo_state.spinning> a owl:NamedIndividual,
+    <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo_state>;
+  rdfs:label "spinning" .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo_state.stopped> a owl:NamedIndividual,
+    <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo_state>;
+  rdfs:label "stopped" .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:widget_schema.widget.label> a owl:DatatypeProperty;
+  rdfs:label "label";
+  rdfs:domain <urn:iso:std:iso:10303:-2:ed-2:en:tech:widget_schema.widget>;
+  rdfs:range <urn:iso:std:iso:10303:-2:ed-2:en:tech:widget_schema.widget_name> .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:widget_schema.widget.label.restriction> a owl:Restriction;
+  owl:cardinality "1"^^xsd:nonNegativeInteger;
+  owl:onProperty <urn:iso:std:iso:10303:-2:ed-2:en:tech:widget_schema.widget.label> .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:widget_schema.widget_name> a rdfs:Datatype;
+  rdfs:label "widget_name";
+  rdfs:isDefinedBy <urn:iso:std:iso:10303:-2:ed-2:en:tech:widget_schema>;
+  rdfs:subClassOf xsd:string .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.calibrated_gizmo> a owl:Class;
+  rdfs:label "calibrated_gizmo";
+  rdfs:comment "sane_factor: calibration_factor > 0.0;";
+  rdfs:isDefinedBy <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm>;
+  rdfs:subClassOf <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo>,
+    <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.calibrated_gizmo.calibration_factor.restriction> .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:widget_schema.widget> a owl:Class;
+  rdfs:label "widget";
+  rdfs:isDefinedBy <urn:iso:std:iso:10303:-2:ed-2:en:tech:widget_schema>;
+  rdfs:subClassOf <urn:iso:std:iso:10303:-2:ed-2:en:tech:widget_schema.widget.label.restriction> .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_arm.ap_gizmo> a owl:Class;
+  rdfs:label "ap_gizmo";
+  rdfs:isDefinedBy <urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_arm>;
+  rdfs:subClassOf <urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_arm.ap_gizmo.base.restriction>,
+    <urn:iso:std:iso:10303:-2:ed-2:en:tech:ap_gizmo_arm.ap_gizmo.state.restriction> .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo> a owl:Class;
+  rdfs:label "gizmo";
+  rdfs:isDefinedBy <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm>;
+  rdfs:subClassOf <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo.designation.restriction>,
+    <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo.state.restriction> .
+
+<urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo_state> a owl:Class;
+  rdfs:label "gizmo_state";
+  rdfs:isDefinedBy <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm>;
+  owl:oneOf <urn:iso:std:iso:10303:-2:ed-2:en:tech:gizmo_arm.gizmo_state.members.0> .

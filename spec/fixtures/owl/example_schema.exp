@@ -1,0 +1,43 @@
+SCHEMA example_schema;
+
+TYPE label_type = STRING;
+END_TYPE;
+
+TYPE status = ENUMERATION OF (active, inactive);
+END_TYPE;
+
+TYPE item_select = SELECT (part, assembly);
+END_TYPE;
+
+ENTITY part
+  ABSTRACT SUPERTYPE OF (ONEOF (bolt, nut));
+  name : label_type;
+  status_value : status;
+  note : OPTIONAL STRING;
+  tags : LIST [0:?] OF STRING;
+  sides : ARRAY [2:6] OF REAL;
+  weight : REAL;
+DERIVE
+  tag_count : INTEGER := SIZEOF(tags);
+INVERSE
+  assemblies : SET [0:?] OF assembly FOR components;
+WHERE
+  positive_weight: weight > 0.0;
+END_ENTITY;
+
+ENTITY bolt
+  SUBTYPE OF (part);
+  diameter : REAL;
+END_ENTITY;
+
+ENTITY nut
+  SUBTYPE OF (part);
+  thread : INTEGER;
+END_ENTITY;
+
+ENTITY assembly;
+  components : SET [1:?] OF part;
+  primary_item : item_select;
+END_ENTITY;
+
+END_SCHEMA;

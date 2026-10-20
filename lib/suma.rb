@@ -26,6 +26,7 @@ module Suma
   autoload :MappingDrift,           "suma/mapping_drift"
   autoload :NoteProcessor,          "suma/note_processor"
   autoload :NullCache,              "suma/null_cache"
+  autoload :OwlProjection,          "suma/owl_projection"
   autoload :RegisterManifestGenerator, "suma/register_manifest_generator"
   autoload :SchemaCache,            "suma/schema_cache"
   autoload :SchemaCategory,         "suma/schema_category"

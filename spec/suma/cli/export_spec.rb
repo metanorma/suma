@@ -317,4 +317,102 @@ RSpec.describe Suma::Cli::Export do
       end.to raise_error(ArgumentError, /--publication requires/)
     end
   end
+
+  describe "#export with --format owl" do
+    let(:ap_manifest) do
+      File.join(__dir__, "../../fixtures/ap_publication/schemas.yaml")
+    end
+    let(:urn) { "urn:iso:std:iso:10303:-2:ed-2:en" }
+
+    it "writes one Turtle ontology per schema under its category" do
+      expect do
+        described_class.start([
+                                "export",
+                                "-o", output_path,
+                                "--format", "owl",
+                                "--urn", urn,
+                                ap_manifest
+                              ])
+      end.not_to raise_error
+
+      expect(Dir.glob("#{output_path}/**/*.ttl").map do |path|
+        path.sub("#{output_path}/", "")
+      end.sort).to eq(
+        %w[applications/ap_gizmo_arm.ttl applications/ap_gizmo_mim.ttl
+           modules/gizmo_arm.ttl resources/widget_schema.ttl],
+      )
+    end
+
+    it "writes a single corpus ontology with --corpus" do
+      expect do
+        described_class.start([
+                                "export",
+                                "-o", output_path,
+                                "--format", "owl",
+                                "--corpus",
+                                "--urn", urn,
+                                ap_manifest
+                              ])
+      end.not_to raise_error
+
+      corpus = File.read(File.join(output_path, "corpus.ttl"))
+      expect(corpus).to include("owl:Class")
+      expect(corpus).to include("#{urn}:tech:gizmo_arm.gizmo")
+      expect(corpus).to include("#{urn}:tech:widget_schema.widget")
+      expect(corpus).to include("owl:imports")
+      # The imported schema ontologies are emitted alongside the corpus
+      # ontology so the imports resolve.
+      expect(Dir.glob("#{output_path}/**/*.ttl").length).to eq(5)
+    end
+
+    it "requires --urn" do
+      expect do
+        described_class.start([
+                                "export",
+                                "-o", output_path,
+                                "--format", "owl",
+                                ap_manifest
+                              ])
+      end.to raise_error(ArgumentError, /--urn/)
+    end
+
+    it "rejects non-manifest input" do
+      exp = File.join(
+        __dir__, "../../fixtures/ap_publication/schemas/modules/gizmo/arm.exp"
+      )
+      expect do
+        described_class.start([
+                                "export",
+                                "-o", output_path,
+                                "--format", "owl",
+                                "--urn", urn,
+                                File.expand_path(exp)
+                              ])
+      end.to raise_error(ArgumentError, /exactly one schema manifest/)
+    end
+
+    it "rejects --publication" do
+      expect do
+        described_class.start([
+                                "export",
+                                "-o", output_path,
+                                "--format", "owl",
+                                "--urn", urn,
+                                "--publication", "ap_gizmo_mim",
+                                ap_manifest
+                              ])
+      end.to raise_error(ArgumentError, /--publication/)
+    end
+
+    it "rejects an unknown format" do
+      expect do
+        described_class.start([
+                                "export",
+                                "-o", output_path,
+                                "--format", "turtle",
+                                ap_manifest
+                              ])
+      end.to raise_error(ArgumentError, /Unsupported format/)
+    end
+  end
 end

@@ -1,0 +1,184 @@
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:example:owl:example:ed-1:en> a owl:Ontology;
+  owl:imports <urn:example:owl:example:ed-1:en:tech:example_schema> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.assembly.components> a owl:ObjectProperty;
+  rdfs:label "components";
+  rdfs:domain <urn:example:owl:example:ed-1:en:tech:example_schema.assembly>;
+  rdfs:range <urn:example:owl:example:ed-1:en:tech:example_schema.part> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.assembly.components.restriction> a owl:Restriction;
+  owl:minCardinality "1"^^xsd:nonNegativeInteger;
+  owl:onProperty <urn:example:owl:example:ed-1:en:tech:example_schema.assembly.components> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.assembly.primary_item> a owl:ObjectProperty;
+  rdfs:label "primary_item";
+  rdfs:domain <urn:example:owl:example:ed-1:en:tech:example_schema.assembly>;
+  rdfs:range <urn:example:owl:example:ed-1:en:tech:example_schema.item_select> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.assembly.primary_item.restriction> a owl:Restriction;
+  owl:cardinality "1"^^xsd:nonNegativeInteger;
+  owl:onProperty <urn:example:owl:example:ed-1:en:tech:example_schema.assembly.primary_item> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.bolt> a owl:Class;
+  rdfs:label "bolt";
+  rdfs:isDefinedBy <urn:example:owl:example:ed-1:en:tech:example_schema>;
+  rdfs:subClassOf <urn:example:owl:example:ed-1:en:tech:example_schema.part>,
+    <urn:example:owl:example:ed-1:en:tech:example_schema.bolt.diameter.restriction> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.bolt.diameter> a owl:DatatypeProperty;
+  rdfs:label "diameter";
+  rdfs:domain <urn:example:owl:example:ed-1:en:tech:example_schema.bolt>;
+  rdfs:range xsd:double .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.bolt.diameter.restriction> a owl:Restriction;
+  owl:cardinality "1"^^xsd:nonNegativeInteger;
+  owl:onProperty <urn:example:owl:example:ed-1:en:tech:example_schema.bolt.diameter> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.item_select> a owl:Class;
+  rdfs:label "item_select";
+  rdfs:isDefinedBy <urn:example:owl:example:ed-1:en:tech:example_schema>;
+  owl:unionOf <urn:example:owl:example:ed-1:en:tech:example_schema.item_select.members.0> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.item_select.members.0> rdf:first <urn:example:owl:example:ed-1:en:tech:example_schema.part>;
+  rdf:rest <urn:example:owl:example:ed-1:en:tech:example_schema.item_select.members.1> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.item_select.members.1> rdf:first <urn:example:owl:example:ed-1:en:tech:example_schema.assembly>;
+  rdf:rest () .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.label_type> a rdfs:Datatype;
+  rdfs:label "label_type";
+  rdfs:isDefinedBy <urn:example:owl:example:ed-1:en:tech:example_schema>;
+  rdfs:subClassOf xsd:string .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.nut> a owl:Class;
+  rdfs:label "nut";
+  rdfs:isDefinedBy <urn:example:owl:example:ed-1:en:tech:example_schema>;
+  rdfs:subClassOf <urn:example:owl:example:ed-1:en:tech:example_schema.part>,
+    <urn:example:owl:example:ed-1:en:tech:example_schema.nut.thread.restriction> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.nut.thread> a owl:DatatypeProperty;
+  rdfs:label "thread";
+  rdfs:domain <urn:example:owl:example:ed-1:en:tech:example_schema.nut>;
+  rdfs:range xsd:integer .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.nut.thread.restriction> a owl:Restriction;
+  owl:cardinality "1"^^xsd:nonNegativeInteger;
+  owl:onProperty <urn:example:owl:example:ed-1:en:tech:example_schema.nut.thread> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.part.assemblies> a owl:ObjectProperty;
+  rdfs:label "assemblies";
+  rdfs:comment "INVERSE assemblies : SET [0:?] OF assembly FOR components;";
+  rdfs:domain <urn:example:owl:example:ed-1:en:tech:example_schema.part>;
+  rdfs:range <urn:example:owl:example:ed-1:en:tech:example_schema.assembly> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.part.assemblies.restriction> a owl:Restriction;
+  owl:minCardinality "0"^^xsd:nonNegativeInteger;
+  owl:onProperty <urn:example:owl:example:ed-1:en:tech:example_schema.part.assemblies> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.part.name> a owl:DatatypeProperty;
+  rdfs:label "name";
+  rdfs:domain <urn:example:owl:example:ed-1:en:tech:example_schema.part>;
+  rdfs:range <urn:example:owl:example:ed-1:en:tech:example_schema.label_type> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.part.name.restriction> a owl:Restriction;
+  owl:cardinality "1"^^xsd:nonNegativeInteger;
+  owl:onProperty <urn:example:owl:example:ed-1:en:tech:example_schema.part.name> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.part.note> a owl:DatatypeProperty;
+  rdfs:label "note";
+  rdfs:domain <urn:example:owl:example:ed-1:en:tech:example_schema.part>;
+  rdfs:range xsd:string .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.part.note.restriction> a owl:Restriction;
+  owl:minCardinality "0"^^xsd:nonNegativeInteger;
+  owl:onProperty <urn:example:owl:example:ed-1:en:tech:example_schema.part.note> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.part.sides> a owl:DatatypeProperty;
+  rdfs:label "sides";
+  rdfs:domain <urn:example:owl:example:ed-1:en:tech:example_schema.part>;
+  rdfs:range xsd:double .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.part.sides.restriction> a owl:Restriction;
+  owl:maxCardinality "6"^^xsd:nonNegativeInteger;
+  owl:minCardinality "2"^^xsd:nonNegativeInteger;
+  owl:onProperty <urn:example:owl:example:ed-1:en:tech:example_schema.part.sides> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.part.status_value> a owl:ObjectProperty;
+  rdfs:label "status_value";
+  rdfs:domain <urn:example:owl:example:ed-1:en:tech:example_schema.part>;
+  rdfs:range <urn:example:owl:example:ed-1:en:tech:example_schema.status> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.part.status_value.restriction> a owl:Restriction;
+  owl:cardinality "1"^^xsd:nonNegativeInteger;
+  owl:onProperty <urn:example:owl:example:ed-1:en:tech:example_schema.part.status_value> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.part.tag_count> a owl:DatatypeProperty;
+  rdfs:label "tag_count";
+  rdfs:comment "DERIVE tag_count : INTEGER := SIZEOF(tags);";
+  rdfs:domain <urn:example:owl:example:ed-1:en:tech:example_schema.part>;
+  rdfs:range xsd:integer .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.part.tag_count.restriction> a owl:Restriction;
+  owl:cardinality "1"^^xsd:nonNegativeInteger;
+  owl:onProperty <urn:example:owl:example:ed-1:en:tech:example_schema.part.tag_count> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.part.tags> a owl:DatatypeProperty;
+  rdfs:label "tags";
+  rdfs:domain <urn:example:owl:example:ed-1:en:tech:example_schema.part>;
+  rdfs:range xsd:string .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.part.tags.restriction> a owl:Restriction;
+  owl:minCardinality "0"^^xsd:nonNegativeInteger;
+  owl:onProperty <urn:example:owl:example:ed-1:en:tech:example_schema.part.tags> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.part.weight> a owl:DatatypeProperty;
+  rdfs:label "weight";
+  rdfs:domain <urn:example:owl:example:ed-1:en:tech:example_schema.part>;
+  rdfs:range xsd:double .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.part.weight.restriction> a owl:Restriction;
+  owl:cardinality "1"^^xsd:nonNegativeInteger;
+  owl:onProperty <urn:example:owl:example:ed-1:en:tech:example_schema.part.weight> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.status.active> a owl:NamedIndividual,
+    <urn:example:owl:example:ed-1:en:tech:example_schema.status>;
+  rdfs:label "active" .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.status.inactive> a owl:NamedIndividual,
+    <urn:example:owl:example:ed-1:en:tech:example_schema.status>;
+  rdfs:label "inactive" .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.status.members.0> rdf:first <urn:example:owl:example:ed-1:en:tech:example_schema.status.active>;
+  rdf:rest <urn:example:owl:example:ed-1:en:tech:example_schema.status.members.1> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.status.members.1> rdf:first <urn:example:owl:example:ed-1:en:tech:example_schema.status.inactive>;
+  rdf:rest () .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.status> a owl:Class;
+  rdfs:label "status";
+  rdfs:isDefinedBy <urn:example:owl:example:ed-1:en:tech:example_schema>;
+  owl:oneOf <urn:example:owl:example:ed-1:en:tech:example_schema.status.members.0> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.assembly> a owl:Class;
+  rdfs:label "assembly";
+  rdfs:isDefinedBy <urn:example:owl:example:ed-1:en:tech:example_schema>;
+  rdfs:subClassOf <urn:example:owl:example:ed-1:en:tech:example_schema.assembly.components.restriction>,
+    <urn:example:owl:example:ed-1:en:tech:example_schema.assembly.primary_item.restriction> .
+
+<urn:example:owl:example:ed-1:en:tech:example_schema.part> a owl:Class;
+  rdfs:label "part";
+  rdfs:comment "positive_weight: weight > 0.0;";
+  rdfs:isDefinedBy <urn:example:owl:example:ed-1:en:tech:example_schema>;
+  rdfs:subClassOf <urn:example:owl:example:ed-1:en:tech:example_schema.part.name.restriction>,
+    <urn:example:owl:example:ed-1:en:tech:example_schema.part.status_value.restriction>,
+    <urn:example:owl:example:ed-1:en:tech:example_schema.part.note.restriction>,
+    <urn:example:owl:example:ed-1:en:tech:example_schema.part.tags.restriction>,
+    <urn:example:owl:example:ed-1:en:tech:example_schema.part.sides.restriction>,
+    <urn:example:owl:example:ed-1:en:tech:example_schema.part.weight.restriction>,
+    <urn:example:owl:example:ed-1:en:tech:example_schema.part.tag_count.restriction>,
+    <urn:example:owl:example:ed-1:en:tech:example_schema.part.assemblies.restriction> .

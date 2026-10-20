@@ -1,0 +1,8 @@
+SCHEMA broken_schema;
+
+ENTITY child
+  SUBTYPE OF (missing_parent);
+  label : STRING;
+END_ENTITY;
+
+END_SCHEMA;

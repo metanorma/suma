@@ -36,6 +36,15 @@ module Suma
                                  "input only)"
       option :profile, type: :string, default: "iso10303",
                        desc: "Corpus profile (iso10303 or generic)"
+      option :format, type: :string, default: "express", banner: "FORMAT",
+                      desc: "Output format: express (default) or owl"
+      option :corpus, type: :boolean, default: false,
+                      desc: "OWL only: emit one ontology for the whole " \
+                            "manifest instead of one per schema"
+      option :urn, type: :string, banner: "URN",
+                   desc: "OWL only: base URN for IRIs, before the " \
+                         ":tech component " \
+                         "(e.g. urn:iso:std:iso:10303:-2:ed-2:en)"
 
       def export(*files)
         require "expressir"
@@ -59,12 +68,84 @@ module Suma
       end
 
       def run(files, options)
+        format = options[:format].to_s.downcase
+        case format
+        when "express"
+          run_express(files, options)
+        when "owl"
+          run_owl(files, options)
+        else
+          raise ArgumentError, "Unsupported format: #{options[:format]}. " \
+                               "Use express or owl."
+        end
+      end
+
+      def run_express(files, options)
         schemas = if options[:publication]
                     publication_bundle(files, options)
                   else
                     files.flat_map { |file| build_schemas(file, options) }
                   end
         run_exporter(schemas, options)
+      end
+
+      # OWL projection: one Turtle file per schema (under its category
+      # directory, mirroring the EXPRESS export layout). With --corpus a
+      # top-level ontology importing every schema ontology is added
+      # alongside them.
+      def run_owl(files, options)
+        validate_owl_input!(files, options)
+        projection = OwlProjection.new(files.first, urn: options[:urn])
+        if options[:corpus]
+          write_schema_ontologies(projection, files.first)
+          write_ontology(projection, output_root.join("corpus.ttl"),
+                         projection.to_turtle)
+        else
+          write_schema_ontologies(projection, files.first)
+        end
+      end
+
+      def validate_owl_input!(files, options)
+        unless bundle_input?(files)
+          raise ArgumentError,
+                "--format owl requires exactly one schema manifest file " \
+                "(.yml/.yaml) as input"
+        end
+        if options[:publication]
+          raise ArgumentError,
+                "--publication bundles EXPRESS files and cannot be " \
+                "combined with --format owl"
+        end
+        return if options[:urn]
+
+        raise ArgumentError, "--format owl requires --urn BASE_URN"
+      end
+
+      def write_schema_ontologies(projection, manifest_file)
+        manifest = Expressir::SchemaManifest.from_file(manifest_file)
+        manifest.schemas.each do |entry|
+          target = output_root
+            .join(SchemaCategory.for_schema(
+              id: entry.id, path: entry.path,
+              profile: options[:profile]
+            ).directory)
+            .join("#{entry.id}.ttl")
+          write_ontology(projection, target,
+                         projection.to_turtle(schema_id: entry.id),
+                         schema_id: entry.id)
+        end
+      end
+
+      def write_ontology(projection, target, turtle, schema_id: nil)
+        problems = projection.validate(schema_id: schema_id)
+        unless problems.empty?
+          raise Error, "OWL projection of #{target} is invalid: " \
+                       "#{problems.join('; ')}"
+        end
+
+        FileUtils.mkdir_p(target.dirname)
+        File.write(target, turtle)
+        Utils.log "Wrote OWL ontology: #{target}"
       end
 
       def run_exporter(schemas, options)
