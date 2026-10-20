@@ -44,8 +44,12 @@ module Suma
     # @param owner [String] dataset owner organisation
     # @param profile [SchemaProfile, Symbol, String, nil] schema profile
     #   governing classification, naming, and category ordering
+    # @param year [Integer, nil] edition year
+    # @param supersedes [String, nil] URN/ref this edition supersedes
+    # @param edition [Integer, nil] edition number (tagged as edition:N)
     def initialize(schema_manifest_file, output_path, urn:, id:, ref:,
-                   language_code: "eng", owner: DEFAULT_OWNER, profile: nil)
+                   language_code: "eng", owner: DEFAULT_OWNER, profile: nil,
+                   year: nil, supersedes: nil, edition: nil)
       @schema_manifest_file = File.expand_path(schema_manifest_file)
       @output_path = output_path
       @urn = Suma::Urn.new(urn)
@@ -54,6 +58,9 @@ module Suma
       @language_code = language_code
       @owner = owner
       @profile = SchemaProfile.fetch(profile)
+      @year = year
+      @supersedes = supersedes
+      @edition = edition
     end
 
     # Generate and write register.yaml.
@@ -121,8 +128,17 @@ module Suma
         owner: @owner,
         languages: [@language_code],
         ordering: DEFAULT_ORDERING,
+        year: @year,
+        supersedes: @supersedes,
+        tags: edition_tags,
         sections: build_sections(schemas),
       )
+    end
+
+    # Edition metadata for the register: the edition number is carried as
+    # a tag so consumers can group editions of one dataset.
+    def edition_tags
+      @edition ? ["edition:#{@edition}"] : []
     end
 
     # Build a list of top-level sections, one per category, in the

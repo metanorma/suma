@@ -395,4 +395,38 @@ RSpec.describe Suma::RegisterManifestGenerator do
       expect(names["topology_schema"]).to eq("Schema: Topology Schema")
     end
   end
+
+  describe "edition metadata" do
+    subject(:result) { generator.generate }
+
+    let(:generator) do
+      described_class.new(
+        manifest_file,
+        output_dir,
+        urn: "urn:iso:std:iso:10303:-2:ed-3:en:tech:*",
+        id: "iso10303-2-express",
+        ref: "ISO 10303-2 EXPRESS Concepts",
+        year: 2026,
+        supersedes: "urn:iso:std:iso:10303:-2:ed-2",
+        edition: 3,
+      )
+    end
+
+    it "carries the edition year, supersedes reference, and edition tag" do
+      expect(result.year).to eq(2026)
+      expect(result.supersedes).to eq("urn:iso:std:iso:10303:-2:ed-2")
+      expect(result.tags).to include("edition:3")
+    end
+
+    it "omits edition metadata when not given" do
+      plain = described_class.new(
+        manifest_file,
+        Dir.mktmpdir,
+        urn: "urn:iso:std:iso:10303:-2:ed-2:en:tech:*",
+        id: "x", ref: "X"
+      ).generate
+      expect(plain.year).to be_nil
+      expect(plain.tags).to eq([])
+    end
+  end
 end

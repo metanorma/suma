@@ -58,4 +58,26 @@ RSpec.describe Suma::CorpusGraph do
       expect(graph.interface_targets("widget_schema")).to eq([])
     end
   end
+
+  describe "#dependency_closure" do
+    it "returns the transitive interface closure" do
+      expect(graph.dependency_closure("ap_gizmo_mim"))
+        .to contain_exactly("ap_gizmo_arm", "gizmo_arm", "widget_schema")
+    end
+
+    it "is empty for a schema with no interfaces" do
+      expect(graph.dependency_closure("widget_schema")).to eq([])
+    end
+  end
+
+  describe "#dependents_of" do
+    it "finds the reverse transitive closure" do
+      expect(graph.dependents_of("widget_schema"))
+        .to contain_exactly("ap_gizmo_arm", "ap_gizmo_mim")
+    end
+
+    it "is empty when nothing depends on the schema" do
+      expect(graph.dependents_of("broken_schema")).to eq([])
+    end
+  end
 end

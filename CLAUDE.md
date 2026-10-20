@@ -26,6 +26,7 @@ exe/suma build METANORMA_YAML                          # Build collection from s
 exe/suma export -o OUTPUT_DIR schema1.yml schema2.exp  # Export schemas (YAML manifest or .exp files)
 exe/suma export -o OUTPUT_DIR --publication AP_LEADER_ID schemas.yaml  # Export an AP publication bundle (lead + USE-FROM closure)
 exe/suma compare TRIAL_SCHEMA REFERENCE_SCHEMA -v VER  # Compare schemas, generate .changes.yaml
+exe/suma compare ... -v VER --typed-output FILE --changelog --impact --manifest SCHEMAS_YAML  # Typed change manifest, changelog, impact analysis
 exe/suma reformat PATH                                  # Reformat EXP files (use -r for recursive)
 exe/suma generate-schemas METANORMA_YAML SCHEMAS_YAML  # Generate schema manifest from site manifest
 exe/suma extract-terms SCHEMA_YAML GLOSSARIST_DIR -u URN   # Extract EXPRESS entity concepts to Glossarist v3 format
@@ -81,6 +82,7 @@ per-publication parent section.
 - **`ManifestTraverser`** — tree-walking service over a `CollectionManifest` (`find_schemas_only`, `export_schema_config`, `expand_schemas_only`, `remove_schemas_only_sources`)
 - **`SchemaDiscovery`** — schema-config I/O service on a single manifest node (`load_config` from `schemas.yaml`, `build_doc_entries`, `build_added_manifest`)
 - **`SchemaIndex`** — O(1) lookup index for schema and element names, used by `LinkValidator`
+- **`ChangeClassification` / `ChangeManifest` / `ChangeImpact`** — S3 typed change ontology: eengine actions are classified (additive/compatible/breaking/editorial), the typed manifest (`change-entry` records via lutaml-model) is emitted alongside `.changes.yaml` with a markdown changelog, and impact analysis walks `CorpusGraph#dependents_of` to report affected schemas and AP publications
 - **`CorpusGraph`** — the declared-element graph of a whole schema collection: schemas, declared elements, USE/REFERENCE interface edges; the resolution substrate for `ClosureValidator` (and later change-impact/incremental builds)
 - **`ClosureValidator`** — S1 referential closure: extracts every EXPRESS-internal reference (attribute domains, SELECT/aggregate branches, where-rule expressions, subtype constraints, supertype/subtype lists, rule applies-to, interfaces) and resolves it against a `CorpusGraph`; zero violations is the corpus well-formedness gate (`rake closure`)
 - **`LinkValidator`** — validates EXPRESS cross-reference links against a `SchemaIndex`; returns `LinkValidationResult` structs for unresolved links
