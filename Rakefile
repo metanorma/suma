@@ -11,8 +11,9 @@ RuboCop::RakeTask.new
 
 desc "Validate referential closure of the fixture corpora"
 task :closure do
-  sh "bundle exec exe/suma validate closure " \
-     "spec/fixtures/ap_publication/schemas.yaml"
+  # `ruby` (Rake helper) rather than `bundle exec exe/suma`: the latter
+  # does not resolve relative executables on Windows.
+  ruby "exe/suma validate closure spec/fixtures/ap_publication/schemas.yaml"
 end
 
 task default: %i[spec rubocop closure]
