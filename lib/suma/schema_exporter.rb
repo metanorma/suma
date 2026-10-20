@@ -42,11 +42,14 @@ module Suma
         annotations: false,
         create_zip: false,
         structure: :preserve,
+        jobs: 1,
       }
     end
 
     def export_to_directory(schemas)
-      schemas.each { |schema| export_single_schema(schema) }
+      WorkerPool.new(size: options[:jobs]).map(schemas) do |schema|
+        export_single_schema(schema)
+      end
     end
 
     # Reuse cached plain/annotated output when the schema source is unchanged,
@@ -77,10 +80,7 @@ module Suma
     # (via the +:cache_dir+ option or the SUMA_SCHEMA_CACHE_DIR environment
     # variable), otherwise a null cache (caching disabled).
     def build_cache
-      directory = options[:cache_dir] || ENV.fetch("SUMA_SCHEMA_CACHE_DIR", nil)
-      return NullCache.new if directory.nil? || directory.empty?
-
-      SchemaCache.new(directory)
+      SchemaCache.build(options)
     end
 
     # rubocop:disable-next Metrics/MethodLength

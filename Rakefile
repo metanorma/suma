@@ -17,3 +17,8 @@ task :closure do
 end
 
 task default: %i[spec rubocop closure]
+
+desc "Benchmark a synthetic 1,000-schema corpus against time/memory budgets"
+task :benchmark do
+  ruby "bin/benchmark_corpus"
+end
