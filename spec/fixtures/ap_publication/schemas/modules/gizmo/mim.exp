@@ -1,0 +1,8 @@
+schema gizmo_mim;
+  USE FROM gizmo_arm;
+
+ENTITY gizmo_mapping;
+  gizmo_ref : gizmo;
+END_ENTITY;
+
+END_SCHEMA;

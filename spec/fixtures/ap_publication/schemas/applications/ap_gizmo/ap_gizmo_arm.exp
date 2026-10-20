@@ -1,3 +1,10 @@
 schema ap_gizmo_arm;
-  use from widget_schema;
-end_schema;
+  USE FROM widget_schema;
+  USE FROM gizmo_arm;
+
+ENTITY ap_gizmo;
+  base  : widget;
+  state : gizmo_state;
+END_ENTITY;
+
+END_SCHEMA;

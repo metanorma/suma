@@ -26,6 +26,22 @@ module Suma
         puts LinkValidation.generate_summary(result)
       end
 
+      desc "closure SCHEMAS_MANIFEST [DOCUMENTS_PATH]",
+           "Validate referential closure: every EXPRESS-internal reference " \
+           "resolves; optionally merge documentation-layer link failures"
+      option :format, type: :string, default: "terminal",
+                      desc: "Report format: terminal, json, yaml"
+      def closure(schemas_manifest_file, documents_path = nil)
+        graph = CorpusGraph.from_manifest(schemas_manifest_file)
+        violations = ClosureValidator.new(graph)
+          .validate_manifest(schemas_manifest_file)
+        if documents_path
+          violations += documentation_violations(schemas_manifest_file,
+                                                 documents_path)
+        end
+        emit_closure_report(violations)
+      end
+
       desc "mappings DOCUMENTS_PATH",
            "Validate module mapping.yaml links and reference paths " \
            "against the parsed module corpus; only NEW drift " \
@@ -47,6 +63,80 @@ module Suma
       end
 
       private
+
+      # Print the closure report and raise on any unresolved reference.
+      def emit_closure_report(violations)
+        if violations.empty?
+          puts closure_success_message
+          return
+        end
+
+        puts format_closure_report(violations)
+        raise Thor::Error,
+              "Referential closure failed: #{violations.size} unresolved " \
+              "reference(s)"
+      end
+
+      def closure_success_message
+        case options[:format]
+        when "json"
+          require "json"
+          { "violations" => [] }.to_json
+        when "yaml"
+          require "yaml"
+          { "violations" => [] }.to_yaml
+        else
+          "Referential closure OK: all references resolve."
+        end
+      end
+
+      def format_closure_report(violations)
+        case options[:format]
+        when "json"
+          require "json"
+          { "violations" => violations.map(&:to_h) }.to_json
+        when "yaml"
+          require "yaml"
+          { "violations" => violations.map(&:to_h) }.to_yaml
+        else
+          violations.map { |v| format_closure_line(v) }
+            .sort
+            .join("\n")
+        end
+      end
+
+      def format_closure_line(violation)
+        location = [violation.file, violation.line].compact.join(":")
+        "[#{violation.kind}] #{violation.schema_id}/#{violation.owner_id} " \
+          "#{violation.reference} (#{location}) — #{violation.reason}"
+      end
+
+      # Merge documentation-layer link failures into the closure report:
+      # the same unresolved-reference predicate, applied by the doc-layer
+      # extractor.
+      def documentation_violations(schemas_file, documents_path)
+        result = LinkValidation.new(
+          schemas_file: schemas_file,
+          documents_path: documents_path,
+          output_file: nil,
+        ).call
+        result.unresolved.map { |issue| documentation_violation(issue) }
+      rescue StandardError => e
+        Utils.log "documentation-layer validation skipped: #{e.message}"
+        []
+      end
+
+      def documentation_violation(issue)
+        ClosureValidator::UnresolvedReference.new(
+          file: issue.file.to_s,
+          line: issue.line,
+          schema_id: issue.link.to_s.split(".").first,
+          owner_id: "(documentation)",
+          kind: "documentation",
+          reference: issue.link,
+          reason: issue.reason,
+        )
+      end
 
       def default_baseline_path(documents_path)
         File.join(documents_path, "mapping-drift-baseline.yml")

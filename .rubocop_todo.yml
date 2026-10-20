@@ -131,6 +131,8 @@ Metrics/AbcSize:
     - 'lib/suma/svg_quality/formatters/terminal_formatter.rb'
     - 'lib/suma/term_extractor.rb'
     - 'lib/suma/thor_ext.rb'
+    - 'lib/suma/closure_validator.rb'
+    - 'lib/suma/corpus_graph.rb'
 
 # Offense count: 2
 # Configuration parameters: CountComments, Max, CountAsOne, AllowedMethods, AllowedPatterns, inherit_mode.
@@ -151,6 +153,7 @@ Metrics/CyclomaticComplexity:
     - 'lib/suma/schema_comparer.rb'
     - 'lib/suma/svg_quality/formatters/terminal_formatter.rb'
     - 'lib/suma/thor_ext.rb'
+    - 'lib/suma/closure_validator.rb'
 
 # Offense count: 32
 # Configuration parameters: CountComments, Max, CountAsOne, AllowedMethods, AllowedPatterns.
@@ -172,6 +175,8 @@ Metrics/MethodLength:
     - 'lib/suma/staged_collection_builder.rb'
     - 'lib/suma/svg_quality/formatters/terminal_formatter.rb'
     - 'lib/suma/term_extractor.rb'
+    - 'lib/suma/closure_validator.rb'
+    - 'lib/suma/cli/validate.rb'
 
 # Offense count: 3
 # Configuration parameters: Max, CountKeywordArgs, MaxOptionalParameters.
@@ -180,6 +185,7 @@ Metrics/ParameterLists:
     - 'lib/suma/cli/check_svg_quality.rb'
     - 'lib/suma/link_validator.rb'
     - 'lib/suma/register_manifest_generator.rb'
+    - 'lib/suma/closure_validator.rb'
 
 # Offense count: 4
 # Configuration parameters: AllowedMethods, AllowedPatterns, Max.
@@ -189,6 +195,7 @@ Metrics/PerceivedComplexity:
     - 'lib/suma/jsdai/figure_image.rb'
     - 'lib/suma/schema_comparer.rb'
     - 'lib/suma/svg_quality/formatters/terminal_formatter.rb'
+    - 'lib/suma/closure_validator.rb'
 
 # Offense count: 1
 # Configuration parameters: Mode, AllowedMethods, AllowedPatterns, AllowBangMethods, WaywardPredicates.
@@ -232,7 +239,9 @@ RSpec/ExampleLength:
     - 'spec/suma/cli/reformat_spec.rb'
     - 'spec/suma/cli_spec.rb'
     - 'spec/suma/collection_config_spec.rb'
+    - 'spec/suma/closure_validator_spec.rb'
     - 'spec/suma/collection_manifest_spec.rb'
+    - 'spec/suma/corpus_graph_spec.rb'
     - 'spec/suma/schema_profile_spec.rb'
     - 'spec/suma/eengine_converter_spec.rb'
     - 'spec/suma/express_reformatter_spec.rb'
@@ -295,7 +304,9 @@ RSpec/MultipleExpectations:
     - 'spec/suma/cli/reformat_spec.rb'
     - 'spec/suma/cli_spec.rb'
     - 'spec/suma/collection_config_spec.rb'
+    - 'spec/suma/closure_validator_spec.rb'
     - 'spec/suma/collection_manifest_spec.rb'
+    - 'spec/suma/corpus_graph_spec.rb'
     - 'spec/suma/schema_profile_spec.rb'
     - 'spec/suma/eengine_converter_spec.rb'
     - 'spec/suma/eengine_spec.rb'

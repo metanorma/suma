@@ -31,6 +31,7 @@ exe/suma generate-schemas METANORMA_YAML SCHEMAS_YAML  # Generate schema manifes
 exe/suma extract-terms SCHEMA_YAML GLOSSARIST_DIR -u URN   # Extract EXPRESS entity concepts to Glossarist v3 format
 exe/suma generate-register SCHEMA_YAML OUT_DIR -u URN --id ID --ref REF  # Generate hierarchical register.yaml from schema manifest
 exe/suma validate links SCHEMAS_FILE DOCS_PATH          # Validate EXPRESS cross-reference links
+exe/suma validate closure SCHEMAS_MANIFEST [DOCUMENTS_PATH]  # Referential closure: every reference resolves (exit 1 on violations)
 ```
 
 ## Schema profiles
@@ -80,6 +81,8 @@ per-publication parent section.
 - **`ManifestTraverser`** — tree-walking service over a `CollectionManifest` (`find_schemas_only`, `export_schema_config`, `expand_schemas_only`, `remove_schemas_only_sources`)
 - **`SchemaDiscovery`** — schema-config I/O service on a single manifest node (`load_config` from `schemas.yaml`, `build_doc_entries`, `build_added_manifest`)
 - **`SchemaIndex`** — O(1) lookup index for schema and element names, used by `LinkValidator`
+- **`CorpusGraph`** — the declared-element graph of a whole schema collection: schemas, declared elements, USE/REFERENCE interface edges; the resolution substrate for `ClosureValidator` (and later change-impact/incremental builds)
+- **`ClosureValidator`** — S1 referential closure: extracts every EXPRESS-internal reference (attribute domains, SELECT/aggregate branches, where-rule expressions, subtype constraints, supertype/subtype lists, rule applies-to, interfaces) and resolves it against a `CorpusGraph`; zero violations is the corpus well-formedness gate (`rake closure`)
 - **`LinkValidator`** — validates EXPRESS cross-reference links against a `SchemaIndex`; returns `LinkValidationResult` structs for unresolved links
 
 ### CLI structure
