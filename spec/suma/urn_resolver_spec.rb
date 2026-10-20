@@ -67,6 +67,31 @@ RSpec.describe Suma::UrnResolver do
       expect(payload["underlying"]).to eq("Enumeration")
     end
 
+    it "resolves an attribute URN (an OWL property IRI)" do
+      payload = resolver.resolve("#{urn_base}:tech:gizmo_arm.gizmo.designation")
+
+      expect(payload["kind"]).to eq("attribute")
+      expect(payload["entity"]).to eq("gizmo")
+      expect(payload["attribute_kind"]).to eq("EXPLICIT")
+      expect(payload["type"]).to eq("STRING")
+    end
+
+    it "resolves every property IRI emitted by the OWL projection" do
+      projection = Suma::OwlProjection.new(manifest, urn: urn_base)
+      owl = Suma::OwlProjection::OWL
+      properties = []
+      [owl.ObjectProperty, owl.DatatypeProperty].each do |type|
+        projection.graph.query([nil, RDF.type, type]) do |statement|
+          properties << statement.subject.to_s
+        end
+      end
+
+      expect(properties).not_to be_empty
+      properties.each do |property|
+        expect { resolver.resolve(property) }.not_to raise_error
+      end
+    end
+
     it "resolves a concept URN with provenance and localizations" do
       payload = resolver.resolve("#{urn_base}:term:widget_schema.widget")
 

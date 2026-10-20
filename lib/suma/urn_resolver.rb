@@ -100,9 +100,36 @@ module Suma
           payload = element_payload(schema, element)
           artifacts[compose(:tech, "#{schema.id}.#{element.id}")] = payload if
             payload
+          add_attribute_artifacts(artifacts, schema, element)
         end
       end
       artifacts
+    end
+
+    # Attribute property IRIs appear in the OWL projection as
+    # <schema>.<entity>.<attribute>; make them dereferenceable too.
+    def add_attribute_artifacts(artifacts, schema, element)
+      return unless element.is_a?(Expressir::Model::Declarations::Entity)
+
+      element.attributes.each do |attribute|
+        key = compose(:tech,
+                      "#{schema.id}.#{element.id}.#{attribute.id}")
+        artifacts[key] = attribute_artifact(schema, element, attribute)
+      end
+    end
+
+    def attribute_artifact(schema, entity, attribute)
+      {
+        "urn" => compose(:tech, "#{schema.id}.#{entity.id}.#{attribute.id}"),
+        "kind" => "attribute",
+        "schema" => schema.id,
+        "entity" => entity.id,
+        "id" => attribute.id,
+        "attribute_kind" => attribute.kind,
+        "optional" => attribute.optional == true,
+        "type" => attribute.type&.source,
+        "source" => relative_source(schema),
+      }
     end
 
     def schemas
