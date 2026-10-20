@@ -32,7 +32,8 @@ RSpec.describe Suma::Cli::Resolve do
 
     expect(Dir[File.join(output_dir, "**/*.json")].length).to be >= 10
     expect(Dir[File.join(output_dir, "**/*.html")].length)
-      .to eq(Dir[File.join(output_dir, "**/*.json")].length)
+      .to eq(Dir[File.join(output_dir, "**/*.json")].length + 1)
+    expect(File).to exist(File.join(output_dir, "index.html"))
   end
 
   it "writes one URN" do

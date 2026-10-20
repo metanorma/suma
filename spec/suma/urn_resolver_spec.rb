@@ -119,6 +119,17 @@ RSpec.describe Suma::UrnResolver do
       expect(payload["urn"]).to eq("#{urn_base}:tech:gizmo_arm.gizmo")
     end
 
+    it "writes an index linking every URN artifact" do
+      resolver.write(output_dir)
+      index = File.read(File.join(output_dir, "index.html"))
+
+      resolver.artifacts.each_key do |urn|
+        href = "#{urn.delete_prefix('urn:').split(':').join('/')}.html"
+        expect(index).to include(href)
+        expect(index).to include(urn)
+      end
+    end
+
     it "resolves every URN it emits, including register and concept URNs" do
       register = Glossarist::DatasetRegister.from_file(register_file)
       expect { resolver.resolve(register.urn) }.not_to raise_error
