@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: read
+  # Keyless sigstore signing exchanges this token for a short-lived certificate.
+  id-token: write
 
 jobs:
   provenance:
@@ -19,13 +21,18 @@ jobs:
         with:
           ruby-version: "3.4"
           bundler-cache: true
+      - uses: sigstore/cosign-installer@v3
       - name: Build gem
         run: gem build suma.gemspec
-      - name: Write and verify provenance
+      - name: Write, verify, and sign provenance
         run: bundle exec ruby bin/release_provenance
+        env:
+          SUMA_PROVENANCE_SIGN: sigstore
       - name: Independent sha256 pass
-        run: sha256sum *.gem
+        run: sha256sum *.gem provenance.json
       - uses: actions/upload-artifact@v4
         with:
           name: release-provenance
-          path: provenance.json
+          path: |
+            provenance.json
+            provenance.json.bundle

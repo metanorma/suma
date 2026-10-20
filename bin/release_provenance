@@ -27,3 +27,14 @@ unless problems.empty?
 end
 
 puts "Wrote #{manifest_path} (#{File.basename(gem_file)})"
+
+sign_method = ENV.fetch("SUMA_PROVENANCE_SIGN", nil)
+sign_method = nil if sign_method.to_s.empty?
+if sign_method
+  sign_key = ENV.fetch("SUMA_PROVENANCE_SIGN_KEY", nil)
+  sign_key = nil if sign_key.to_s.empty?
+  signature = Suma::Provenance.sign(
+    manifest_path, method: sign_method, key: sign_key
+  )
+  puts "Signed provenance (#{sign_method}): #{signature}"
+end
