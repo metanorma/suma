@@ -72,6 +72,10 @@ module Suma
         "glossarist_version" => Glossarist::VERSION,
         "created_at" => @created_at.utc.iso8601,
         "created_by" => "suma CLI",
+        # Top-level summary keys as consumed by the Glossarist Vocabulary
+        # Browser and the Glossarist::GcrMetadata model.
+        "concept_count" => statistics["total_concepts"],
+        "languages" => statistics["languages"],
         "uri" => register.urn,
         "uri_aliases" => register.urn_aliases,
         "statistics" => statistics,

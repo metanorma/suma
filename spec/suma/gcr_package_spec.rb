@@ -74,6 +74,8 @@ RSpec.describe Suma::GcrPackage do
       expect(metadata["created_at"]).to eq("2026-01-01T00:00:00Z")
       expect(metadata["uri"]).to eq("#{urn_base}:tech")
       expect(metadata["uri_aliases"]).to eq(["#{urn_base}:tech:*"])
+      expect(metadata["concept_count"]).to eq(4)
+      expect(metadata["languages"]).to eq(["eng"])
       expect(metadata["statistics"]["total_concepts"]).to eq(4)
       expect(metadata["statistics"]["languages"]).to eq(["eng"])
       expect(metadata["schema_version"]).to eq("1.0.0")
