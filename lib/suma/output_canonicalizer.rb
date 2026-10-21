@@ -10,48 +10,61 @@ module Suma
   # lacks an identifier (Manifest#identifier's default) and stamps each
   # rendered document with a random 8-letter type marker
   # (collection/xrefprocess). Both leak into the emitted manifest and the XML
-  # output, so two identical builds produce different bytes. This pass
-  # replaces those values with position-derived (UUIDs) or fixed (type)
-  # values, while leaving identifiers that appear in the source untouched.
+  # output, so two identical builds produce different bytes.
+  #
+  # Manifest identifiers are replaced IN THE MODEL before serialization:
+  # Psych's quoting of the resulting strings is value-dependent (a few
+  # percent of UUID-looking values get single-quoted), so patching the dumped
+  # YAML afterwards would preserve a random quoting decision. Values that
+  # appear in the source YAML are preserved.
   class OutputCanonicalizer
     UUID_PATTERN =
       /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/
+    FULL_UUID_PATTERN = /\A#{UUID_PATTERN.source}\z/
     CANONICAL_TYPE = "SUMASUMA"
     NAMESPACE = UUIDTools::UUID.parse("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 
-    def initialize(output_directory:, manifest_path: nil, sources: [])
+    def initialize(output_directory:, sources: [])
       @output_directory = File.expand_path(output_directory)
-      @manifest_path = manifest_path && File.expand_path(manifest_path)
       @sources = sources.map { |path| File.expand_path(path) }
     end
 
-    def call
-      canonicalize_manifest
-      canonicalize_documents
+    # Replace generated manifest identifiers with deterministic UUIDv5s.
+    # Must run before the manifest is serialized and the site key computed.
+    def canonicalize_manifest(manifest)
+      canonicalize_node(manifest, "collection-manifest")
       self
-    end
-
-    # Canonicalize the emitted collection manifest. Must run before the site
-    # key is computed, so the key does not change on every build.
-    def canonicalize_manifest
-      return unless @manifest_path && File.file?(@manifest_path)
-
-      canonicalize_file(@manifest_path, path: "collection-output.yaml")
     end
 
     # Canonicalize the rendered site's root XML documents.
     def canonicalize_documents
       Dir.glob(File.join(@output_directory, "*.xml")).each do |file|
-        canonicalize_file(file, path: File.basename(file), documents: true)
+        canonicalize_document(file)
       end
+      self
     end
 
     private
 
-    def canonicalize_file(file, path:, documents: false)
+    def canonicalize_node(node, seed)
+      return unless node
+
+      if generated_uuid?(node.identifier)
+        node.identifier = uuid_v5("suma-manifest:#{seed}").to_s
+      end
+      Array(node.entry).each_with_index do |child, index|
+        canonicalize_node(child, "#{seed}/#{index}")
+      end
+    end
+
+    def generated_uuid?(value)
+      value.to_s.match?(FULL_UUID_PATTERN) && !preserved.include?(value)
+    end
+
+    def canonicalize_document(file)
       content = File.read(file)
-      canonical = replace_uuids(content, path)
-      canonical = replace_type(canonical) if documents
+      canonical = replace_uuids(content, File.basename(file))
+      canonical = replace_type(canonical)
       File.write(file, canonical) if canonical != content
     end
 
@@ -61,7 +74,7 @@ module Suma
         next uuid if preserved.include?(uuid)
 
         index += 1
-        uuid_v5("#{seed}:#{index}").to_s
+        uuid_v5("suma-document:#{seed}:#{index}").to_s
       end
     end
 
@@ -81,7 +94,7 @@ module Suma
 
     def yaml_sources
       @sources.select do |file|
-        file != @manifest_path && file.match?(/\.ya?ml\z/i) && File.file?(file)
+        file.match?(/\.ya?ml\z/i) && File.file?(file)
       end
     end
 

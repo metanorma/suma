@@ -44,12 +44,14 @@ RSpec.describe Suma::SiteBuild do
     expect(site.current?).to be false
   end
 
-  it "ignores render artifacts written beside the sources" do
+  it "ignores render artifacts and emitted manifests beside the sources" do
     site.record
     File.write(File.join(root, "documents", "document.xml"), "<x/>")
     File.write(File.join(root, "documents", "dummy_index.html"), "<html/>")
     File.write(File.join(root, "documents", "document.asciidoc.log.txt"),
                "log")
+    File.write(File.join(root, "collection-output.yaml"), "manifest: {}\n")
+    File.write(File.join(root, "schemas.yml"), "schemas: {}\n")
 
     expect(site.current?).to be true
   end

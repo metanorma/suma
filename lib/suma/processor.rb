@@ -140,8 +140,8 @@ module Suma
     end
 
     def compile_collection(collection_config, output_directory)
+      prepare_collection_manifest(collection_config)
       write_collection_manifest(collection_config)
-      canonicalizer.canonicalize_manifest
 
       if site_build.current?
         Utils.log "Collection outputs are up to date; 0 documents rendered."
@@ -154,9 +154,16 @@ module Suma
       site_build.record
     end
 
-    def write_collection_manifest(collection_config)
+    # Generated manifest identifiers are canonicalized in the model, before
+    # serialization: patching the dumped YAML would preserve Psych's
+    # value-dependent (random) quoting decision.
+    def prepare_collection_manifest(collection_config)
       ManifestTraverser.new(collection_config.manifest)
         .remove_schemas_only_sources
+      canonicalizer.canonicalize_manifest(collection_config.manifest)
+    end
+
+    def write_collection_manifest(collection_config)
       collection_config.to_file(COLLECTION_OUTPUT_PATH)
     end
 
@@ -198,7 +205,6 @@ module Suma
     def canonicalizer
       @canonicalizer ||= OutputCanonicalizer.new(
         output_directory: output_directory,
-        manifest_path: COLLECTION_OUTPUT_PATH,
         sources: site_build.source_files,
       )
     end
