@@ -125,7 +125,19 @@ module Suma
         agree_to_terms: true,
         install_fonts: false,
       )
+      verify_outputs!
       log_relative "Compiling schema (id: #{id}) ... done!", filename_adoc
+    end
+
+    # Metanorma::Compile#compile can return nil for a handled failure instead
+    # of raising. Never cache a render that produced no output.
+    def verify_outputs!
+      missing = expected_output_paths.reject { |path| File.file?(path) }
+      return if missing.empty?
+
+      names = missing.map { |path| File.basename(path) }.join(", ")
+      raise CompilationError,
+            "Metanorma produced no #{names} for schema #{id}"
     end
 
     def log_relative(prefix, path)
