@@ -1,0 +1,46 @@
+SCHEMA ifc4;
+
+TYPE IfcLabel = STRING;
+END_TYPE;
+
+TYPE IfcIdentifier = STRING;
+END_TYPE;
+
+TYPE IfcWallTypeEnum = ENUMERATION OF (solid, partitioned);
+END_TYPE;
+
+ENTITY IfcRoot
+  ABSTRACT SUPERTYPE OF (ONEOF (IfcWall, IfcSlab));
+  GlobalId : IfcLabel;
+  Name : OPTIONAL IfcLabel;
+  Description : OPTIONAL IfcLabel;
+END_ENTITY;
+
+ENTITY IfcWall
+  SUBTYPE OF (IfcRoot);
+  Tag : OPTIONAL IfcIdentifier;
+  PredefinedType : IfcWallTypeEnum;
+END_ENTITY;
+
+ENTITY IfcSlab
+  SUBTYPE OF (IfcRoot);
+  Thickness : REAL;
+END_ENTITY;
+
+ENTITY IfcSpace
+  ABSTRACT SUPERTYPE OF (ONEOF (IfcRoom));
+  LongName : OPTIONAL IfcLabel;
+END_ENTITY;
+
+ENTITY IfcRoom
+  SUBTYPE OF (IfcSpace);
+  FloorArea : REAL;
+END_ENTITY;
+
+END_SCHEMA;
+
+(*"ifc4"
+Synthetic IFC-style corpus for the +ifc+ profile fixture: a single
+standalone schema with buildingSMART-style Ifc-prefixed declarations.
+It contains no buildingSMART material.
+*)

@@ -35,7 +35,7 @@ module Suma
                                  "USE-FROM/REFERENCE closure (manifest " \
                                  "input only)"
       option :profile, type: :string, default: "iso10303",
-                       desc: "Corpus profile (iso10303 or generic)"
+                       desc: "Corpus profile (iso10303, generic, or ifc)"
       option :format, type: :string, default: "express", banner: "FORMAT",
                       desc: "Output format: express (default) or owl"
       option :corpus, type: :boolean, default: false,

@@ -271,6 +271,8 @@ RSpec/ExampleLength:
     - 'spec/suma/output_canonicalizer_spec.rb'
     - 'spec/suma/anchor_validator_spec.rb'
     - 'spec/suma/translation_ingester_spec.rb'
+    - 'spec/suma/ifc_profile_pipeline_spec.rb'
+    - 'spec/suma/schema_naming_spec.rb'
     - 'spec/suma/cli/build_integration_spec.rb'
     - 'spec/suma/artifact_server_spec.rb'
     - 'spec/suma/gcr_package_spec.rb'
@@ -420,11 +422,13 @@ RSpec/NestedGroups:
 RSpec/DescribeClass:
   Exclude:
     - 'spec/suma/reproducibility_spec.rb'
+    - 'spec/suma/ifc_profile_pipeline_spec.rb'
 
 RSpec/SpecFilePathFormat:
   Exclude:
     - '**/spec/routing/**/*'
     - 'spec/suma/cli/expressir_spec.rb'
+    - 'spec/suma/ifc_profile_pipeline_spec.rb'
 
 # Offense count: 1
 RSpec/StubbedMock:
@@ -435,6 +439,7 @@ RSpec/StubbedMock:
 # Configuration parameters: Max.
 RSpec/MultipleMemoizedHelpers:
   Exclude:
+    - 'spec/suma/ifc_profile_pipeline_spec.rb'
     - 'spec/suma/gcr_package_spec.rb'
     - 'spec/suma/provenance_spec.rb'
     - 'spec/suma/worker_pool_spec.rb'
