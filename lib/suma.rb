@@ -7,6 +7,7 @@ require "fileutils"
 module Suma
   autoload :VERSION, "suma/version"
 
+  autoload :ArtifactServer,         "suma/artifact_server"
   autoload :SchemaProfile,          "suma/schema_profile"
   autoload :BuildPlan,              "suma/build_plan"
   autoload :Processor,              "suma/processor"
@@ -20,6 +21,7 @@ module Suma
   autoload :CorpusGraph,            "suma/corpus_graph"
   autoload :CollectionManifest,     "suma/collection_manifest"
   autoload :EengineConverter,       "suma/eengine_converter"
+  autoload :GcrPackage,             "suma/gcr_package"
   autoload :ExpressReformatter,     "suma/express_reformatter"
   autoload :ExpressSchema,          "suma/express_schema"
   autoload :LinkValidation,         "suma/link_validation"

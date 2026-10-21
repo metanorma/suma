@@ -39,6 +39,8 @@ exe/suma extract-terms SCHEMA_YAML GLOSSARIST_DIR -u URN   # Extract EXPRESS ent
 exe/suma extract-terms ... --edition 3 --language-codes fra deu  # Provenance + linked localizations
 exe/suma resolve URN --manifest SCHEMAS_YAML --concepts DIR --register register.yaml -o OUT  # Emit canonical JSON + HTML
 exe/suma resolve --all --manifest SCHEMAS_YAML --concepts DIR --register register.yaml -o OUT  # Emit every URN artifact
+exe/suma package-gcr CONCEPTS_DIR --register register.yaml --shortname ID --version V --title T --description D -o OUT  # Package concepts into a .gcr archive
+exe/suma serve ARTIFACTS_DIR --port 2113  # Serve resolved URN artifacts with Accept negotiation
 exe/suma generate-register SCHEMA_YAML OUT_DIR -u URN --id ID --ref REF  # Generate hierarchical register.yaml from schema manifest
 exe/suma validate links SCHEMAS_FILE DOCS_PATH          # Validate EXPRESS cross-reference links
 exe/suma validate closure SCHEMAS_MANIFEST [DOCUMENTS_PATH]  # Referential closure: every reference resolves (exit 1 on violations)
@@ -99,6 +101,8 @@ per-publication parent section.
 - **`BuildPlan`** — incremental-build decision: hashes every schema source, diffs against the persisted state, and expands changed schemas to their transitive dependents through `CorpusGraph`. State defaults to `plain_schemas/.suma-build-state.json`; `SchemaCollection#rebuild_targets` is the build-facing query
 - **`WorkerPool`** — bounded worker pool for independent per-schema work. Schema export runs in the pool (`build --jobs N`); Metanorma document compilation stays sequential and composes with `StagedCollectionBuilder`'s process isolation
 - **`UrnResolver`** — S4 dereferenceable identity: resolves `tech:` schema/element URNs from a manifest, `term:` concept URNs from Glossarist documents, and the dataset URN from `register.yaml`; emits canonical JSON plus a static HTML document per URN at a path derived from the URN itself. Every URN the register emits resolves against the artifact set
+- **`ArtifactServer`** — T2 development server for the resolved artifact tree (`serve DIRECTORY`): dependency-free TCP responder negotiating JSON vs HTML by the Accept header at URN-derived paths; production hosting maps the same paths statically
+- **`GcrPackage`** — T2 packaging (`package-gcr`): bundles extracted concepts into a GCR archive for the Glossarist Vocabulary Browser — `metadata.yaml` (identity, statistics, schema_version), `register.yaml`, and `concepts/` in the browser's canonical flat format (`termid`, `term`, `{lang}` blocks). Standard variant only; `created_at` is injectable for byte-reproducible archives
 - **`Provenance`** — S5 build provenance: sha256 of every input and output (files or directory trees) plus Ruby/Expressir/Suma toolchain versions, written as canonical JSON by `build --provenance FILE`. `Provenance.verify` recomputes the digests independently; `build --sign minisign|sigstore` (with `--sign-key` where needed) optionally signs the manifest, and `bin/release_provenance` signs keylessly with cosign in the release workflow (`SUMA_PROVENANCE_SIGN`)
 - **`LinkValidator`** — validates EXPRESS cross-reference links against a `SchemaIndex`; returns `LinkValidationResult` structs for unresolved links
 

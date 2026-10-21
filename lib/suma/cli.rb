@@ -2,7 +2,8 @@
 
 module Suma
   module Cli
-    autoload :Core,             "suma/cli/core"
+    autoload :Core, "suma/cli/core"
+    autoload :ArtifactServerCli, "suma/cli/artifact_server_cli"
     autoload :Build,            "suma/cli/build"
     autoload :CheckSvgQuality,  "suma/cli/check_svg_quality"
     autoload :Compare,          "suma/cli/compare"
@@ -11,6 +12,7 @@ module Suma
     autoload :ExtractTerms,     "suma/cli/extract_terms"
     autoload :GenerateRegister, "suma/cli/generate_register"
     autoload :GenerateSchemas,  "suma/cli/generate_schemas"
+    autoload :PackageGcr,       "suma/cli/package_gcr"
     autoload :Reformat,         "suma/cli/reformat"
     autoload :Resolve,          "suma/cli/resolve"
     autoload :Validate,         "suma/cli/validate"
