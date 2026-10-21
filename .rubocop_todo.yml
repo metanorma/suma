@@ -155,6 +155,7 @@ Metrics/BlockLength:
 # Configuration parameters: AllowedMethods, AllowedPatterns, Max.
 Metrics/CyclomaticComplexity:
   Exclude:
+    - 'lib/suma/corpus_graph.rb'
     - 'lib/suma/worker_pool.rb'
     - 'lib/suma/urn_resolver.rb'
     - 'lib/suma/cli/check_svg_quality.rb'

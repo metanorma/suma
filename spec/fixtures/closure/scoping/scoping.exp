@@ -1,0 +1,27 @@
+SCHEMA scoping;
+
+ENTITY measured;
+  name : STRING;
+  values : LIST[1:?] OF REAL;
+WHERE
+  WR1: SIZEOF(QUERY (it <* values | it > 0.0)) > 0;
+  WR2: SELF\measured.name <> '';
+END_ENTITY;
+
+ENTITY parent_thing;
+  tag : STRING;
+END_ENTITY;
+
+ENTITY child_thing
+  SUBTYPE OF (parent_thing);
+WHERE
+  WR1: tag <> '';
+END_ENTITY;
+
+ENTITY haunted;
+  amount : REAL;
+WHERE
+  WR1: ghost_attr > 0.0;
+END_ENTITY;
+
+END_SCHEMA;

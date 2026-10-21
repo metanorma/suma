@@ -1,0 +1,6 @@
+SCHEMA y_schema;
+  USE FROM x_schema;
+  ENTITY y_thing
+    SUBTYPE OF (thing);
+  END_ENTITY;
+END_SCHEMA;

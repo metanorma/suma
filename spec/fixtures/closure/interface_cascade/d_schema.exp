@@ -1,0 +1,3 @@
+SCHEMA d_schema;
+  USE FROM b_schema (thing);
+END_SCHEMA;

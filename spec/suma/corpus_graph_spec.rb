@@ -19,6 +19,48 @@ RSpec.describe Suma::CorpusGraph do
     end
   end
 
+  describe "interface visibility (ISO 10303-11 13.3)" do
+    let(:cascade_manifest) do
+      File.expand_path("../fixtures/closure/interface_cascade/schemas.yaml",
+                       __dir__)
+    end
+    let(:cascade_graph) { described_class.from_manifest(cascade_manifest) }
+
+    it "cascades visibility through unrestricted USE chains" do
+      expect(cascade_graph.element_visible?("c_schema", "thing")).to be(true)
+      expect(cascade_graph.element_visible?("c_schema", "other_thing"))
+        .to be(true)
+    end
+
+    it "limits a named USE to the named items" do
+      expect(cascade_graph.element_visible?("d_schema", "thing")).to be(true)
+      expect(cascade_graph.element_visible?("d_schema", "other_thing"))
+        .to be(false)
+    end
+
+    it "applies USE renames to the visible name" do
+      expect(cascade_graph.element_visible?("g_schema", "renamed_thing"))
+        .to be(true)
+      expect(cascade_graph.element_visible?("g_schema", "thing")).to be(false)
+    end
+
+    it "cascades across circular USE interfaces" do
+      expect(cascade_graph.element_visible?("x_schema", "y_thing")).to be(true)
+      expect(cascade_graph.element_visible?("y_schema", "thing")).to be(true)
+    end
+
+    it "resolves chains that pass through the cycle" do
+      expect(cascade_graph.element_visible?("w_schema", "thing")).to be(true)
+      expect(cascade_graph.element_visible?("w_schema", "y_thing")).to be(true)
+    end
+
+    it "exposes declarations through an unnamed REFERENCE without cascade" do
+      expect(cascade_graph.element_visible?("e_schema", "thing")).to be(true)
+      expect(cascade_graph.element_visible?("e_schema", "other_thing"))
+        .to be(true)
+    end
+  end
+
   describe "#schema_exists?" do
     it "is case-insensitive" do
       expect(graph.schema_exists?("GIZMO_ARM")).to be(true)

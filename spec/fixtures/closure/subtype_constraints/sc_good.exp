@@ -1,0 +1,23 @@
+SCHEMA sc_good;
+
+ENTITY base;
+END_ENTITY;
+
+ENTITY sub
+  SUBTYPE OF (base);
+END_ENTITY;
+
+ENTITY sub_one
+  SUBTYPE OF (sub);
+END_ENTITY;
+
+ENTITY sub_two
+  SUBTYPE OF (sub);
+END_ENTITY;
+
+SUBTYPE_CONSTRAINT sc_one FOR sub;
+  TOTAL_OVER (sub_one);
+  ONEOF (sub_one, sub_two);
+END_SUBTYPE_CONSTRAINT;
+
+END_SCHEMA;

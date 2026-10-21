@@ -15,9 +15,11 @@ module Suma
   # and inter-schema interfaces.
   #
   # A reference resolves against, in order: the enclosing schema's declared
-  # elements, elements of schemas it interfaces to, the enclosing entity's
-  # own attributes (for entity-scoped expressions), the enclosing rule's
-  # applies-to attributes and variables, and the EXPRESS builtin vocabulary.
+  # elements, elements of schemas it interfaces to (with USE-FROM cascade),
+  # the enclosing entity's own and inherited attributes (for entity-scoped
+  # expressions), the enclosing rule's applies-to attributes and variables,
+  # QUERY-bound variables, and the EXPRESS builtin vocabulary. Attribute
+  # accesses (var.attr) are not schema-level references and are excluded.
   #
   # The predicate is zero-tolerance: any unresolved reference is a
   # violation, and `violations.empty?` is the corpus well-formedness gate.
@@ -56,10 +58,18 @@ module Suma
       manifest = Expressir::SchemaManifest.from_file(
         File.expand_path(manifest_file),
       )
-      manifest.schemas.flat_map do |entry|
-        repo = Expressir::Express::Parser.from_file(entry.path.to_s)
+      parsed = manifest.schemas.map do |entry|
+        [entry, Expressir::Express::Parser.from_file(entry.path.to_s)]
+      end
+      corpus_entities = parsed.flat_map { |_, repo| repo.schemas }
+        .flat_map do |schema|
+          schema.children.grep(Expressir::Model::Declarations::Entity)
+        end
+        .to_h { |entity| [entity.id.downcase, entity] }
+
+      parsed.flat_map do |entry, repo|
         repo.schemas.flat_map do |schema|
-          validate_schema(entry.path.to_s, schema)
+          validate_schema(entry.path.to_s, schema, corpus_entities)
         end
       end
     end
@@ -68,10 +78,14 @@ module Suma
     #
     # @param file [String] source file path (for diagnostics)
     # @param schema [Expressir::Model::Declarations::Schema]
+    # @param corpus_entities [Hash{String=>Entity}] every entity of the
+    #   corpus by downcased id, for cross-schema attribute inheritance
     # @return [Array<UnresolvedReference>]
-    def validate_schema(file, schema)
+    def validate_schema(file, schema, corpus_entities = {})
       violations = []
       scope = SchemaScope.new(schema, graph)
+      entities = schema.children.grep(Expressir::Model::Declarations::Entity)
+        .to_h { |entity| [entity.id.downcase, entity] }
 
       schema.interfaces.each do |interface|
         next if graph.schema_exists?(interface.schema.id)
@@ -83,7 +97,8 @@ module Suma
 
       schema.children.each do |owner|
         violations.concat(declared_element_references(file, schema.id, owner,
-                                                      scope))
+                                                      scope, entities,
+                                                      corpus_entities))
       end
       violations
     end
@@ -91,8 +106,9 @@ module Suma
     private
 
     # Type- and structure-position references of one declared element.
-    def declared_element_references(file, schema_id, owner, scope)
-      refs = typed_references(owner)
+    def declared_element_references(file, schema_id, owner, scope, entities,
+                                    corpus_entities)
+      refs = typed_references(owner, entities, corpus_entities)
       refs.filter_map do |(kind, identifier)|
         if resolvable?(identifier, scope)
           nil
@@ -107,11 +123,13 @@ module Suma
     end
 
     # (kind, identifier) pairs from every position of one declaration.
-    def typed_references(owner)
+    def typed_references(owner, entities, corpus_entities)
       case owner
-      when Expressir::Model::Declarations::Entity then entity_references(owner)
+      when Expressir::Model::Declarations::Entity
+        entity_references(owner, entities, corpus_entities)
       when Expressir::Model::Declarations::Type then type_references(owner)
-      when Expressir::Model::Declarations::Rule then rule_references(owner)
+      when Expressir::Model::Declarations::Rule
+        rule_references(owner)
       when Expressir::Model::Declarations::Constant
         datatype_references(owner.type, "constant")
       when Expressir::Model::Declarations::Function
@@ -122,9 +140,10 @@ module Suma
       end
     end
 
-    def entity_references(entity)
+    def entity_references(entity, entities, corpus_entities)
+      locals = attribute_scope(entity, entities, corpus_entities)
       refs = (entity.where_rules || []).flat_map do |rule|
-        expression_references(rule.expression, "where")
+        expression_references(rule.expression, "where", locals)
       end
       entity.attributes.each do |attribute|
         refs.concat(datatype_references(attribute.type, "attribute"))
@@ -141,8 +160,11 @@ module Suma
 
     def rule_references(rule)
       refs = rule.applies_to.map { |ref| ["rule_applies_to", ref.id] }
+      locals = Array(rule.variables).filter_map do |variable|
+        variable.id&.downcase
+      end
       refs += (rule.where_rules || []).flat_map do |where|
-        expression_references(where.expression, "where")
+        expression_references(where.expression, "where", locals)
       end
       refs += (rule.variables || []).flat_map do |variable|
         datatype_references(variable.type, "variable")
@@ -162,8 +184,20 @@ module Suma
 
     def subtype_constraint_references(constraint)
       refs = []
-      refs << ["subtype_constraint", constraint.entity.id] if constraint.entity
-      refs.concat(supertype_references(constraint))
+      if constraint.applies_to.is_a?(Expressir::Model::References::SimpleReference)
+        refs << ["subtype_constraint", constraint.applies_to.id]
+      end
+      Array(constraint.total_over).each do |ref|
+        next unless ref.is_a?(Expressir::Model::References::SimpleReference)
+
+        refs << ["total_over", ref.id]
+      end
+      if constraint.supertype_expression
+        refs.concat(
+          expression_references(constraint.supertype_expression, "supertype"),
+        )
+      end
+      refs
     end
 
     def supertype_references(owner)
@@ -183,12 +217,82 @@ module Suma
       expression_references(node, kind)
     end
 
-    def expression_references(node, kind)
+    def expression_references(node, kind, locals = [])
+      scoped = locals + query_variables(node) +
+        attribute_access_identifiers(node)
       refs = []
       walk(node) do |child|
-        refs << [kind, child.id] if simple_reference?(child)
+        next unless simple_reference?(child)
+        next if child.id == "?"
+        next if scoped.include?(child.id.to_s.downcase)
+
+        refs << [kind, child.id]
       end
       refs
+    end
+
+    # QUERY expressions bind their variable inside the query; collect every
+    # bound variable name in the tree so the walk can skip them.
+    def query_variables(node)
+      found = []
+      walk(node) do |child|
+        if child.is_a?(Expressir::Model::Expressions::QueryExpression) &&
+            child.id
+          found << child.id.to_s.downcase
+        end
+      end
+      found
+    end
+
+    # Attribute accesses (var.attr, SELF\entity.attr) resolve against the
+    # base value's type, not the schema — neither the accessed attribute
+    # nor the base identifier is a schema-level reference.
+    def attribute_access_identifiers(node)
+      found = []
+      walk(node) do |child|
+        next unless child.is_a?(Expressir::Model::References::AttributeReference)
+
+        collect_access_identifier(found, child.ref)
+        collect_access_identifier(found, child.attribute)
+      end
+      found
+    end
+
+    def collect_access_identifier(found, part)
+      return unless part.is_a?(Expressir::Model::References::SimpleReference)
+      return unless part.id
+
+      found << part.id.to_s.downcase
+    end
+
+    # Bare identifiers in an entity's expressions resolve against the
+    # entity's own attributes and those inherited through its supertype
+    # chain, following subtypes across schemas when the parent entity is
+    # in the corpus (name-keyed; EXPRESS entity names are schema-scoped,
+    # but cross-schema parents resolve through interface visibility, so
+    # the name is the identity the child's source references).
+    def attribute_scope(entity, entities, corpus_entities)
+      names = []
+      queue = [entity]
+      seen = {}
+      until queue.empty?
+        current = queue.shift
+        key = current.id.to_s.downcase
+        next if seen[key]
+
+        seen[key] = true
+        Array(current.attributes).each do |attribute|
+          names << attribute.id.downcase if attribute.id
+        end
+        supertype_references(current).each do |(kind, name)|
+          next unless kind == "subtype_of"
+
+          parent = entities[name.downcase] ||
+            corpus_entities[name.downcase]
+          queue << parent if parent
+        end
+      end
+      names
     end
 
     def simple_reference?(node)

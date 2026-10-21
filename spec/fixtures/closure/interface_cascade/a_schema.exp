@@ -1,0 +1,6 @@
+SCHEMA a_schema;
+  ENTITY thing;
+  END_ENTITY;
+  ENTITY other_thing;
+  END_ENTITY;
+END_SCHEMA;

@@ -1,0 +1,3 @@
+SCHEMA w_schema;
+  USE FROM y_schema;
+END_SCHEMA;

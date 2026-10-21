@@ -1,0 +1,6 @@
+---
+schemas:
+  sc_good:
+    path: sc_good.exp
+  sc_broken:
+    path: sc_broken.exp
