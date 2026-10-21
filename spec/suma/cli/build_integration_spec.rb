@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "digest"
+require "stringio"
 require "tmpdir"
 require "fileutils"
 require "suma/cli"
@@ -9,10 +11,17 @@ require "suma/cli/build"
 # (spec/fixtures/dummy_collection, suma#107): schema compilation
 # (expressir), schema_docs generation, then collection rendering with
 # attachments and sectionsplit, exactly as `suma build` runs in CI.
+#
+# The same build is then repeated: unchanged inputs must reuse every
+# rendered schema doc, skip the collection render, and leave byte-identical
+# output; deleting the site and rendering again must reproduce it exactly.
 RSpec.describe Suma::Cli::Build do
-  it "builds the dummy collection end to end (suma#107)" do
+  it "builds, reuses, and reproduces the dummy collection (suma#107)" do
     with_built_dummy_collection do |workdir|
       assert_dummy_collection_outputs(workdir)
+      snapshot = site_snapshot(workdir)
+      assert_unchanged_rebuild(workdir, snapshot)
+      assert_reproducible_rebuild(workdir, snapshot)
     end
   end
 
@@ -25,12 +34,67 @@ RSpec.describe Suma::Cli::Build do
       workdir = File.join(tmp, "dummy_collection")
       FileUtils.cp_r(fixture_path, workdir)
       scrub_build_artifacts(workdir)
+      build_site(workdir)
+      yield workdir
+    end
+  end
+
+  def build_site(workdir)
+    capture_log do
       Dir.chdir(workdir) do
         # start (not new.invoke): applies declared option defaults,
         # notably compile: true, exactly as the real CLI dispatch does
         described_class.start(["build", "metanorma.yml"])
       end
-      yield workdir
+    end
+  end
+
+  def capture_log
+    previous = Suma::Utils.output
+    io = StringIO.new
+    Suma::Utils.output = io
+    yield
+    io.string
+  ensure
+    Suma::Utils.output = previous
+  end
+
+  def site_snapshot(workdir)
+    Dir.glob(File.join(workdir, "_site", "**", "*"))
+      .select { |file| File.file?(file) }
+      .sort
+      .to_h do |file|
+        [file.delete_prefix("#{workdir}/"),
+         Digest::SHA256.file(file).hexdigest]
+      end
+  end
+
+  def assert_unchanged_rebuild(workdir, snapshot)
+    index = File.join(workdir, "_site", "index.html")
+    mtime = File.mtime(index)
+    manifest = File.read(File.join(workdir, "collection-output.yaml"))
+
+    log = build_site(workdir)
+
+    aggregate_failures do
+      expect(log).to include("0 documents rendered")
+      expect(log).not_to include("Compiling schema (id:")
+      expect(File.mtime(index)).to eq(mtime)
+      expect(site_snapshot(workdir)).to eq(snapshot)
+      expect(File.read(File.join(workdir, "collection-output.yaml")))
+        .to eq(manifest)
+    end
+  end
+
+  def assert_reproducible_rebuild(workdir, snapshot)
+    FileUtils.rm_rf(File.join(workdir, "_site"))
+
+    log = build_site(workdir)
+
+    aggregate_failures do
+      expect(log.scan("Reusing rendered schema doc").size).to eq(6)
+      expect(log).not_to include("Compiling schema (id:")
+      expect(site_snapshot(workdir)).to eq(snapshot)
     end
   end
 

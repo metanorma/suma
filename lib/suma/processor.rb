@@ -39,7 +39,6 @@ module Suma
         Utils.log "Compiling schema collection..."
         compile_schema(schemas_all_path, collection_config)
 
-        Utils.log "Compiling complete collection..."
         compile_collection(collection_config, output_directory)
       end
 
@@ -56,6 +55,7 @@ module Suma
         @provenance_file,
         inputs: provenance_inputs,
         outputs: provenance_outputs,
+        exclude: provenance_excludes,
       )
       if @sign_method
         signature = Provenance.sign(
@@ -78,6 +78,31 @@ module Suma
     def provenance_outputs
       [COLLECTION_OUTPUT_PATH, "plain_schemas", "schema_docs",
        @output_directory]
+    end
+
+    # Build metadata that is not site content: the site freshness state, the
+    # staged-build store, and a provenance file written inside the output tree.
+    def provenance_excludes
+      excludes = [File.join(@output_directory, SiteBuild::STATE_FILE)]
+      if @staged
+        excludes << File.join(@output_directory,
+                              StagedCollectionBuilder::STORE_DIRNAME)
+        excludes << File.join(@output_directory, "_staged_reinflate")
+      end
+      excludes + provenance_artifacts.select { |path| within_output?(path) }
+    end
+
+    def provenance_artifacts
+      return [] unless @provenance_file
+
+      base = File.expand_path(@provenance_file)
+      [base, "#{base}.minisig", "#{base}.bundle"]
+    end
+
+    def within_output?(path)
+      full = File.expand_path(path)
+      output = File.expand_path(@output_directory)
+      full == output || full.start_with?("#{output}#{File::SEPARATOR}")
     end
 
     def export_schema_config
@@ -115,36 +140,67 @@ module Suma
     end
 
     def compile_collection(collection_config, output_directory)
-      metanorma_collection, collection_opts = build_collection(
-        collection_config, output_directory
-      )
+      write_collection_manifest(collection_config)
+      canonicalizer.canonicalize_manifest
 
+      if site_build.current?
+        Utils.log "Collection outputs are up to date; 0 documents rendered."
+        return
+      end
+
+      Utils.log "Rendering collection site..."
+      render_collection(collection_config, output_directory)
+      canonicalizer.canonicalize_documents
+      site_build.record
+    end
+
+    def write_collection_manifest(collection_config)
+      ManifestTraverser.new(collection_config.manifest)
+        .remove_schemas_only_sources
+      collection_config.to_file(COLLECTION_OUTPUT_PATH)
+    end
+
+    def render_collection(collection_config, output_directory)
       if @staged
-        # build_collection has written the emitted manifest; stage each member in
-        # its own process, then reinflate. Bounds peak memory to a single member.
+        # The emitted manifest is the staging input; each member is compiled
+        # in its own process and then reinflated into +output_directory+.
         StagedCollectionBuilder.new(
           collection_config_path: COLLECTION_OUTPUT_PATH,
           output_directory: output_directory,
-          coverpage: collection_opts[:coverpage],
+          coverpage: collection_coverpage(collection_config),
         ).build
       else
-        metanorma_collection.render(collection_opts)
+        Metanorma::Collection.parse(COLLECTION_OUTPUT_PATH)
+          .render(collection_options(collection_config, output_directory))
       end
     end
 
-    def build_collection(collection_config, output_directory)
-      new_collection_config_path = COLLECTION_OUTPUT_PATH
-      ManifestTraverser.new(collection_config.manifest).remove_schemas_only_sources
-      collection_config.to_file(new_collection_config_path)
-
-      collection = Metanorma::Collection.parse(new_collection_config_path)
-
-      collection_opts = {
+    def collection_options(collection_config, output_directory)
+      {
         output_folder: output_directory,
         compile: { install_fonts: false },
-        coverpage: collection_config.coverpage || "cover.html",
+        coverpage: collection_coverpage(collection_config),
       }
-      [collection, collection_opts]
+    end
+
+    def collection_coverpage(collection_config)
+      collection_config.coverpage || "cover.html"
+    end
+
+    def site_build
+      @site_build ||= SiteBuild.new(
+        root: File.dirname(File.expand_path(metanorma_yaml_path)),
+        output_directory: output_directory,
+        inputs: [schemas_all_path],
+      )
+    end
+
+    def canonicalizer
+      @canonicalizer ||= OutputCanonicalizer.new(
+        output_directory: output_directory,
+        manifest_path: COLLECTION_OUTPUT_PATH,
+        sources: site_build.source_files,
+      )
     end
   end
 end

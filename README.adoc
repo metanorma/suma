@@ -87,6 +87,16 @@ Options:
 The generated `schemas-*.yaml` file name is derived from the input file name
 with the word `metanorma` replaced with `schemas`.
 
+Repeated builds reuse work and are reproducible: a schema document is rendered
+again only when its adoc, schema config, schema source, or the rendering
+toolchain changed, and the collection render is skipped entirely when no site
+input changed (state: `_site/.suma-site-build.json`). Metanorma's random
+manifest identifiers and per-document type markers are canonicalized, so two
+identical builds produce byte-identical output. A provenance manifest covers
+`schema_docs`, `plain_schemas`, and `_site`, and verification reports files
+that appeared under those roots without being recorded (build metadata such as
+the site state file is excluded explicitly).
+
 [example]
 ====
 .To compile SRL subset test collection

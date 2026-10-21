@@ -82,6 +82,36 @@ RSpec.describe Suma::Provenance do
       expect(described_class.verify(provenance_file))
         .to include(a_string_matching(/\Ainputs: missing/))
     end
+
+    it "records output roots for completeness checks" do
+      record = described_class.record(inputs: [manifest], outputs: [output_dir])
+
+      expect(record["output_roots"])
+        .to eq([described_class.relative(output_dir)])
+    end
+
+    it "reports files added to an output root after the build" do
+      described_class.write(provenance_file, inputs: [manifest],
+                                             outputs: [output_dir])
+      File.write(File.join(output_dir, "extra.txt"), "later")
+
+      expect(described_class.verify(provenance_file))
+        .to include(a_string_matching(/\Aoutputs: unrecorded .*extra\.txt/))
+    end
+
+    it "ignores explicitly excluded build metadata" do
+      state = File.join(output_dir, ".suma-site-build.json")
+      File.write(state, "{}\n")
+      described_class.write(provenance_file, inputs: [manifest],
+                                             outputs: [output_dir],
+                                             exclude: [state])
+      File.write(state, "{\"key\":\"changed\"}\n")
+
+      expect(described_class.verify(provenance_file)).to eq([])
+      expect(described_class.record(inputs: [manifest],
+                                    outputs: [output_dir])["outputs"].keys)
+        .not_to include(described_class.relative(state))
+    end
   end
 
   describe "signing" do
