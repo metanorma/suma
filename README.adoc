@@ -49,6 +49,7 @@ $ suma
   suma convert-jsdai XML_FILE IMAGE_FILE OUTPUT_DIR                   # Convert JSDAI XML and image files to SVG and EXP
   suma export *FILES -o OUTPUT                                        # Export EXPRESS schemas or project them to OWL
   suma extract-terms SCHEMA_MANIFEST_FILE GLOSSARIST_OUTPUT_PATH      # Extract entity concepts to Glossarist v3
+  suma ingest-translations CONCEPTS_DIR TRANSLATIONS_FILE [-o OUT]    # Overlay translated content onto extracted concepts
   suma generate-register SCHEMA_MANIFEST_FILE OUTPUT_PATH             # Generate hierarchical register.yaml
   suma generate-schemas METANORMA_MANIFEST_FILE SCHEMA_MANIFEST_FILE  # Generate a schema manifest from a site manifest
   suma reformat EXPRESS_FILE_PATH                                     # Reformat EXPRESS files
@@ -365,6 +366,37 @@ $ bundle exec suma extract-terms schemas-activity-modules.yml terms_output
 # => processes only schemas listed in the manifest file
 ----
 ====
+
+=== Ingest translations command
+
+The `suma ingest-translations` command overlays translated content onto
+extracted concepts. A translations file is a YAML sequence of
+localized-concept documents, each keyed by concept id (or localized
+UUID) and carrying the fields to apply:
+
+[source,yaml]
+----
+- concept_id: example_schema.part
+  data:
+    language_code: fra
+    terms:
+      - designation: pièce
+        type: expression
+        normative_status: preferred
+    definition:
+      - content: "Composant d'un assemblage."
+----
+
+Every field the entry provides replaces that localization's field; every
+field it omits keeps the source-language content (a language absent from
+the extracted concepts is created with the same stable UUID convention
+the linked localizations use). Updated concepts are written in place, or
+to `--output` when given.
+
+[source,sh]
+----
+$ suma ingest-translations CONCEPTS_DIR TRANSLATIONS_FILE [-o OUTPUT_DIR]
+----
 
 
 === Generate register command
