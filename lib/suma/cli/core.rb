@@ -42,6 +42,8 @@ module Suma
                     desc: "Sign the provenance manifest: minisign or sigstore"
       option :sign_key, type: :string,
                         desc: "Signing key (sigstore signs keylessly when omitted)"
+      option :no_valid, type: :boolean, default: false,
+                        desc: "Skip Metanorma document validation"
       def build(_site_manifest)
         Cli::Build.start
       end

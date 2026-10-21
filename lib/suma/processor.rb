@@ -14,7 +14,8 @@ module Suma
     def initialize(metanorma_yaml_path:, schemas_all_path:, compile: true,
                    output_directory: "_site", staged: false,
                    incremental: false, state_file: nil, jobs: 1,
-                   provenance_file: nil, sign_method: nil, sign_key: nil)
+                   provenance_file: nil, sign_method: nil, sign_key: nil,
+                   no_valid: false)
       @metanorma_yaml_path = metanorma_yaml_path
       @schemas_all_path = schemas_all_path
       @compile_flag = compile
@@ -28,6 +29,9 @@ module Suma
       @provenance_file = provenance_file
       @sign_method = sign_method
       @sign_key = sign_key
+      # Skip Metanorma document validation (metanorma `--no-valid`). Opt-in:
+      # for collections whose flavor's validators are still in flight.
+      @no_valid = no_valid
     end
 
     def run
@@ -133,6 +137,7 @@ module Suma
           incremental: @incremental,
           state_file: @state_file,
           jobs: @jobs,
+          no_valid: @no_valid,
         },
       )
 
@@ -175,6 +180,7 @@ module Suma
           collection_config_path: COLLECTION_OUTPUT_PATH,
           output_directory: output_directory,
           coverpage: collection_coverpage(collection_config),
+          no_valid: @no_valid,
         ).build
       else
         Metanorma::Collection.parse(COLLECTION_OUTPUT_PATH)
@@ -185,9 +191,15 @@ module Suma
     def collection_options(collection_config, output_directory)
       {
         output_folder: output_directory,
-        compile: { install_fonts: false },
+        compile: compile_flags,
         coverpage: collection_coverpage(collection_config),
       }
+    end
+
+    def compile_flags
+      { install_fonts: false }.tap do |flags|
+        flags[:novalid] = true if @no_valid
+      end
     end
 
     def collection_coverpage(collection_config)
