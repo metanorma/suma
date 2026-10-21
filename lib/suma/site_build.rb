@@ -71,7 +71,7 @@ module Suma
       Dir.glob(File.join(@root, "**", "*")).select do |file|
         File.file?(file) &&
           excluded.none? { |path| under?(file, path) } &&
-          !generated?(relative(file))
+          !generated?(relative(file).tr("\\", "/"))
       end
     end
 
