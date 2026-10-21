@@ -116,6 +116,7 @@ Lint/UnusedMethodArgument:
 # Configuration parameters: AllowedMethods, AllowedPatterns, CountRepeatedAttributes, Max.
 Metrics/AbcSize:
   Exclude:
+    - 'lib/suma/gcr_package.rb'
     - 'bin/benchmark_corpus'
     - 'lib/suma/worker_pool.rb'
     - 'spec/suma/reproducibility_spec.rb'
@@ -155,6 +156,7 @@ Metrics/BlockLength:
 # Configuration parameters: AllowedMethods, AllowedPatterns, Max.
 Metrics/CyclomaticComplexity:
   Exclude:
+    - 'lib/suma/gcr_package.rb'
     - 'lib/suma/corpus_graph.rb'
     - 'lib/suma/worker_pool.rb'
     - 'lib/suma/urn_resolver.rb'
@@ -173,6 +175,8 @@ Metrics/CyclomaticComplexity:
 # Configuration parameters: CountComments, Max, CountAsOne, AllowedMethods, AllowedPatterns.
 Metrics/MethodLength:
   Exclude:
+    - 'lib/suma/artifact_server.rb'
+    - 'lib/suma/gcr_package.rb'
     - 'bin/benchmark_corpus'
     - 'lib/suma/cli/build.rb'
     - 'lib/suma/worker_pool.rb'
@@ -205,6 +209,7 @@ Metrics/MethodLength:
 # Configuration parameters: Max, CountKeywordArgs, MaxOptionalParameters.
 Metrics/ParameterLists:
   Exclude:
+    - 'lib/suma/gcr_package.rb'
     - 'lib/suma/processor.rb'
     - 'lib/suma/express_schema.rb'
     - 'lib/suma/term_extractor.rb'
@@ -217,6 +222,7 @@ Metrics/ParameterLists:
 # Configuration parameters: AllowedMethods, AllowedPatterns, Max.
 Metrics/PerceivedComplexity:
   Exclude:
+    - 'lib/suma/gcr_package.rb'
     - 'lib/suma/worker_pool.rb'
     - 'lib/suma/eengine/wrapper.rb'
     - 'lib/suma/jsdai/figure_image.rb'
@@ -260,6 +266,8 @@ RSpec/ContextWording:
 # Configuration parameters: Max, CountAsOne.
 RSpec/ExampleLength:
   Exclude:
+    - 'spec/suma/artifact_server_spec.rb'
+    - 'spec/suma/gcr_package_spec.rb'
     - 'spec/suma/schema_cache_spec.rb'
     - 'spec/suma/worker_pool_spec.rb'
     - 'spec/suma/schema_collection_rebuild_targets_spec.rb'
@@ -339,6 +347,8 @@ RSpec/MessageSpies:
 # Configuration parameters: Max.
 RSpec/MultipleExpectations:
   Exclude:
+    - 'spec/suma/artifact_server_spec.rb'
+    - 'spec/suma/gcr_package_spec.rb'
     - 'spec/suma/schema_cache_spec.rb'
     - 'spec/suma/worker_pool_spec.rb'
     - 'spec/suma/reproducibility_spec.rb'
@@ -416,6 +426,7 @@ RSpec/StubbedMock:
 # Configuration parameters: Max.
 RSpec/MultipleMemoizedHelpers:
   Exclude:
+    - 'spec/suma/gcr_package_spec.rb'
     - 'spec/suma/provenance_spec.rb'
     - 'spec/suma/worker_pool_spec.rb'
     - 'spec/suma/schema_cache_spec.rb'

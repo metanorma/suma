@@ -164,8 +164,7 @@ module Suma
       desc "validate SUBCOMMAND ...ARGS", "Validate express documents"
       subcommand "validate", Cli::Validate
 
-      desc "resolve [URN]", "Resolve URNs to canonical JSON + HTML artifacts"
-      # Mirrors so Core accepts the switches Cli::Resolve reparses; the
+      desc "resolve [URN]", "Resolve URNs to canonical JSON + HTML artifacts" # Mirrors so Core accepts the switches Cli::Resolve reparses; the
       # inner class owns their declarations.
       option :manifest, type: :string, required: true,
                         desc: "Schema manifest used for schema/entity URNs"
@@ -181,6 +180,36 @@ module Suma
                    desc: "Emit artifacts for every known URN"
       def resolve(_urn = nil)
         Cli::Resolve.start
+      end
+
+      desc "package-gcr CONCEPTS_DIR",
+           "Package extracted concepts into a .gcr archive"
+      # Mirrors so Core accepts the switches Cli::PackageGcr reparses; the
+      # inner class owns their declarations.
+      option :register, type: :string, required: true,
+                        desc: "register.yaml (dataset identity)"
+      option :shortname, type: :string, required: true,
+                         desc: "Dataset id"
+      option :version, type: :string, required: true,
+                       desc: "Semver of this dataset release"
+      option :title, type: :string, required: true,
+                     desc: "Human-readable dataset title"
+      option :description, type: :string, required: true,
+                           desc: "Dataset description"
+      option :created_at, type: :string,
+                          desc: "Package timestamp (pin for reproducibility)"
+      option :output, type: :string, aliases: "-o", required: true,
+                      desc: "Output directory for the .gcr archives"
+      def package_gcr(_concepts_dir)
+        Cli::PackageGcr.start
+      end
+
+      desc "serve DIRECTORY", "Serve resolved URN artifacts locally"
+      option :port, type: :numeric,
+                    default: Suma::ArtifactServer::DEFAULT_PORT,
+                    desc: "TCP port to listen on"
+      def serve(_directory)
+        Cli::ArtifactServerCli.start
       end
 
       desc "check_svg_quality [PATH]",

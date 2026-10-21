@@ -53,6 +53,8 @@ $ suma
   suma generate-schemas METANORMA_MANIFEST_FILE SCHEMA_MANIFEST_FILE  # Generate a schema manifest from a site manifest
   suma reformat EXPRESS_FILE_PATH                                     # Reformat EXPRESS files
   suma resolve [URN] --manifest=MANIFEST -o OUTPUT                    # Emit canonical JSON + HTML for URNs
+  suma package-gcr CONCEPTS_DIR --register=REGISTER -o OUTPUT         # Package concepts into a .gcr archive
+  suma serve DIRECTORY                                                # Serve resolved artifacts (Accept negotiation)
   suma validate SUBCOMMAND ...ARGS                                    # Validate express documents
 ----
 
@@ -726,6 +728,45 @@ $ suma export --format owl --urn urn:iso:std:iso:10303:-2:ed-2:en \
 $ suma export --format owl --corpus --urn urn:iso:std:iso:10303:-2:ed-2:en \
     -o OUTPUT schemas.yaml
 ----
+
+=== Package concepts for the Vocabulary Browser
+
+The `package-gcr` command bundles extracted concepts into a GCR
+(Glossarist Concept Repository) archive — the sealed distribution format
+consumed by the Glossarist Vocabulary Browser:
+
+[source,sh]
+----
+$ suma package-gcr CONCEPTS_DIR --register register.yaml \
+    --shortname my-dataset --version 1.0.0 \
+    --title "My Dataset" --description "Concepts from my corpus" \
+    -o OUT
+----
+
+The archive contains `metadata.yaml` (identity, statistics), the original
+`register.yaml`, and `concepts/` in the browser's canonical flat format
+(`termid`, `term`, one block per language). Both a versioned
+(`{shortname}-{version}.gcr`) and an unversioned (`{shortname}.gcr`)
+archive are written. Pass `--created-at` to pin the package timestamp for
+byte-reproducible archives. Point the browser's `datasets.yml` at the
+published archive (or at the concepts directory in development via
+`localPath`).
+
+=== Serve resolved artifacts
+
+`suma serve` serves a `resolve --all` artifact tree at its URN-derived
+paths, returning JSON or HTML according to the request's `Accept`
+header:
+
+[source,sh]
+----
+$ suma serve OUT --port 2113
+$ curl -H "Accept: application/json" \
+    http://localhost:2113/urn/iso/std/iso/10303/-2/ed-2/en/tech/action_schema.action
+----
+
+Production hosting maps the same paths statically; no application server
+is required.
 
 === Resolve URNs command
 
