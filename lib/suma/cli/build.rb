@@ -33,6 +33,9 @@ module Suma
       option :sign_key, type: :string,
                         desc: "Signing key (minisign requires it; sigstore " \
                               "signs keylessly when omitted)"
+      option :no_valid, type: :boolean, default: false,
+                        desc: "Skip Metanorma document validation " \
+                              "(equivalent of metanorma --no-valid)"
 
       def build(metanorma_site_manifest)
         unless File.exist?(metanorma_site_manifest)
@@ -62,6 +65,7 @@ module Suma
           provenance_file: options[:provenance],
           sign_method: options[:sign],
           sign_key: options[:sign_key],
+          no_valid: options[:no_valid],
         ).run
       end
 

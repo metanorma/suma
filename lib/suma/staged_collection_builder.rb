@@ -37,14 +37,16 @@ module Suma
     # +collection_config_path+ is the emitted collection manifest (the same
     # +collection-output.yaml+ the normal build renders). Member filerefs are
     # relative to its directory, so all per-member manifests are written there.
+    # (a data-declaring initializer)
     def initialize(collection_config_path:, output_directory:, coverpage: nil,
-                   store_dir: nil, formats: %i[xml html])
+                   store_dir: nil, formats: %i[xml html], no_valid: false) # rubocop:disable Metrics/ParameterLists
       @config_path = collection_config_path
       @config_dir = File.dirname(File.expand_path(collection_config_path))
       @output_directory = output_directory
       @coverpage = coverpage
       @store_dir = store_dir || File.join(output_directory, STORE_DIRNAME)
       @formats = formats
+      @no_valid = no_valid
     end
 
     def build
@@ -97,7 +99,7 @@ module Suma
         manifest_path: one_path,
         opts: { format: [:xml], output_folder: out,
                 preserve_unresolved: true, artifact_store_dir: @store_dir,
-                compile: { install_fonts: false } },
+                compile: compile_flags },
       )
     ensure
       FileUtils.rm_f(one_path)
@@ -118,8 +120,14 @@ module Suma
         manifest_path: reinf_path,
         opts: { format: @formats, output_folder: @output_directory,
                 reinflate: true, coverpage: @coverpage,
-                compile: { install_fonts: false } }.compact,
+                compile: compile_flags }.compact,
       )
+    end
+
+    def compile_flags
+      { install_fonts: false }.tap do |flags|
+        flags[:novalid] = true if @no_valid
+      end
     end
 
     # Copy each member's stored stub into +dir+ and return docref entries pointing

@@ -23,11 +23,12 @@ module Suma
 
     attr_reader :schema, :id, :output_path, :template
 
-    def initialize(schema:, output_path:, template:)
+    def initialize(schema:, output_path:, template:, no_valid: false)
       @schema = schema
       @id = schema.id
       @output_path = output_path
       @template = template
+      @no_valid = no_valid
     end
 
     def compile
@@ -48,6 +49,13 @@ module Suma
 
     def extensions
       template.extensions
+    end
+
+    # Options handed to Metanorma::Compile. Exposed for specs.
+    def compile_options
+      { agree_to_terms: true, install_fonts: false }.tap do |options|
+        options[:novalid] = true if @no_valid
+      end
     end
 
     private
@@ -120,11 +128,7 @@ module Suma
 
     def invoke_metanorma
       log_relative "Compiling schema (id: #{id})", filename_adoc
-      Metanorma::Compile.new.compile(
-        filename_adoc,
-        agree_to_terms: true,
-        install_fonts: false,
-      )
+      Metanorma::Compile.new.compile(filename_adoc, **compile_options)
       verify_outputs!
       log_relative "Compiling schema (id: #{id}) ... done!", filename_adoc
     end

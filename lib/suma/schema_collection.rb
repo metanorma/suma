@@ -125,6 +125,7 @@ module Suma
         schema: express,
         output_path: @output_path_docs.join(express.id),
         template: template_class.new(express.id),
+        no_valid: @options[:no_valid],
       )
 
       @docs[express.id] = compiler

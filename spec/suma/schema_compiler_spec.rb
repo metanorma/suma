@@ -61,6 +61,23 @@ RSpec.describe Suma::SchemaCompiler do
     end
   end
 
+  describe "#compile_options" do
+    it "declares the options handed to Metanorma::Compile" do
+      expect(compiler.compile_options)
+        .to eq(agree_to_terms: true, install_fonts: false)
+    end
+
+    it "skips Metanorma validation under no_valid" do
+      skipping = described_class.new(
+        schema: schema, output_path: tmpdir, template: template,
+        no_valid: true
+      )
+
+      expect(skipping.compile_options)
+        .to eq(agree_to_terms: true, install_fonts: false, novalid: true)
+    end
+  end
+
   describe "#compile" do
     let(:schema_path) do
       File.expand_path(
