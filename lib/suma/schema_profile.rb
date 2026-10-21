@@ -126,9 +126,21 @@ module Suma
       category_ids: %w[other],
     )
 
+    # buildingSMART IFC: one standalone schema per edition (IFC4, IFC4X3,
+    # ...), entities prefixed Ifc, no ARM/MIM-style decomposition.
+    IFC = new(
+      id: "ifc",
+      rules: [],
+      suffix_labels: {},
+      acronyms: %w[bim ifc idf 2d 3d 4d 5d],
+      acronym_patterns: [/\Aifc\d+(x\d+)*\z/],
+      category_ids: %w[other],
+    )
+
     REGISTRY = {
       "iso10303" => ISO_10303,
       "generic" => GENERIC,
+      "ifc" => IFC,
     }.freeze
   end
 end

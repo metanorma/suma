@@ -18,7 +18,7 @@ module Suma
       option :owner, type: :string, default: Suma::RegisterManifestGenerator::DEFAULT_OWNER,
                      desc: "Owner of the dataset (e.g. 'ISO/TC 184/SC 4')"
       option :profile, type: :string, default: "iso10303",
-                       desc: "Corpus profile (iso10303 or generic)"
+                       desc: "Corpus profile (iso10303, generic, or ifc)"
       option :year, type: :numeric,
                     desc: "Edition year for the register"
       option :supersedes, type: :string,

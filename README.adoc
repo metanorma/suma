@@ -756,6 +756,7 @@ names, and the ordered register categories. Registered profiles:
 
 `iso10303`:: Default; STEP conventions including `/applications/` classifying as an application protocol
 `generic`:: No STEP conventions (one category for every schema)
+`ifc`:: buildingSMART IFC editions: one standalone schema per edition (`ifc4`, `ifc4x3`, ...), edition names preserved uppercase (`IFC4`, `IFC4X3`), Ifc-prefixed declarations, one `Other Schemas` register category
 
 An AP publication is a lead schema bundled with the module and resource
 schemas it USEs. `--publication SCHEMA_ID` computes the transitive

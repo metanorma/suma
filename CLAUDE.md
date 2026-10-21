@@ -55,8 +55,10 @@ identifiers and paths map to types (`ExpressSchema::Type`), how
 identifiers become display names (`SchemaNaming`), and the ordered
 register categories (`SchemaCategory`). Registered profiles: `iso10303`
 (default; STEP conventions incl. `/applications/` → application
-protocol) and `generic` (no STEP conventions). The CLI takes
-`--profile` on `export`, `extract-terms`, and `generate-register`.
+protocol), `generic` (no STEP conventions), and `ifc` (buildingSMART
+IFC editions: standalone classification, `IFC4`-style edition names via
+`/\Aifc\d+(x\d+)*\z/`). The CLI takes `--profile` on `export`,
+`extract-terms`, and `generate-register`.
 
 ## ISO 10303 AP publications
 

@@ -154,4 +154,31 @@ RSpec.describe Suma::SchemaNaming do
         .to eq("Schema: Activity Arm")
     end
   end
+
+  describe "ifc schema profile" do
+    it "keeps edition identifiers uppercase" do
+      aggregate_failures do
+        expect(described_class.display_name("ifc4", profile: "ifc"))
+          .to eq("IFC4")
+        expect(described_class.display_name("ifc4x3", profile: "ifc"))
+          .to eq("IFC4X3")
+        expect(described_class.display_name("ifc2x3", profile: "ifc"))
+          .to eq("IFC2X3")
+      end
+    end
+
+    it "title-cases non-edition identifiers with IFC acronyms preserved" do
+      aggregate_failures do
+        expect(described_class.display_name("bim_shared", profile: "ifc"))
+          .to eq("BIM Shared")
+        expect(described_class.display_name("ifc_extensions", profile: "ifc"))
+          .to eq("IFC Extensions")
+      end
+    end
+
+    it "prefixes with the standalone category" do
+      expect(described_class.prefixed_name("ifc4", profile: "ifc"))
+        .to eq("Schema: IFC4")
+    end
+  end
 end

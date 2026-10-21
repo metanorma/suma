@@ -70,6 +70,8 @@ module Suma
                        desc: "Owning edition recorded on each concept"
       option :language_codes, type: :array,
                               desc: "Additional linked localization languages"
+      option :profile, type: :string, default: "iso10303",
+                       desc: "Corpus profile (iso10303, generic, or ifc)"
       def extract_terms(schema_manifest_file, glossarist_output_path)
         TermExtractor.new(
           schema_manifest_file,
@@ -78,6 +80,7 @@ module Suma
           language_code: options[:language_code],
           edition: options[:edition],
           language_codes: options[:language_codes],
+          profile: options[:profile],
         ).call
       end
 
@@ -94,7 +97,7 @@ module Suma
       option :owner, type: :string, default: Suma::RegisterManifestGenerator::DEFAULT_OWNER,
                      desc: "Owner of the dataset (e.g. 'ISO/TC 184/SC 4')"
       option :profile, type: :string, default: "iso10303",
-                       desc: "Corpus profile (iso10303 or generic)"
+                       desc: "Corpus profile (iso10303, generic, or ifc)"
       option :year, type: :numeric,
                     desc: "Edition year for the register"
       option :supersedes, type: :string,
@@ -141,7 +144,7 @@ module Suma
                                  "USE-FROM/REFERENCE closure (manifest " \
                                  "input only)"
       option :profile, type: :string, default: "iso10303",
-                       desc: "Corpus profile (iso10303 or generic)"
+                       desc: "Corpus profile (iso10303, generic, or ifc)"
       option :format, type: :string, default: "express", banner: "FORMAT",
                       desc: "Output format: express (default) or owl"
       option :corpus, type: :boolean, default: false,

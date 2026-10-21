@@ -84,6 +84,19 @@ RSpec.describe Suma::SchemaProfile do
     end
   end
 
+  describe "#classify (ifc)" do
+    subject(:profile) { described_class::IFC }
+
+    it "classifies every schema as standalone, whatever the path looks like" do
+      aggregate_failures do
+        expect(profile.classify(id: "ifc4", path: "IFC4.exp"))
+          .to eq(:standalone)
+        expect(profile.classify(id: "ifc4x3", path: "x/modules/w_arm.exp"))
+          .to eq(:standalone)
+      end
+    end
+  end
+
   describe "profile data" do
     it "keeps the ISO naming table and acronyms frozen" do
       expect(described_class::ISO_10303.suffix_labels).to be_frozen
@@ -102,6 +115,7 @@ RSpec.describe Suma::SchemaProfile do
            business_object_models core_model other],
       )
       expect(described_class::GENERIC.category_ids).to eq(%w[other])
+      expect(described_class::IFC.category_ids).to eq(%w[other])
     end
   end
 end

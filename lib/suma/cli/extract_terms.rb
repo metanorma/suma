@@ -14,7 +14,7 @@ module Suma
                    desc: "URN for the dataset source " \
                          "(used for section references)"
       option :profile, type: :string, default: "iso10303",
-                       desc: "Corpus profile (iso10303 or generic)"
+                       desc: "Corpus profile (iso10303, generic, or ifc)"
       option :edition, type: :numeric,
                        desc: "Owning edition recorded on each concept"
       option :language_codes, type: :array,
