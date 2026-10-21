@@ -17,8 +17,9 @@ RSpec.describe Suma::SchemaTemplate::Document do
 
   it "keeps the element anchors the links point at" do
     aggregate_failures do
-      expect(rendered).to include("[[#{schema_id}.constants]]")
-      expect(rendered).to include("[[#{schema_id}.{{thing.id")
+      expect(rendered).to include("[[{{ schema.id")
+      expect(rendered).to include(".constants]]")
+      expect(rendered).to include(".{{thing.id")
     end
   end
 

@@ -13,6 +13,7 @@ module Suma
   #
   # Composition with the compiler lives in SchemaCompiler.
   module SchemaTemplate
+    autoload :Anchors, "suma/schema_template/anchors"
     autoload :Plain, "suma/schema_template/plain"
     autoload :Document, "suma/schema_template/document"
   end

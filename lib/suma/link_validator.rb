@@ -4,9 +4,6 @@ require "expressir"
 require "suma/link_validation"
 
 module Suma
-  LinkValidationResult = Struct.new(:file, :line, :link, :reason,
-                                    keyword_init: true)
-
   class LinkValidator
     autoload :Step, "suma/link_validator/step"
 

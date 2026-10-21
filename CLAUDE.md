@@ -44,6 +44,7 @@ exe/suma serve ARTIFACTS_DIR --port 2113  # Serve resolved URN artifacts with Ac
 exe/suma generate-register SCHEMA_YAML OUT_DIR -u URN --id ID --ref REF  # Generate hierarchical register.yaml from schema manifest
 exe/suma validate links SCHEMAS_FILE DOCS_PATH          # Validate EXPRESS cross-reference links
 exe/suma validate closure SCHEMAS_MANIFEST [DOCUMENTS_PATH]  # Referential closure: every reference resolves (exit 1 on violations)
+exe/suma validate anchors SCHEMA_DOCS_PATH              # Rendered docs: every xref and in-page link resolves (exit 1 on dead links)
 ```
 
 ## Schema profiles
@@ -85,7 +86,8 @@ per-publication parent section.
 - **`TermExtractor`** — extracts EXPRESS entity concepts from a schema manifest into Glossarist v3 YAML format. Generates definitions with URN cross-references, processes remarks into notes, and resolves EXPRESS xrefs to URN mentions. Assigns stable UUIDv5 identifiers
 - **`RegisterManifestGenerator`** (file: `lib/suma/register_manifest_generator.rb`) — generates a Glossarist v3 `register.yaml` with hierarchical sections from a schema manifest. Classifies schemas via `ExpressSchema::Type` (DRY), delegates naming to `SchemaNaming` (OCP), orders resources before modules. Uses the Section model's `children` field for hierarchy
 - **`SchemaNaming`** — pure module that converts EXPRESS schema IDs to human-readable display names. Strips type suffixes (`_schema`/`_arm`/`_mim`/`_bom`), title-cases with acronym preservation (AIC, AEC, BREP, 2D, 3D…), lowercases function words, appends type labels (ARM/MIM)
-- **`SchemaTemplate::Plain` / `SchemaTemplate::Document`** — pure renderers for the AsciiDoc body fed to Metanorma (no I/O, no schema knowledge). `Document` adds cross-reference anchors and produces XML-only output
+- **`SchemaTemplate::Plain` / `SchemaTemplate::Document`** — pure renderers for the AsciiDoc body fed to Metanorma (no I/O, no schema knowledge). Both render the schema through `formatted_hyperlinked_adoc` (live cross-references) under the shared `Anchors` block, which emits one `[[id]]` per linkable element — schema-qualified ids plus bare `entity.attribute` pairs, matching Expressir's two xref forms. `Plain` produces HTML+XML for top-level schemas; `Document` produces XML-only for schemas-only entries. `validate anchors` verifies zero dead links in rendered docs
+- **`AnchorValidator`** — T4 dead-link gate: for every rendered `doc_*.adoc` + `doc_*.html`, each `<<target,...>>` xref must have an anchor in the HTML (unresolved xrefs are silently dropped by the renderer) and every in-page `href="#..."` must hit an id; cross-document xrefs are out of scope. `validate anchors SCHEMA_DOCS_PATH` exits 1 on violations
 - **`SchemaCompiler`** — orchestrates one schema's compilation: writes adoc + config, invokes `Metanorma::Compile`. Templates are injected via the constructor (composition over inheritance). A render key over adoc, config, schema source, and `Provenance.render_toolchain` is stored in `.suma-render-key` beside the outputs; an unchanged key with the requested outputs present reuses them without invoking Metanorma
 - **`SchemaCollection`** — orchestrates processing of all schemas from a config; selects `Plain` for top-level schemas and `Document` for schemas-only entries
 - **`SchemaExporter`** — standalone export of schemas from manifest or `.exp` files to a directory, with optional ZIP
