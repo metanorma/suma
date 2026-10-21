@@ -54,4 +54,51 @@ RSpec.describe Suma::ClosureValidator do
       expect(lines["missing_attribute"]).to eq(11)
     end
   end
+
+  describe "expression scoping" do
+    let(:scoping_manifest) do
+      File.expand_path("../fixtures/closure/scoping/schemas.yaml", __dir__)
+    end
+
+    it "resolves own and inherited attributes, QUERY variables, and bounds" do
+      scoped_owners = %w[measured child_thing]
+      violations = violations_for(scoping_manifest)
+        .select { |v| scoped_owners.include?(v.owner_id) }
+      expect(violations).to be_empty
+    end
+
+    it "still reports genuinely unknown identifiers" do
+      ghosts = violations_for(scoping_manifest)
+        .select { |v| v.owner_id == "haunted" }
+      expect(ghosts.map(&:kind)).to eq(["where"])
+      expect(ghosts.map(&:reference)).to eq(["ghost_attr"])
+    end
+  end
+
+  describe "subtype constraints" do
+    let(:constraint_manifest) do
+      File.expand_path(
+        "../fixtures/closure/subtype_constraints/schemas.yaml", __dir__
+      )
+    end
+
+    it "resolves applies_to, total_over, and the body expression" do
+      good = violations_for(constraint_manifest)
+        .select { |violation| violation.schema_id == "sc_good" }
+      expect(good).to be_empty
+    end
+
+    it "reports unresolvable constraint references by kind" do
+      broken = violations_for(constraint_manifest)
+        .select { |violation| violation.schema_id == "sc_broken" }
+
+      expect(broken.map(&:kind)).to contain_exactly(
+        "subtype_constraint", "total_over", "supertype", "supertype"
+      )
+      expect(broken.map(&:reference)).to contain_exactly(
+        "missing_one", "missing_two", "missing_three", "missing_four"
+      )
+      expect(broken.map(&:owner_id)).to all(eq("sc_bad"))
+    end
+  end
 end

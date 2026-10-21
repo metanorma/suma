@@ -1,0 +1,20 @@
+---
+schemas:
+  a_schema:
+    path: a_schema.exp
+  b_schema:
+    path: b_schema.exp
+  c_schema:
+    path: c_schema.exp
+  d_schema:
+    path: d_schema.exp
+  e_schema:
+    path: e_schema.exp
+  g_schema:
+    path: g_schema.exp
+  x_schema:
+    path: x_schema.exp
+  y_schema:
+    path: y_schema.exp
+  w_schema:
+    path: w_schema.exp

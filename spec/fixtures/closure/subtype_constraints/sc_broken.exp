@@ -1,0 +1,11 @@
+SCHEMA sc_broken;
+
+ENTITY sub;
+END_ENTITY;
+
+SUBTYPE_CONSTRAINT sc_bad FOR missing_one;
+  TOTAL_OVER (missing_two);
+  ONEOF (missing_three, missing_four);
+END_SUBTYPE_CONSTRAINT;
+
+END_SCHEMA;

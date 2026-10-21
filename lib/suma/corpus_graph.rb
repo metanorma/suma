@@ -13,6 +13,12 @@ module Suma
   # change-impact analysis (S3) and dependency-driven builds (S6). Nodes are
   # schemas and their declared elements; edges are USE/REFERENCE interfaces.
   class CorpusGraph
+    # One USE/REFERENCE import: the target schema, its kind, and the named
+    # items (renames already applied — the visible name is +items+).
+    InterfaceEdge = Struct.new(:kind, :target, :items, keyword_init: true)
+
+    EMPTY_VISIBLE = {}.freeze
+
     attr_reader :schema_ids
 
     def initialize(repositories)
@@ -24,6 +30,7 @@ module Suma
         repo.schemas.each { |schema| add_schema(schema) }
       end
       @schema_ids = @schemas.keys
+      @visibility = build_visibility
       freeze
     end
 
@@ -47,20 +54,18 @@ module Suma
       @schemas.key?(normalize(id))
     end
 
-    # Does +schema_id+ (or a schema it interfaces to) declare +element_id+?
-    # EXPRESS resolves unqualified names against the local schema and
-    # implicitly-used schemas.
+    # Does +schema_id+ (or the schemas it imports) declare +element_id+?
+    # EXPRESS resolves unqualified names against the local schema and the
+    # schema's interface visibility, including USE-FROM cascades.
     #
     # @param schema_id [String]
     # @param element_id [String]
     # @return [Boolean]
     def element_visible?(schema_id, element_id)
       key = normalize(schema_id)
-      return false unless @elements.key?(key)
+      return false unless @visibility.key?(key)
 
-      return true if @elements[key].key?(normalize(element_id))
-
-      visible_from_interfaces(key).include?(normalize(element_id))
+      @visibility[key].key?(normalize(element_id))
     end
 
     # Schemas that +schema_id+ USEs FROM or REFERENCEs.
@@ -68,7 +73,7 @@ module Suma
     # @param schema_id [String]
     # @return [Array<String>] normalized ids of interface targets
     def interface_targets(schema_id)
-      @interfaces[normalize(schema_id)] || []
+      (@interfaces[normalize(schema_id)] || []).map(&:target)
     end
 
     # Transitive interface closure: every schema +schema_id+ depends on,
@@ -110,11 +115,21 @@ module Suma
       key = normalize(schema.id)
       @schemas[key] = true
       @elements[key] = declared_elements(schema)
-      targets = (schema.interfaces || [])
-        .filter_map { |i| i.schema&.id }
-        .map { |id| normalize(id) }
-        .uniq
-      @interfaces[key] = targets
+      @interfaces[key] = Array(schema.interfaces).filter_map do |interface|
+        build_edge(interface)
+      end
+    end
+
+    def build_edge(interface)
+      target = interface.schema&.id
+      return nil unless target
+
+      items = Array(interface.items).filter_map do |item|
+        item.id || (item.ref.id if item.ref.respond_to?(:id))
+      end
+      InterfaceEdge.new(kind: interface.kind.to_s,
+                        target: normalize(target),
+                        items: items)
     end
 
     def declared_elements(schema)
@@ -128,9 +143,57 @@ module Suma
       index
     end
 
-    def visible_from_interfaces(key)
-      (@interfaces[key] || []).flat_map do |target|
-        @elements[target]&.keys || []
+    # EXPRESS interface visibility (ISO 10303-11 §13.3): a schema sees its
+    # declarations plus its imports. An unrestricted USE re-exports
+    # everything its target makes visible, so visibility cascades through
+    # USE chains; a named import exposes only the named (renamed) items;
+    # a REFERENCE exposes the target's declarations without cascading.
+    #
+    # WG12 corpora ship circular USE interfaces, so this is a monotone
+    # fixed-point iteration — sound under cycles, and each pass only adds.
+    def build_visibility
+      visible = {}
+      @schemas.each_key { |key| visible[key] = (@elements[key] || {}).dup }
+
+      changed = true
+      while changed
+        changed = false
+        @schemas.each_key do |key|
+          changed ||= apply_visibility_pass(key, visible)
+        end
+      end
+      visible
+    end
+
+    def apply_visibility_pass(key, visible)
+      names = visible[key]
+      changed = false
+      (@interfaces[key] || []).each do |edge|
+        next unless @schemas.key?(edge.target)
+
+        changed ||= import_edge_names(names, edge, visible)
+      end
+      changed
+    end
+
+    def import_edge_names(names, edge, visible)
+      changed = false
+      imported_names(edge, visible).each_key do |name|
+        next if names.key?(name)
+
+        names[name] = true
+        changed = true
+      end
+      changed
+    end
+
+    def imported_names(edge, visible)
+      if edge.items.any?
+        edge.items.to_h { |name| [normalize(name), true] }
+      elsif edge.kind == "USE"
+        visible[edge.target] || EMPTY_VISIBLE
+      else
+        @elements[edge.target] || EMPTY_VISIBLE
       end
     end
 

@@ -1,0 +1,4 @@
+---
+schemas:
+  scoping:
+    path: scoping.exp

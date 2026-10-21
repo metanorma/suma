@@ -1,0 +1,3 @@
+SCHEMA g_schema;
+  USE FROM a_schema (thing AS renamed_thing);
+END_SCHEMA;

@@ -1,0 +1,3 @@
+SCHEMA e_schema;
+  REFERENCE FROM a_schema;
+END_SCHEMA;

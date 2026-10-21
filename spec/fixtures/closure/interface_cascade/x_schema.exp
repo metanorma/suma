@@ -1,0 +1,5 @@
+SCHEMA x_schema;
+  USE FROM y_schema;
+  ENTITY thing;
+  END_ENTITY;
+END_SCHEMA;
