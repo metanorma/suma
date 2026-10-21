@@ -7,6 +7,7 @@ require "fileutils"
 module Suma
   autoload :VERSION, "suma/version"
 
+  autoload :AnchorValidator,        "suma/anchor_validator"
   autoload :ArtifactServer,         "suma/artifact_server"
   autoload :SchemaProfile,          "suma/schema_profile"
   autoload :BuildPlan,              "suma/build_plan"
@@ -25,6 +26,7 @@ module Suma
   autoload :ExpressReformatter,     "suma/express_reformatter"
   autoload :ExpressSchema,          "suma/express_schema"
   autoload :LinkValidation,         "suma/link_validation"
+  autoload :LinkValidationResult,   "suma/link_validation_result"
   autoload :LinkValidator,          "suma/link_validator"
   autoload :ManifestTraverser,      "suma/manifest_traverser"
   autoload :MappingDrift,           "suma/mapping_drift"

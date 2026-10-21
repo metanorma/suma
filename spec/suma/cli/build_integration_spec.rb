@@ -19,6 +19,7 @@ RSpec.describe Suma::Cli::Build do
   it "builds, reuses, and reproduces the dummy collection (suma#107)" do
     with_built_dummy_collection do |workdir|
       assert_dummy_collection_outputs(workdir)
+      assert_hyperlinked_schema_docs(workdir)
       snapshot = site_snapshot(workdir)
       assert_unchanged_rebuild(workdir, snapshot)
       assert_reproducible_rebuild(workdir, snapshot)
@@ -36,6 +37,25 @@ RSpec.describe Suma::Cli::Build do
       scrub_build_artifacts(workdir)
       build_site(workdir)
       yield workdir
+    end
+  end
+
+  # Top-level schema docs are rendered from the anchored, hyperlinked
+  # template: entity and attribute cross-references become in-page links
+  # and every target resolves (suma#107; T4).
+  def assert_hyperlinked_schema_docs(workdir)
+    html = File.read(File.join(workdir, "schema_docs", "widget_schema",
+                               "doc_widget_schema.html"))
+
+    aggregate_failures do
+      expect(html).to include('id="widget_schema.widget"')
+      expect(html).to include('href="#widget_schema.widget"')
+      expect(html).to include('id="widget.components"')
+      expect(html).to include('href="#widget.components"')
+    end
+
+    Dir.chdir(workdir) do
+      Suma::Cli::Validate.start(["anchors", "schema_docs"])
     end
   end
 

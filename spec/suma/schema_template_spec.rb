@@ -31,9 +31,25 @@ RSpec.describe Suma::SchemaTemplate do
         expect(rendered).to include("{% for schema in context.schemas %}")
       end
 
-      it "emits the schema id as the unnumbered section heading" do
+      it "renders the schema with live cross-reference links under anchors" do
         rendered = template.render("schemas.yaml")
-        expect(rendered).to include("[%unnumbered]\n== action_schema")
+        aggregate_failures do
+          expect(rendered).to include("[[action_schema]]")
+          expect(rendered).to include("[%unnumbered,type=express]")
+          expect(rendered).to include("{{ schema.formatted_hyperlinked_adoc }}")
+          expect(rendered).to include('[source%unnumbered,subs="+macros"]')
+        end
+      end
+
+      it "emits element anchors including bare entity.attribute bookmarks" do
+        rendered = template.render("schemas.yaml")
+        aggregate_failures do
+          # element anchors qualify with the schema's declared id
+          expect(rendered).to include("[[{{ schema.id")
+          expect(rendered).to include(".entities")
+          # Expressir links attributes as bare entity.attribute pairs
+          expect(rendered).to include("[[{{thing.id")
+        end
       end
     end
   end
@@ -58,14 +74,13 @@ RSpec.describe Suma::SchemaTemplate do
 
       it "includes per-collection anchor ids (entities, types, constants, etc.)" do
         rendered = template.render("schemas.yaml")
-        # the anchor block emits one bookmark per element collection
-        expect(rendered).to include("[[action_schema.entities")
-        expect(rendered).to include("[[action_schema.types")
-        expect(rendered).to include("[[action_schema.constants")
-        expect(rendered).to include("[[action_schema.functions")
-        expect(rendered).to include("[[action_schema.procedures")
-        expect(rendered).to include("[[action_schema.rules")
-        expect(rendered).to include("[[action_schema.subtype_constraints")
+        # the anchor block emits one bookmark per element collection,
+        # qualified by the schema's declared id (a Liquid reference)
+        expect(rendered).to include("[[{{ schema.id")
+        %w[entities types constants functions procedures rules
+           subtype_constraints].each do |collection|
+          expect(rendered).to include(".#{collection}]]")
+        end
       end
 
       it "only declares xml as the output extension" do
@@ -76,11 +91,19 @@ RSpec.describe Suma::SchemaTemplate do
   end
 
   describe "Plain vs Document" do
-    it "Plain does not emit the [[<schema_id>]] section anchor that Document does" do
-      plain = described_class::Plain.new("action_schema").render("schemas.yaml")
-      document = described_class::Document.new("action_schema").render("schemas.yaml")
-      expect(plain).not_to include("[[action_schema]]\n[%unnumbered,type=express]")
-      expect(document).to include("[[action_schema]]\n[%unnumbered,type=express]")
+    it "differs only in output extensions" do
+      plain = described_class::Plain.new("action_schema")
+      document = described_class::Document.new("action_schema")
+
+      aggregate_failures do
+        expect(plain.extensions).to eq("xml,html")
+        expect(document.extensions).to eq("xml")
+        expect(plain.render("schemas.yaml")).to eq(
+          document.render("schemas.yaml")
+            .sub(":mn-output-extensions: xml\n",
+                 ":mn-output-extensions: xml,html\n"),
+        )
+      end
     end
   end
 end

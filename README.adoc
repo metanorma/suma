@@ -97,6 +97,10 @@ identical builds produce byte-identical output. A provenance manifest covers
 that appeared under those roots without being recorded (build metadata such as
 the site state file is excluded explicitly).
 
+Top-level schema documents render with live cross-reference links: every
+`schema.entity` and `entity.attribute` reference Expressir emits becomes an
+in-page link, and `suma validate anchors` verifies that no link is dead.
+
 [example]
 ====
 .To compile SRL subset test collection
@@ -221,6 +225,19 @@ $ suma validate closure SCHEMAS_MANIFEST [DOCUMENTS_PATH] [--format terminal|jso
 
 When `DOCUMENTS_PATH` is given, documentation-layer link failures are merged
 into the same report.
+
+==== Anchors subcommand
+
+The `anchors` subcommand checks rendered schema documents for dead links:
+every Expressir cross-reference (`<<schema.entity,...>>`,
+`<<entity.attribute,...>>`) emitted in a compiled `doc_*.adoc` must have a
+matching anchor in its rendered `doc_*.html`, and every in-page `href` must
+point at an existing id. It exits non-zero on violations.
+
+[source,sh]
+----
+$ suma validate anchors SCHEMA_DOCS_PATH
+----
 
 
 === Generate schemas command

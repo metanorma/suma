@@ -62,6 +62,22 @@ module Suma
         fail_on_new_drift(*drift.check(path), path)
       end
 
+      desc "anchors SCHEMA_DOCS_PATH",
+           "Validate rendered schema docs: every Expressir cross-reference " \
+           "and in-page link resolves to an anchor in its HTML"
+      def anchors(schema_docs_path = "schema_docs")
+        violations = AnchorValidator.new(schema_docs_path).validate
+        if violations.empty?
+          puts "All anchors resolve: no dead links."
+          return
+        end
+
+        puts violations.map { |v| "#{v.file}: #{v.link} — #{v.reason}" }
+          .join("\n")
+        raise Thor::Error,
+              "Anchor validation failed: #{violations.size} dead link(s)"
+      end
+
       private
 
       # Print the closure report and raise on any unresolved reference.

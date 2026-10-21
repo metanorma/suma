@@ -2,10 +2,13 @@
 
 module Suma
   module SchemaTemplate
-    # Emits a plain AsciiDoc body for a single EXPRESS schema, producing
-    # both HTML and XML outputs via Metanorma.
+    # Emits an anchored, hyperlinked AsciiDoc body for a single EXPRESS
+    # schema, producing both HTML and XML outputs via Metanorma. Every
+    # element cross-reference the hyperlinked source emits resolves inside
+    # the rendered document through the shared anchor block.
     class Plain
       EXTENSIONS = "xml,html"
+      include Anchors
 
       attr_reader :schema_id
 
@@ -29,12 +32,13 @@ module Suma
           ----
           {% for schema in context.schemas %}
 
-          [%unnumbered]
-          == #{schema_id}
+          [[#{schema_id}]]
+          [%unnumbered,type=express]
+          == #{schema_id} #{rendered_anchors}
 
-          [source%unnumbered]
+          [source%unnumbered,subs="+macros"]
           --
-          {{ schema.formatted }}
+          {{ schema.formatted_hyperlinked_adoc }}
           --
           {% endfor %}
           ----
