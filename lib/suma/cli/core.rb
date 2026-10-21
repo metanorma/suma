@@ -204,6 +204,18 @@ module Suma
         Cli::PackageGcr.start
       end
 
+      desc "ingest-translations CONCEPTS_DIR TRANSLATIONS_FILE",
+           "Overlay translated localized-concept content onto extracted " \
+           "Glossarist concepts"
+      # Mirrors so Core accepts the switches Cli::IngestTranslations
+      # reparses; the inner class owns their declarations.
+      option :output, type: :string, aliases: "-o",
+                      desc: "Write updated concepts here (default: " \
+                            "update CONCEPTS_DIR in place)"
+      def ingest_translations(_concepts_dir, _translations_file)
+        Cli::IngestTranslations.start
+      end
+
       desc "serve DIRECTORY", "Serve resolved URN artifacts locally"
       option :port, type: :numeric,
                     default: Suma::ArtifactServer::DEFAULT_PORT,

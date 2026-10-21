@@ -270,6 +270,7 @@ RSpec/ExampleLength:
     - 'spec/suma/site_build_spec.rb'
     - 'spec/suma/output_canonicalizer_spec.rb'
     - 'spec/suma/anchor_validator_spec.rb'
+    - 'spec/suma/translation_ingester_spec.rb'
     - 'spec/suma/cli/build_integration_spec.rb'
     - 'spec/suma/artifact_server_spec.rb'
     - 'spec/suma/gcr_package_spec.rb'
