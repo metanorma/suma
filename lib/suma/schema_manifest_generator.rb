@@ -48,11 +48,18 @@ exclude_paths: nil)
       YAML.safe_load(File.read(file_path, encoding: "UTF-8"), aliases: true)
     end
 
+    # Collection manifest files referenced by the site manifest. Both
+    # manifest shapes are handled: legacy `docref` entries and the
+    # nested `documents` entries (metanorma 2.x collection manifests).
+    # Only `file` references count — `fileref` entries are attachments
+    # (documents, schema exports), not collection manifests.
     def load_manifest_files(collection_files)
-      collection_files.map do |c|
+      collection_files.flat_map do |c|
         collection_data = load_yaml(c)
-        collection_data["manifest"]["docref"].map { |docref| docref["file"] }
-      end.flatten
+        manifest = collection_data["manifest"] || {}
+        entries = Array(manifest["docref"]) + Array(manifest["documents"])
+        entries.filter_map { |entry| entry["file"] }
+      end
     end
 
     def load_project_schemas(manifest_files)
