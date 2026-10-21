@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
+require "digest"
 require "fileutils"
+require "json"
 require "pathname"
 
 module Suma
@@ -12,7 +14,13 @@ module Suma
   # that the caller injects. This split means templates can be tested as pure
   # functions and the compiler can be tested with a real adoc fixture, without
   # either depending on the other.
+  #
+  # Rendering is skipped when the adoc, the schema config, the schema source,
+  # and the rendering toolchain are unchanged since the outputs were written:
+  # the render key is stored beside the outputs.
   class SchemaCompiler
+    RENDER_KEY_FILE = ".suma-render-key"
+
     attr_reader :schema, :id, :output_path, :template
 
     def initialize(schema:, output_path:, template:)
@@ -24,8 +32,13 @@ module Suma
 
     def compile
       save_config
-      save_adoc
+      adoc = template.render(config_relative_path)
+      save_adoc(adoc)
+      key = render_key(adoc)
+      return reuse_render if rendered_current?(key)
+
       invoke_metanorma
+      write_render_key(key)
       self
     end
 
@@ -47,15 +60,20 @@ module Suma
       File.join(output_path, "schema_#{id}.yaml")
     end
 
-    def save_adoc
+    def render_key_path
+      File.join(output_path, RENDER_KEY_FILE)
+    end
+
+    def config_relative_path
+      Pathname.new(filename_config)
+        .relative_path_from(Pathname.new(File.dirname(filename_adoc)))
+    end
+
+    def save_adoc(content)
       log_relative "Save EXPRESS adoc", filename_adoc
 
       FileUtils.mkdir_p(File.dirname(filename_adoc))
-
-      config_relative = Pathname.new(filename_config)
-        .relative_path_from(Pathname.new(File.dirname(filename_adoc)))
-
-      File.write(filename_adoc, template.render(config_relative))
+      File.write(filename_adoc, content)
     end
 
     def save_config
@@ -66,6 +84,38 @@ module Suma
       config.schemas << Expressir::SchemaManifestEntry.new(id: id,
                                                            path: schema.path)
       config.save_to_path(filename_config)
+    end
+
+    # Everything the rendered document depends on. The schema source is an
+    # input even though the adoc references it only by path.
+    def render_key(adoc)
+      Digest::SHA256.hexdigest(
+        [adoc, File.read(filename_config), schema_source_digest,
+         JSON.generate(Provenance.render_toolchain)].join("\0"),
+      )
+    end
+
+    def schema_source_digest
+      path = schema.path.to_s
+      File.file?(path) ? Digest::SHA256.file(path).hexdigest : "missing:#{path}"
+    end
+
+    def rendered_current?(key)
+      File.file?(render_key_path) && File.read(render_key_path) == key &&
+        expected_output_paths.all? { |path| File.file?(path) }
+    end
+
+    def expected_output_paths
+      extensions.split(",").map { |ext| filename_adoc(ext.strip) }
+    end
+
+    def write_render_key(key)
+      File.write(render_key_path, key)
+    end
+
+    def reuse_render
+      log_relative "Reusing rendered schema doc (id: #{id})", filename_adoc
+      self
     end
 
     def invoke_metanorma
