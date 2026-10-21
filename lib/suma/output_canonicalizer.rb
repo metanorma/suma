@@ -85,10 +85,12 @@ module Suma
     end
 
     # UUIDs that occur in the site's source YAML. Identifiers the author
-    # wrote must survive; only generated ones are replaced.
+    # wrote must survive; only generated ones are replaced. YAML is read as
+    # bytes: an author-supplied file with non-UTF-8 bytes must not fail the
+    # build, and the pattern is ASCII-only.
     def preserved
       @preserved ||= yaml_sources.flat_map do |file|
-        File.read(file).scan(UUID_PATTERN)
+        File.binread(file).scan(UUID_PATTERN)
       end.uniq
     end
 

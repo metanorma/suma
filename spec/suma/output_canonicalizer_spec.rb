@@ -63,6 +63,17 @@ RSpec.describe Suma::OutputCanonicalizer do
         .to eq("aaaaaaaa-1111-4111-8111-111111111111")
     end
 
+    it "preserves identifiers in sources carrying non-UTF-8 bytes" do
+      File.binwrite(source, "id: aaaaaaaa-1111-4111-8111-111111111111\n" \
+                            "note: caf\xE9\n")
+      node = manifest_node("aaaaaaaa-1111-4111-8111-111111111111")
+
+      canonicalizer.canonicalize_manifest(node)
+
+      expect(node.identifier)
+        .to eq("aaaaaaaa-1111-4111-8111-111111111111")
+    end
+
     it "leaves non-UUID identifiers alone" do
       node = manifest_node("dummy-2026",
                            entry: [["dummy100001", "documents/one"]])

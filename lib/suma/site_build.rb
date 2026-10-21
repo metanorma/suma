@@ -99,15 +99,17 @@ module Suma
     end
 
     # Generated trees are derived from the sources above and never feed the
-    # site render as inputs of their own.
+    # site render as inputs of their own. Bundler's install directory is a
+    # dependency artifact: CI conventionally places it at vendor/bundle
+    # inside the project, where it must never count as site source.
     def excluded_paths
-      paths = [@output_directory,
-               File.join(@root, "schema_docs"),
-               File.join(@root, "plain_schemas"),
-               File.join(@root, ".git")]
-      cache = ENV.fetch("SUMA_SCHEMA_CACHE_DIR", nil)
-      paths << File.expand_path(cache, @root) if cache && !cache.empty?
-      paths
+      fixed = %w[schema_docs plain_schemas .git .bundle vendor/bundle]
+        .map { |dir| File.join(@root, dir) }
+      env = [ENV.fetch("SUMA_SCHEMA_CACHE_DIR", nil),
+             ENV.fetch("BUNDLE_PATH", nil)]
+        .compact
+        .map { |dir| File.expand_path(dir, @root) }
+      [@output_directory] + fixed + env
     end
 
     def under?(file, path)

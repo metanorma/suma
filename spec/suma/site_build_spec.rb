@@ -56,6 +56,17 @@ RSpec.describe Suma::SiteBuild do
     expect(site.current?).to be true
   end
 
+  it "does not count the bundler install directory as a source" do
+    site.record
+    gem_yaml = File.join(root, "vendor", "bundle", "ruby", "3.3.0",
+                         "gems", "some-gem", "data.yml")
+    FileUtils.mkdir_p(File.dirname(gem_yaml))
+    File.write(gem_yaml, "locale: tr\n")
+
+    expect(described_class.new(root: root, output_directory: output).key)
+      .to eq(site.key)
+  end
+
   it "keeps its own state out of the recorded outputs" do
     state = site.record
     entries = JSON.parse(File.read(state.state_path))["outputs"]
