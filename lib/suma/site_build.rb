@@ -16,6 +16,10 @@ module Suma
   class SiteBuild
     STATE_FILE = ".suma-site-build.json"
 
+    # Emitted manifests that the build itself regenerates deterministically
+    # from the sources above; whether they exist yet must not change the key.
+    GENERATED_FILES = %w[collection-output.yaml schemas.yml].freeze
+
     def initialize(root:, output_directory:, inputs: [])
       @root = File.expand_path(root)
       @output_directory = File.expand_path(output_directory)
@@ -80,7 +84,8 @@ module Suma
     # change the key on every run.
     def generated?(relative)
       base = File.basename(relative)
-      relative.start_with?("relaton/") ||
+      GENERATED_FILES.include?(relative) ||
+        relative.start_with?("relaton/") ||
         base.start_with?("tmp_document") ||
         base.end_with?("_index.html", ".err.html", ".log.txt") ||
         document_artifact?(relative, base)
