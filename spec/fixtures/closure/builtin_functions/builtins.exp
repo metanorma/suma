@@ -1,0 +1,11 @@
+SCHEMA builtins;
+
+ENTITY finite_bag;
+  members : SET[1:?] OF REAL;
+WHERE
+  WR1: VALUE_UNIQUE(members);
+  WR2: SIZEOF(members) > 0;
+  WR3: ROLESOF(SELF) <> '';
+END_ENTITY;
+
+END_SCHEMA;

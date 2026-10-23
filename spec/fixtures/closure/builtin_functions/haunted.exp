@@ -1,0 +1,9 @@
+SCHEMA haunted_functions;
+
+ENTITY phantom_call;
+  members : SET[1:?] OF REAL;
+WHERE
+  WR1: NO_SUCH_FUNCTION(members);
+END_ENTITY;
+
+END_SCHEMA;

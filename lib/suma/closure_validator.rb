@@ -36,8 +36,8 @@ module Suma
     BUILTIN_IDENTIFIERS = %w[
       abs acos asin atan atan2 bexists blength const_e cos exists exp
       format hibound hiindex length lobound loindex log log2 log10 nvl odd
-      roles_of sin sizeof sqrt tan typeof usedin value value_in
-      value_range value_list_by unique
+      roles_of rolesof sin sizeof sqrt tan typeof usedin value value_in
+      value_range value_list_by value_unique unique
       self and or xor not in like equal instanceof
       e pi
     ].freeze
