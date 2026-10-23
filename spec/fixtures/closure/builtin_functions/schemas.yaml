@@ -1,0 +1,5 @@
+schemas:
+  builtins:
+    path: builtins.exp
+  haunted_functions:
+    path: haunted.exp

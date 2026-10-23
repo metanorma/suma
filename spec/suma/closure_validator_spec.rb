@@ -75,6 +75,26 @@ RSpec.describe Suma::ClosureValidator do
     end
   end
 
+  describe "EXPRESS builtin functions" do
+    let(:builtin_manifest) do
+      File.expand_path("../fixtures/closure/builtin_functions/schemas.yaml",
+                       __dir__)
+    end
+
+    it "resolves standard functions such as VALUE_UNIQUE" do
+      good = violations_for(builtin_manifest)
+        .select { |violation| violation.schema_id == "builtins" }
+      expect(good).to be_empty
+    end
+
+    it "still reports unknown function calls" do
+      ghost = violations_for(builtin_manifest)
+        .select { |violation| violation.schema_id == "haunted_functions" }
+      expect(ghost.map(&:kind)).to eq(["where"])
+      expect(ghost.map(&:reference)).to eq(["NO_SUCH_FUNCTION"])
+    end
+  end
+
   describe "subtype constraints" do
     let(:constraint_manifest) do
       File.expand_path(
