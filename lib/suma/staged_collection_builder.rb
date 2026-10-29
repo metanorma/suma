@@ -116,8 +116,8 @@ module Suma
 
     def run_batch_workers(count)
       children = Array.new([@workers, count].min) do
-        Process.spawn(RbConfig.ruby, child_script, @config_dir, count.to_s,
-                      @store_dir, @output_directory,
+        Process.spawn(RbConfig.ruby, "-e", child_script, @config_dir,
+                      count.to_s, @store_dir, @output_directory,
                       @no_valid ? "1" : "0", chdir: @config_dir)
       end
       failed = children
@@ -180,7 +180,7 @@ module Suma
             ensure
               File.unlink(one_path) rescue nil
               FileUtils.rm_rf(out) rescue nil
-              GC.start(full_mark: true, compact: true)
+              GC.start
             end
           end
           claimed += 1
