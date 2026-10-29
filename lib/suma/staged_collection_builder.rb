@@ -16,10 +16,12 @@ module Suma
   #      stub-bearing Semantic XML + anchors to a durable content-addressed store
   #      (the metanorma engine's +preserve_unresolved:+ / +artifact_store_dir:+
   #      render options, metanorma/metanorma#576);
-  #   2. runs those per-member processes SEQUENTIALLY (never in parallel --
-  #      parallelism reintroduces the cross-linking / sectionsplit races that are
-  #      deliberately avoided); each process exits and the OS reclaims its memory
-  #      before the next, so peak memory is bounded by a single member; then
+  #   2. runs those per-member processes SEQUENTIALLY by default; with
+  #      +workers+ > 1, batches of members are rendered by that many child
+  #      processes concurrently (safe: members write disjoint store entries,
+  #      and sectionsplit happens only in the sequential reinflate pass); each
+  #      process exit hands its memory back to the OS, so peak memory stays
+  #      bounded by workers x one member; then
   #   3. REINFLATES: a final pass assembles a manifest of the stored stubs and
   #      resolves them into real cross-document links (+reinflate:+), producing
   #      the same output an all-present build would.
@@ -34,12 +36,19 @@ module Suma
   class StagedCollectionBuilder
     STORE_DIRNAME = ".metanorma-collection-cache"
 
+    # Members rendered per child process: one Metanorma boot amortised over
+    # a batch of small members keeps boot cost under a few percent.
+    DEFAULT_BATCH_SIZE = 25
+
     # +collection_config_path+ is the emitted collection manifest (the same
     # +collection-output.yaml+ the normal build renders). Member filerefs are
     # relative to its directory, so all per-member manifests are written there.
-    # (a data-declaring initializer)
+    # +workers+ > 1 runs that many renderer processes concurrently over batches
+    # of +batch_size+ members; members write disjoint, identifier-keyed store
+    # entries, so children cannot race. (a data-declaring initializer)
     def initialize(collection_config_path:, output_directory:, coverpage: nil,
-                   store_dir: nil, formats: %i[xml html], no_valid: false) # rubocop:disable Metrics/ParameterLists
+                   store_dir: nil, formats: %i[xml html], no_valid: false,
+                   workers: 1, batch_size: DEFAULT_BATCH_SIZE) # rubocop:disable Metrics/ParameterLists
       @config_path = collection_config_path
       @config_dir = File.dirname(File.expand_path(collection_config_path))
       @output_directory = output_directory
@@ -47,19 +56,138 @@ module Suma
       @store_dir = store_dir || File.join(output_directory, STORE_DIRNAME)
       @formats = formats
       @no_valid = no_valid
+      @workers = [workers.to_i, 1].max
+      @batch_size = [batch_size.to_i, 1].max
     end
 
     def build
       FileUtils.mkdir_p(@output_directory)
       FileUtils.mkdir_p(@store_dir)
       members = collection_members
-      Utils.log "[staged] #{members.size} members; one process per member, " \
-                "sequential; store: #{@store_dir}"
-      members.each_with_index { |member, i| stage_member(member, i) }
+      Utils.log "[staged] #{members.size} members; workers: #{@workers}; " \
+                "batch size: #{@batch_size}; store: #{@store_dir}"
+      if @workers == 1
+        members.each_with_index { |member, i| stage_member(member, i) }
+      else
+        stage_parallel(members)
+      end
       reinflate(members)
     end
 
     private
+
+    # Batch the members and run +@workers+ renderer child processes
+    # concurrently. Each batch file carries fully-rendered single-member
+    # manifests; children claim batches through O_EXCL markers, so a slow
+    # worker never starves. One Metanorma boot amortises over
+    # +@batch_size+ members (the boot dominates small members), and each
+    # child exit hands its memory back to the OS. Members write disjoint,
+    # identifier-keyed store entries, so concurrent children cannot race;
+    # sectionsplit only happens at reinflate (a single sequential pass).
+    def stage_parallel(members)
+      paths, count = write_batch_files(members)
+      run_batch_workers(count)
+    ensure
+      remove_batch_files(paths, count)
+    end
+
+    def write_batch_files(members)
+      batches = batch_manifests(members)
+      paths = write_batch_bins(batches)
+      Utils.log "[staged] #{batches.size} batches over #{@workers} workers"
+      [paths, batches.size]
+    end
+
+    def batch_manifests(members)
+      members.each_slice(@batch_size).map do |slice|
+        slice.map do |member|
+          base_manifest.merge("manifest" => collection_manifest([member]))
+        end
+      end
+    end
+
+    def write_batch_bins(batches)
+      batches.map.with_index do |batch, i|
+        path = File.join(@config_dir, "._suma_batch_#{i}.bin")
+        File.binwrite(path, Marshal.dump(batch))
+        path
+      end
+    end
+
+    def run_batch_workers(count)
+      children = Array.new([@workers, count].min) do
+        Process.spawn(RbConfig.ruby, child_script, @config_dir, count.to_s,
+                      @store_dir, @output_directory,
+                      @no_valid ? "1" : "0", chdir: @config_dir)
+      end
+      failed = children
+        .filter_map { |pid| Process.waitpid2(pid) }
+        .map(&:last).reject(&:success?).size
+      return if failed.zero?
+
+      raise "[staged] #{failed} of #{@workers} batch workers failed; " \
+            "see the worker output above"
+    end
+
+    def remove_batch_files(paths, count)
+      paths&.each { |path| FileUtils.rm_f(path) }
+      (0...(count || 0)).each do |i|
+        FileUtils.rm_f(File.join(@config_dir, "._suma_batch_#{i}.claim"))
+      end
+    end
+
+    # Child renderer: claims and renders batches until none remain. The
+    # Metanorma boot is paid once per child, and GC runs between members to
+    # bound the heap. Any render failure exits nonzero and fails the build.
+    def child_script
+      <<~RUBY
+        require "yaml"
+        require "fileutils"
+        require "metanorma"
+        config_dir, batch_count, store_dir, out_dir, no_valid = ARGV
+        count = Integer(batch_count)
+        claimed = 0
+        loop do
+          idx = (0...count).find do |i|
+            begin
+              File.open(File.join(config_dir, "._suma_batch_\#{i}.claim"),
+                        File::RDWR | File::CREAT | File::EXCL) {}
+              true
+            rescue Errno::EEXIST
+              false
+            end
+          end
+          break unless idx
+
+          manifests = Marshal.load(File.binread(File.join(
+            config_dir, "._suma_batch_\#{idx}.bin")))
+          manifests.each_with_index do |manifest, j|
+            one_path = File.join(config_dir,
+                                 "._suma_staged_b\#{idx}_\#{j}.yml")
+            out = File.join(out_dir, "._staged_out_b\#{idx}_\#{j}")
+            t0 = Time.now
+            begin
+              File.write(one_path, YAML.dump(manifest))
+              compile = { install_fonts: false }
+              compile[:novalid] = true if no_valid == "1"
+              Metanorma::Collection.parse(one_path).render(
+                format: [:xml], output_folder: out,
+                preserve_unresolved: true, artifact_store_dir: store_dir,
+                compile: compile,
+              )
+              warn format("[staged worker %d] batch %d/%d member %d OK (%ds)",
+                          Process.pid, idx + 1, count, j, Time.now - t0)
+            ensure
+              File.unlink(one_path) rescue nil
+              FileUtils.rm_rf(out) rescue nil
+              GC.start(full_mark: true, compact: true)
+            end
+          end
+          claimed += 1
+        end
+        exit 1 if claimed.zero? && count.positive?
+      RUBY
+    end
 
     def manifest
       @manifest ||= YAML.load_file(@config_path)
