@@ -47,6 +47,18 @@ module Suma
     end
 
     def export_to_directory(schemas)
+      run_pool_export(schemas)
+    rescue SystemStackError
+      # One pathological schema (a very deep AST) can overflow the
+      # worker threads' ~1 MB stack. The main thread has the full OS
+      # stack and every completed export is cached, so the retry only
+      # pays for the schemas that did not finish.
+      Utils.log "[export] worker thread stack exhausted; " \
+                "retrying the remaining schemas on the main thread"
+      schemas.each { |schema| export_single_schema(schema) }
+    end
+
+    def run_pool_export(schemas)
       WorkerPool.new(size: options[:jobs]).map(schemas) do |schema|
         export_single_schema(schema)
       end
