@@ -22,7 +22,7 @@ module Suma
                                     "members per process; requires --staged)"
       option :staged_batch_size, type: :numeric,
                                  desc: "Members per staged render process " \
-                                       "(default: #{Suma::StagedCollectionBuilder::DEFAULT_BATCH_SIZE})"
+                                       "(default: 25)"
       option :incremental, type: :boolean, default: false,
                            desc: "Re-render only changed schemas and their " \
                                  "transitive dependents (state file defaults " \
