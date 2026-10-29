@@ -14,8 +14,15 @@ module Suma
                                 desc: "Generate file that contains all schemas in the collection."
       option :staged, type: :boolean, default: false,
                       desc: "Memory-bounded staged build: compile each member in " \
-                            "its own process (sequential) and reinflate. For large " \
-                            "collections that OOM a single-process build (suma#94)."
+                            "its own process (sequential unless --staged-workers " \
+                            "is given) and reinflate. For large collections that " \
+                            "OOM a single-process build (suma#94)."
+      option :staged_workers, type: :numeric, default: 1,
+                              desc: "Concurrent staged render processes (batched " \
+                                    "members per process; requires --staged)"
+      option :staged_batch_size, type: :numeric,
+                                 desc: "Members per staged render process " \
+                                       "(default: #{Suma::StagedCollectionBuilder::DEFAULT_BATCH_SIZE})"
       option :incremental, type: :boolean, default: false,
                            desc: "Re-render only changed schemas and their " \
                                  "transitive dependents (state file defaults " \
@@ -58,7 +65,6 @@ module Suma
           schemas_all_path: schemas_all_path,
           compile: options[:compile],
           output_directory: "_site",
-          staged: options[:staged],
           incremental: options[:incremental],
           state_file: options[:state_file],
           jobs: options[:jobs],
@@ -66,7 +72,14 @@ module Suma
           sign_method: options[:sign],
           sign_key: options[:sign_key],
           no_valid: options[:no_valid],
+          **staged_options(options),
         ).run
+      end
+
+      def staged_options(options)
+        { staged: options[:staged],
+          staged_workers: options[:staged_workers],
+          staged_batch_size: options[:staged_batch_size] }
       end
 
       def log_error(error)
