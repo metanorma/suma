@@ -94,7 +94,9 @@ module Suma
       section_ref = get_section_ref(schema)
 
       Glossarist::ManagedConceptCollection.new.tap do |collection|
-        schema.entities.each do |entity|
+        # expressir leaves collection attributes nil when the clause is
+        # absent; guard every walk over parsed-model collections.
+        Array(schema.entities).each do |entity|
           managed_data = build_managed_data(schema, entity, section_ref,
                                             classification)
 
@@ -154,7 +156,7 @@ module Suma
         data.sources = [build_source_ref(schema, entity)]
 
         notes = NoteProcessor.call(
-          entity.remarks,
+          Array(entity.remarks),
           definitions: data.definition,
           xref_to_mention: method(:xref_to_mention),
         )
@@ -273,12 +275,16 @@ module Suma
 
       entity_ref = urn_mention(term_urn("express-language.entity"), "entity")
 
-      if entity.subtype_of.empty?
+      # expressir 2.4.44 returns nil for entities without SUBTYPE_OF
+      # (older versions returned []); guard both shapes.
+      subtypes = entity.subtype_of || []
+
+      if subtypes.empty?
         "#{entity_type} " \
           "that represents the " \
           "#{entity_name_to_text(entity.id)} #{entity_ref}"
       else
-        entity_subtypes = entity.subtype_of.map do |e|
+        entity_subtypes = subtypes.map do |e|
           urn_mention(express_entity_urn("#{schema.id}.#{e.id}"), e.id)
         end
 
