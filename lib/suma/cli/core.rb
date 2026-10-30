@@ -30,6 +30,10 @@ module Suma
                                       "in the collection."
       option :staged, type: :boolean, default: false,
                       desc: "Memory-bounded staged build"
+      option :staged_workers, type: :numeric, default: 1,
+                              desc: "Concurrent staged render processes"
+      option :staged_batch_size, type: :numeric,
+                                 desc: "Members per staged render process"
       option :incremental, type: :boolean, default: false,
                            desc: "Re-render only changed schemas and dependents"
       option :state_file, type: :string,
