@@ -45,7 +45,11 @@ module Suma
           item, index = pair
           begin
             results[index] = block.call(item)
-          rescue StandardError => e
+          # SystemStackError is not StandardError: deep per-item recursion
+          # (a pathological EXPRESS AST in the export pretty-printer)
+          # overflows the ~1 MB thread stack, and swallowing it would
+          # leave silent holes in results. The caller falls back.
+          rescue SystemStackError, StandardError => e
             errors << e
             break
           end
