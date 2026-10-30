@@ -57,8 +57,22 @@ module Suma
       notes = only_keep_first_sentence(notes)
       notes = remove_see_content(notes)
       notes = remove_redundant_note(notes)
+      notes = convert_legacy_bibitem_mentions(notes)
       notes = remove_invalid_references(notes)
       compare_with_definitions(notes, definitions)
+    end
+
+    # EXPRESS remarks carry bibliography cross-references as AsciiDoc
+    # derived anchors (<<ISO_10303-42_2022>>). The glossarist mention
+    # syntax for a bibliography entry is {{bib:<anchor>}}: translate
+    # them so the notes survive (remove_invalid_references drops any
+    # note still carrying a raw <<...>> block).
+    def convert_legacy_bibitem_mentions(notes)
+      notes.each do |note|
+        note.content = note.content.gsub(/<<([^<>]+)>>/) do
+          "{{bib:#{Regexp.last_match(1)}}}"
+        end
+      end
     end
 
     private

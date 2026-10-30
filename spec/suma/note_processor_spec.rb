@@ -51,12 +51,20 @@ RSpec.describe Suma::NoteProcessor do
     end
   end
 
-  describe "double-angle-bracket filtering" do
-    it "drops a note whose content contains a non-express <<...>> block" do
+  describe "legacy derived-anchor mentions" do
+    it "translates surviving <<...>> blocks into {{bib:...}} mentions" do
       # express xrefs are converted to {{urn,display}} mentions before the
-      # filter runs; the filter catches other <<...>> blocks (e.g. asciidoc
-      # cross-references that survived xref conversion).
-      result = described_class.call("Refers to <<some_other_ref>>.",
+      # filter runs; the remaining <<...>> blocks are bibliography
+      # cross-references in the remark source and carry over as bib mentions.
+      result = described_class.call("Refers to <<ISO_10303-42_2022>>.",
+                                    definitions: [],
+                                    xref_to_mention: xref_to_mention)
+      expect(result.first.content)
+        .to eq("Refers to {{bib:ISO_10303-42_2022}}.")
+    end
+
+    it "drops notes that still carry an image reference" do
+      result = described_class.call("See image::diagram.svg[].",
                                     definitions: [],
                                     xref_to_mention: xref_to_mention)
       expect(result).to eq([])
