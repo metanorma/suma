@@ -61,9 +61,9 @@ module Suma
       parsed = manifest.schemas.map do |entry|
         [entry, Expressir::Express::Parser.from_file(entry.path.to_s)]
       end
-      corpus_entities = parsed.flat_map { |_, repo| repo.schemas }
+      corpus_entities = parsed.flat_map { |_, repo| Array(repo.schemas) }
         .flat_map do |schema|
-          schema.children.grep(Expressir::Model::Declarations::Entity)
+          Array(schema.children).grep(Expressir::Model::Declarations::Entity)
         end
         .to_h { |entity| [entity.id.downcase, entity] }
 
@@ -84,10 +84,10 @@ module Suma
     def validate_schema(file, schema, corpus_entities = {})
       violations = []
       scope = SchemaScope.new(schema, graph)
-      entities = schema.children.grep(Expressir::Model::Declarations::Entity)
+      entities = Array(schema.children).grep(Expressir::Model::Declarations::Entity)
         .to_h { |entity| [entity.id.downcase, entity] }
 
-      schema.interfaces.each do |interface|
+      Array(schema.interfaces).each do |interface|
         next if graph.schema_exists?(interface.schema.id)
 
         violations << unresolved(file, schema.id, schema.id, "interface",
@@ -95,7 +95,7 @@ module Suma
                                  "interface target not declared")
       end
 
-      schema.children.each do |owner|
+      Array(schema.children).each do |owner|
         violations.concat(declared_element_references(file, schema.id, owner,
                                                       scope, entities,
                                                       corpus_entities))
@@ -145,7 +145,7 @@ module Suma
       refs = (entity.where_rules || []).flat_map do |rule|
         expression_references(rule.expression, "where", locals)
       end
-      entity.attributes.each do |attribute|
+      Array(entity.attributes).each do |attribute|
         refs.concat(datatype_references(attribute.type, "attribute"))
       end
       refs.concat(supertype_references(entity))
@@ -159,7 +159,7 @@ module Suma
     end
 
     def rule_references(rule)
-      refs = rule.applies_to.map { |ref| ["rule_applies_to", ref.id] }
+      refs = Array(rule.applies_to).map { |ref| ["rule_applies_to", ref.id] }
       locals = Array(rule.variables).filter_map do |variable|
         variable.id&.downcase
       end
@@ -383,24 +383,24 @@ module Suma
         @graph = graph
         @schema_id = schema.id
 
-        schema.children.each { |declaration| add(declaration) }
-        schema.entities.each do |entity|
-          entity.attributes.each { |attribute| add(attribute) }
+        Array(schema.children).each { |declaration| add(declaration) }
+        Array(schema.entities).each do |entity|
+          Array(entity.attributes).each { |attribute| add(attribute) }
         end
-        schema.rules.each do |rule|
-          rule.variables.each { |variable| add(variable) }
-          rule.applies_to.each do |ref|
-            entity = schema.entities.find do |candidate|
+        Array(schema.rules).each do |rule|
+          Array(rule.variables).each { |variable| add(variable) }
+          Array(rule.applies_to).each do |ref|
+            entity = Array(schema.entities).find do |candidate|
               candidate.id&.downcase == ref.id&.downcase
             end
             next unless entity
 
-            entity.attributes.each { |attribute| add(attribute) }
+            Array(entity.attributes).each { |attribute| add(attribute) }
           end
         end
-        schema.constants.each { |constant| add(constant) }
-        schema.functions.each do |function|
-          (function.parameters || []).each { |parameter| add(parameter) }
+        Array(schema.constants).each { |constant| add(constant) }
+        Array(schema.functions).each do |function|
+          Array(function.parameters).each { |parameter| add(parameter) }
         end
       end
 
