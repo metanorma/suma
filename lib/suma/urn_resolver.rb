@@ -96,7 +96,7 @@ module Suma
       artifacts = {}
       schemas.each do |schema|
         artifacts[compose(:tech, schema.id)] = schema_payload(schema)
-        schema.children.each do |element|
+        Array(schema.children).each do |element|
           payload = element_payload(schema, element)
           artifacts[compose(:tech, "#{schema.id}.#{element.id}")] = payload if
             payload
@@ -111,7 +111,7 @@ module Suma
     def add_attribute_artifacts(artifacts, schema, element)
       return unless element.is_a?(Expressir::Model::Declarations::Entity)
 
-      element.attributes.each do |attribute|
+      Array(element.attributes).each do |attribute|
         key = compose(:tech,
                       "#{schema.id}.#{element.id}.#{attribute.id}")
         artifacts[key] = attribute_artifact(schema, element, attribute)
@@ -150,7 +150,7 @@ module Suma
         "interface" => Array(schema.interfaces).filter_map do |interface|
           interface.schema&.id
         end,
-        "elements" => schema.children.filter_map do |element|
+        "elements" => Array(schema.children).filter_map do |element|
           element.id if declared_element?(element)
         end.sort,
       }

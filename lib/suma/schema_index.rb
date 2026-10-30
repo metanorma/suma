@@ -40,11 +40,11 @@ module Suma
 
     def element_collections(schema)
       [
-        schema.entities,
-        schema.types,
-        schema.constants,
-        schema.functions,
-        schema.rules,
+        Array(schema.entities),
+        Array(schema.types),
+        Array(schema.constants),
+        Array(schema.functions),
+        Array(schema.rules),
         schema.procedures,
         schema.subtype_constraints,
       ]

@@ -167,7 +167,7 @@ module Suma
     # the Expressir model and must not shadow declarations).
     def index_elements
       @schemas.each_with_object({}) do |(schema_key, schema), map|
-        schema.children.each do |element|
+        Array(schema.children).each do |element|
           next unless class_element?(element)
 
           map[[schema_key, normalize(element.id)]] = element
@@ -231,7 +231,7 @@ module Suma
     end
 
     def project_schema(graph, schema_key, schema)
-      schema.children.each do |element|
+      Array(schema.children).each do |element|
         case element
         when Expressir::Model::Declarations::Entity
           project_entity(graph, schema_key, element)
@@ -482,7 +482,7 @@ module Suma
 
     def validate_materialization(projected)
       projected.flat_map do |schema_key, schema|
-        schema.children.filter_map do |element|
+        Array(schema.children).filter_map do |element|
           next unless class_element?(element)
 
           iri = element_iri(schema_key, element.id)

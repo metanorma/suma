@@ -134,7 +134,7 @@ module Suma
 
     def declared_elements(schema)
       index = {}
-      schema.children.each do |element|
+      Array(schema.children).each do |element|
         if element.respond_to?(:id) && element.id
           index[normalize(element.id)] =
             true
