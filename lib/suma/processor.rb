@@ -13,6 +13,7 @@ module Suma
 
     def initialize(metanorma_yaml_path:, schemas_all_path:, compile: true,
                    output_directory: "_site", staged: false,
+                   staged_workers: 1, staged_batch_size: nil,
                    incremental: false, state_file: nil, jobs: 1,
                    provenance_file: nil, sign_method: nil, sign_key: nil,
                    no_valid: false)
@@ -23,6 +24,8 @@ module Suma
       # Opt-in memory-bounded staged build (metanorma/suma#94); the default
       # single-process build below is unchanged when false.
       @staged = staged
+      @staged_workers = staged_workers
+      @staged_batch_size = staged_batch_size
       @incremental = incremental
       @state_file = state_file
       @jobs = jobs
@@ -181,6 +184,9 @@ module Suma
           output_directory: output_directory,
           coverpage: collection_coverpage(collection_config),
           no_valid: @no_valid,
+          workers: @staged_workers,
+          batch_size: @staged_batch_size ||
+            StagedCollectionBuilder::DEFAULT_BATCH_SIZE,
         ).build
       else
         Metanorma::Collection.parse(COLLECTION_OUTPUT_PATH)
