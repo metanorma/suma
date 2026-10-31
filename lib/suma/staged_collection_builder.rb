@@ -192,7 +192,7 @@ module Suma
                   f.end_with?(".semantic.xml")
                 end - semantics_before
                 produced.each do |f|
-                  if (m = f.match(/\A(.*)\.([0-9a-f]+)\.semantic\.xml\z/))
+                  if (m = f.match(/\A(.*).([0-9a-f]+).semantic.xml\z/))
                     alias_name = "\#{id_slug}.\#{m[2]}.semantic.xml"
                     alias_path = File.join(store_dir, alias_name)
                     FileUtils.cp(File.join(store_dir, f), alias_path)
