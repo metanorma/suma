@@ -168,6 +168,18 @@ module Suma
             t0 = Time.now
             begin
               File.write(one_path, YAML.dump(manifest))
+              # The artefact store keys on the rendered document's own
+              # docid, while the parent reinflates by the docref
+              # identifier; members whose document docid differs from the
+              # docref (docrefs carrying metanorma's GUID marker) were
+              # therefore unrecoverable ("no stored artefact"). Alias the
+              # artefacts this render produced under the docref slug too.
+              member_id = manifest.dig("manifest", "docref", 0, "identifier")
+              id_slug = member_id.to_s
+                .gsub(/[^A-Za-z0-9._-]+/, "-").gsub(/-{2,}/, "-")
+                .gsub(/\A-|-\z/, "")
+              semantics_before = Dir.children(store_dir)
+                .select { |f| f.end_with?(".semantic.xml") }
               compile = { install_fonts: false }
               compile[:novalid] = true if no_valid == "1"
               Metanorma::Collection.parse(one_path).render(
@@ -175,6 +187,18 @@ module Suma
                 preserve_unresolved: true, artifact_store_dir: store_dir,
                 compile: compile,
               )
+              unless id_slug.empty?
+                produced = Dir.children(store_dir).select do |f|
+                  f.end_with?(".semantic.xml")
+                end - semantics_before
+                produced.each do |f|
+                  if (m = f.match(/\A(.*)\.([0-9a-f]+)\.semantic\.xml\z/))
+                    alias_name = "\#{id_slug}.\#{m[2]}.semantic.xml"
+                    alias_path = File.join(store_dir, alias_name)
+                    FileUtils.cp(File.join(store_dir, f), alias_path)
+                  end
+                end
+              end
               warn format("[staged worker %d] batch %d/%d member %d OK (%ds)",
                           Process.pid, idx + 1, count, j, Time.now - t0)
             ensure
