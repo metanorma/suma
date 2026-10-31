@@ -184,15 +184,39 @@ module Suma
                 .select { |f| f.end_with?(".semantic.xml") }
               compile = { install_fonts: false }
               compile[:novalid] = true if no_valid == "1"
-              Metanorma::Collection.parse(one_path).render(
+              collection = Metanorma::Collection.parse(one_path)
+              collection.render(
                 format: [:xml], output_folder: out,
                 preserve_unresolved: true, artifact_store_dir: store_dir,
                 compile: compile,
               )
               unless id_slug.empty?
+                # A warm artefact cache makes the render a full cache hit:
+                # no new artefact files appear, so a produced-files delta
+                # never fires. The collection's own keys are what the
+                # renderer stored under, so alias every semantic artefact
+                # keyed by them to the docref slug as well.
+                store_keys = (collection.bibdatas || {}).keys
                 produced = Dir.children(store_dir).select do |f|
                   f.end_with?(".semantic.xml")
                 end - semantics_before
+                if produced.empty?
+                  store_keys.each do |key|
+                    src_slug = key.to_s
+                      .gsub(/[^A-Za-z0-9._-]+/, "-").gsub(/-{2,}/, "-")
+                      .gsub(/\A-|-\z/, "")
+                    next if src_slug.empty? || src_slug == id_slug
+
+                    Dir[File.join(store_dir,
+                                  "\#{src_slug}.*.semantic.xml")].each do |f|
+                      alias_name = f.sub(
+                        %r{/\#{Regexp.escape(src_slug)}.},
+                        "/\#{id_slug}.",
+                      )
+                      FileUtils.cp(f, alias_name)
+                    end
+                  end
+                end
                 produced.each do |f|
                   if (m = f.match(/\A(.*).([0-9a-f]+).semantic.xml\z/))
                     alias_name = "\#{id_slug}.\#{m[2]}.semantic.xml"
