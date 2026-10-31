@@ -84,4 +84,20 @@ RSpec.describe Suma::StagedCollectionBuilder do
         .to eq("ISO-17301-1-2016-Amd.1-2017")
     end
   end
+
+  describe "child artefact alias wiring" do
+    let(:dig_path) { ["manifest", "manifest", 0, "docref", 0, "identifier"] }
+
+    it "digs the docref identifier through the single-member manifest shape" do
+      one = builder.send(:single_member_manifest,
+                         "fileref" => "a.xml", "identifier" => "ISO 1")
+      expect(one.dig(*dig_path)).to eq("ISO 1")
+    end
+
+    it "generates a child script that digs the same path" do
+      script = builder.send(:child_script)
+      expect(script)
+        .to include(%(manifest.dig("manifest", "manifest", 0, "docref", 0, "identifier")))
+    end
+  end
 end

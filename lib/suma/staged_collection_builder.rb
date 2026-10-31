@@ -174,7 +174,9 @@ module Suma
               # docref (docrefs carrying metanorma's GUID marker) were
               # therefore unrecoverable ("no stored artefact"). Alias the
               # artefacts this render produced under the docref slug too.
-              member_id = manifest.dig("manifest", "docref", 0, "identifier")
+              # Shape: single_member_manifest => {"manifest" =>
+              #   {"manifest" => [{"docref" => [dr]}]}}.
+              member_id = manifest.dig("manifest", "manifest", 0, "docref", 0, "identifier")
               id_slug = member_id.to_s
                 .gsub(/[^A-Za-z0-9._-]+/, "-").gsub(/-{2,}/, "-")
                 .gsub(/\A-|-\z/, "")
