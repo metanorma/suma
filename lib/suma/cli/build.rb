@@ -23,6 +23,12 @@ module Suma
       option :staged_batch_size, type: :numeric,
                                  desc: "Members per staged render process " \
                                        "(default: 25)"
+      option :staged_shard, type: :string,
+                            desc: "Render only this shard of the collection " \
+                                  "as INDEX/TOTAL (e.g. 2/8): stages every " \
+                                  "INDEXth member and skips reinflate, so " \
+                                  "disjoint shards can render concurrently " \
+                                  "into a shared store (requires --staged)"
       option :incremental, type: :boolean, default: false,
                            desc: "Re-render only changed schemas and their " \
                                  "transitive dependents (state file defaults " \
@@ -79,7 +85,21 @@ module Suma
       def staged_options(options)
         { staged: options[:staged],
           staged_workers: options[:staged_workers],
-          staged_batch_size: options[:staged_batch_size] }
+          staged_batch_size: options[:staged_batch_size],
+          staged_shard: parse_shard(options[:staged_shard]) }
+      end
+
+      def parse_shard(value)
+        return nil unless value
+
+        index, total = value.split("/", 2).map { |p| Integer(p, 10) }
+        unless total && index >= 0 && index < total
+          raise ArgumentError,
+                "--staged-shard expects INDEX/TOTAL with INDEX < TOTAL, " \
+                "got #{value.inspect}"
+        end
+
+        [index, total]
       end
 
       def log_error(error)
