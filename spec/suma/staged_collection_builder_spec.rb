@@ -10,12 +10,12 @@ require "yaml"
 # reinflation manifests. The end-to-end staged compile is exercised separately
 # (it requires the metanorma preserve/store/reinflate engine).
 RSpec.describe Suma::StagedCollectionBuilder do
-  def builder_for(manifest)
+  def builder_for(manifest, **opts)
     dir = Dir.mktmpdir
     path = File.join(dir, "collection-output.yaml")
     File.write(path, manifest.to_yaml)
     described_class.new(collection_config_path: path,
-                        output_directory: File.join(dir, "_site"))
+                        output_directory: File.join(dir, "_site"), **opts)
   end
 
   subject(:builder) { builder_for(manifest) }
@@ -82,6 +82,32 @@ RSpec.describe Suma::StagedCollectionBuilder do
     it "matches the metanorma ArtifactStore filesystem-safe slug" do
       expect(builder.send(:slug, "ISO 17301-1:2016/Amd.1:2017"))
         .to eq("ISO-17301-1-2016-Amd.1-2017")
+    end
+  end
+
+  describe "#shard_members" do
+    let(:members) { builder.send(:collection_members) }
+
+    def shard_ids(shard)
+      picked = builder_for(manifest, shard: shard)
+        .send(:shard_members, members)
+      picked.map { |m| m["identifier"] }
+    end
+
+    it "keeps every member when no shard is given" do
+      expect(builder.send(:shard_members, members)).to eq(members)
+    end
+
+    it "selects the members matching index % total, in order" do
+      expect(shard_ids([0, 2])).to eq(["ISO 1", "ISO 3"])
+      expect(shard_ids([1, 2])).to eq(["ISO 2"])
+    end
+
+    it "partitions the members across all shards of a total" do
+      picked = (0...3).flat_map do |i|
+        builder_for(manifest, shard: [i, 3]).send(:shard_members, members)
+      end
+      expect(picked).to eq(members)
     end
   end
 

@@ -45,10 +45,15 @@ module Suma
     # relative to its directory, so all per-member manifests are written there.
     # +workers+ > 1 runs that many renderer processes concurrently over batches
     # of +batch_size+ members; members write disjoint, identifier-keyed store
-    # entries, so children cannot race. (a data-declaring initializer)
+    # entries, so children cannot race. +shard+ is an [index, total] pair:
+    # only members whose position satisfies +index % total+ are staged and
+    # reinflation is skipped, so disjoint shards of one collection can render
+    # concurrently in separate build runs into a shared store. (a
+    # data-declaring initializer)
     def initialize(collection_config_path:, output_directory:, coverpage: nil,
                    store_dir: nil, formats: %i[xml html], no_valid: false,
-                   workers: 1, batch_size: DEFAULT_BATCH_SIZE) # rubocop:disable Metrics/ParameterLists
+                   workers: 1, batch_size: DEFAULT_BATCH_SIZE,
+                   shard: nil) # rubocop:disable Metrics/ParameterLists
       @config_path = collection_config_path
       @config_dir = File.dirname(File.expand_path(collection_config_path))
       @output_directory = output_directory
@@ -58,23 +63,46 @@ module Suma
       @no_valid = no_valid
       @workers = [workers.to_i, 1].max
       @batch_size = [batch_size.to_i, 1].max
+      @shard = shard
     end
 
     def build
       FileUtils.mkdir_p(@output_directory)
       FileUtils.mkdir_p(@store_dir)
       members = collection_members
-      Utils.log "[staged] #{members.size} members; workers: #{@workers}; " \
-                "batch size: #{@batch_size}; store: #{@store_dir}"
+      staged = shard_members(members)
+      Utils.log shard_log(staged.size, members.size)
       if @workers == 1
-        members.each_with_index { |member, i| stage_member(member, i) }
+        staged.each_with_index { |member, i| stage_member(member, i) }
       else
-        stage_parallel(members)
+        stage_parallel(staged)
       end
+      return if @shard
+
       reinflate(members)
     end
 
     private
+
+    # A shard stages the members whose position in the member order matches
+    # +index % total+; the full member list is unchanged.
+    def shard_members(members)
+      return members unless @shard
+
+      index, total = @shard
+      members.each_with_index.filter_map do |member, position|
+        member if (position % total) == index
+      end
+    end
+
+    def shard_log(staged_count, total_count)
+      line = "[staged] #{total_count} members; workers: #{@workers}; " \
+             "batch size: #{@batch_size}; store: #{@store_dir}"
+      return line unless @shard
+
+      "#{line}; shard #{@shard[0]}/#{@shard[1]}: staging #{staged_count}, " \
+        "skipping reinflate"
+    end
 
     # Batch the members and run +@workers+ renderer child processes
     # concurrently. Each batch file carries fully-rendered single-member
