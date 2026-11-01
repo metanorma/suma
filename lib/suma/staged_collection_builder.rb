@@ -109,11 +109,11 @@ module Suma
     # a warm store goes straight to reinflate, so the assembly pass costs
     # minutes instead of re-rendering the whole collection.
     def unstaged_members(members)
-      members.select do |member|
+      members.reject do |member|
         identifier = member["identifier"]
         stored = identifier && stored_semantic(identifier)
         Utils.log "[staged] stored, skipping #{identifier}" if stored
-        !stored
+        stored
       end
     end
 
