@@ -168,7 +168,7 @@ module Suma
     # Metanorma boot is paid once per child, and GC runs between members to
     # bound the heap. Any render failure exits nonzero and fails the build.
     def child_script
-      <<~RUBY
+      <<~'RUBY'
         require "yaml"
         require "fileutils"
         require "metanorma"
@@ -178,7 +178,7 @@ module Suma
         loop do
           idx = (0...count).find do |i|
             begin
-              File.open(File.join(config_dir, "._suma_batch_\#{i}.claim"),
+              File.open(File.join(config_dir, "._suma_batch_#{i}.claim"),
                         File::RDWR | File::CREAT | File::EXCL) {}
               true
             rescue Errno::EEXIST
@@ -188,11 +188,11 @@ module Suma
           break unless idx
 
           manifests = Marshal.load(File.binread(File.join(
-            config_dir, "._suma_batch_\#{idx}.bin")))
+            config_dir, "._suma_batch_#{idx}.bin")))
           manifests.each_with_index do |manifest, j|
             one_path = File.join(config_dir,
-                                 "._suma_staged_b\#{idx}_\#{j}.yml")
-            out = File.join(out_dir, "._staged_out_b\#{idx}_\#{j}")
+                                 "._suma_staged_b#{idx}_#{j}.yml")
+            out = File.join(out_dir, "._staged_out_b#{idx}_#{j}")
             t0 = Time.now
             begin
               File.write(one_path, YAML.dump(manifest))
@@ -236,10 +236,10 @@ module Suma
                     next if src_slug.empty? || src_slug == id_slug
 
                     Dir[File.join(store_dir,
-                                  "\#{src_slug}.*.semantic.xml")].each do |f|
+                                  "#{src_slug}.*.semantic.xml")].each do |f|
                       alias_name = f.sub(
-                        %r{/\#{Regexp.escape(src_slug)}.},
-                        "/\#{id_slug}.",
+                        %r{/#{Regexp.escape(src_slug)}.},
+                        "/#{id_slug}.",
                       )
                       FileUtils.cp(f, alias_name)
                     end
@@ -247,7 +247,7 @@ module Suma
                 end
                 produced.each do |f|
                   if (m = f.match(/\A(.*).([0-9a-f]+).semantic.xml\z/))
-                    alias_name = "\#{id_slug}.\#{m[2]}.semantic.xml"
+                    alias_name = "#{id_slug}.#{m[2]}.semantic.xml"
                     alias_path = File.join(store_dir, alias_name)
                     FileUtils.cp(File.join(store_dir, f), alias_path)
                   end

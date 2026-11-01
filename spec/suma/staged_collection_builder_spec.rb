@@ -125,5 +125,15 @@ RSpec.describe Suma::StagedCollectionBuilder do
       expect(script)
         .to include(%(manifest.dig("manifest", "manifest", 0, "docref", 0, "identifier")))
     end
+
+    # The child script rides to the worker in an interpolating heredoc, so
+    # a stray `\A` in the source becomes `A` in the generated file: the
+    # alias matcher then matches nothing and reinflate fails with "no
+    # stored artefact". Pin the generated regex text, not just the source.
+    it "generates a child script whose alias regexes keep their anchors" do
+      script = builder.send(:child_script)
+      expect(script).to include(%(match(/\\A(.*).([0-9a-f]+).semantic.xml\\z/)))
+      expect(script).to include(%(.gsub(/\\A-|-\\z/, "")))
+    end
   end
 end
