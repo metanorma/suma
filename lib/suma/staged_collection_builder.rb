@@ -73,7 +73,7 @@ module Suma
       staged = shard_members(members)
       Utils.log shard_log(staged.size, members.size)
       if @workers == 1
-        staged.each_with_index { |member, i| stage_member(member, i) }
+        unstaged_members(staged).each_with_index { |member, i| stage_member(member, i) }
       else
         stage_parallel(staged)
       end
@@ -104,6 +104,19 @@ module Suma
         "skipping reinflate"
     end
 
+    # Members already present in the store (their docref-slug artefact
+    # exists) are not re-rendered: an interrupted or repeated build over
+    # a warm store goes straight to reinflate, so the assembly pass costs
+    # minutes instead of re-rendering the whole collection.
+    def unstaged_members(members)
+      members.select do |member|
+        identifier = member["identifier"]
+        stored = identifier && stored_semantic(identifier)
+        Utils.log "[staged] stored, skipping #{identifier}" if stored
+        !stored
+      end
+    end
+
     # Batch the members and run +@workers+ renderer child processes
     # concurrently. Each batch file carries fully-rendered single-member
     # manifests; children claim batches through O_EXCL markers, so a slow
@@ -113,7 +126,7 @@ module Suma
     # identifier-keyed store entries, so concurrent children cannot race;
     # sectionsplit only happens at reinflate (a single sequential pass).
     def stage_parallel(members)
-      paths, count = write_batch_files(members)
+      paths, count = write_batch_files(unstaged_members(members))
       run_batch_workers(count)
     ensure
       remove_batch_files(paths, count)
