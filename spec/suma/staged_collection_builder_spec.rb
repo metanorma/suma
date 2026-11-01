@@ -121,14 +121,27 @@ RSpec.describe Suma::StagedCollectionBuilder do
       end
     end
 
+    let(:stubbed_tree) do
+      builder.send(:with_stubbed_members, builder.send(:manifest),
+                   docrefs, [0])
+    end
+
     it "preserves the tree and swaps only member entries" do
-      subs = builder.send(:with_stubbed_members, builder.send(:manifest),
-                          docrefs, [0])["manifest"]
-      expect(subs[0]["docref"].map { |d| d["fileref"] })
-        .to eq(%w[/tmp/reinf/member_0.xml /tmp/reinf/member_1.xml])
+      subs = stubbed_tree.dig("manifest", "manifest")
+      expect(subs[0]["docref"].map { |d| d["fileref"] }).to eq(
+        %w[/tmp/reinf/member_0.xml /tmp/reinf/member_1.xml],
+      )
+    end
+
+    it "swaps a single-docref hash entry" do
+      subs = stubbed_tree.dig("manifest", "manifest")
       expect(subs[1]["docref"]).to eq(
         "fileref" => "/tmp/reinf/member_2.xml", "identifier" => "ISO 3",
       )
+    end
+
+    it "absolutizes attachment filerefs" do
+      subs = stubbed_tree.dig("manifest", "manifest")
       expect(subs[2]["docref"][0]["fileref"]).to end_with("/logo.svg")
     end
   end
