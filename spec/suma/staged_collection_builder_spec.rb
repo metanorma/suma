@@ -125,20 +125,19 @@ RSpec.describe Suma::StagedCollectionBuilder do
       builder = builder_for(manifest, coverpage: "cover.html")
       rebuilt = builder.send(:with_stubbed_members,
                              builder.send(:manifest)["manifest"], docrefs, [0])
-      subs = rebuilt["manifest"]
-      expect(subs[0]["title"]).to eq("Standards")
-      verify_stubbed_tree(subs)
+      verify_stubbed_tree(rebuilt["manifest"])
     end
 
     def verify_stubbed_tree(subs)
+      expect(subs[0]["title"]).to eq("Standards")
       expect(subs[0]["docref"].map { |d| d["fileref"] })
-        .to eq(["/tmp/reinf/member_0.xml", "/tmp/reinf/member_1.xml"])
-      expect(subs[1]["docref"]).to eq(
-        { "fileref" => "/tmp/reinf/member_2.xml", "identifier" => "ISO 3" },
-      )
-      attach = subs[2]["docref"][0]
-      expect(attach["identifier"]).to eq("logo.svg")
-      expect(attach["fileref"]).to end_with("/logo.svg")
+        .to eq(%w[/tmp/reinf/member_0.xml /tmp/reinf/member_1.xml])
+      expect(subs[1]["docref"]).to eq(member_2_stub)
+      expect(subs[2]["docref"][0]["fileref"]).to end_with("/logo.svg")
+    end
+
+    def member_2_stub
+      { "fileref" => "/tmp/reinf/member_2.xml", "identifier" => "ISO 3" }
     end
   end
 
