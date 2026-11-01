@@ -3,6 +3,7 @@
 require "metanorma"
 require "yaml"
 require "fileutils"
+require "pathname"
 
 module Suma
   # Memory-bounded, resumable staged collection build (metanorma/suma#94).
@@ -214,15 +215,13 @@ module Suma
               # identifier; members whose document docid differs from the
               # docref (docrefs carrying metanorma's GUID marker) were
               # therefore unrecoverable ("no stored artefact"). Alias the
-              # artefacts this render produced under the docref slug too.
-              # Shape: single_member_manifest => {"manifest" =>
-              #   {"manifest" => [{"docref" => [dr]}]}}.
+              # artefacts keyed by the render's own bibdata keys under the
+              # docref slug too. Shape: single_member_manifest =>
+              # {"manifest" => {"manifest" => [{"docref" => [dr]}]}}.
               member_id = manifest.dig("manifest", "manifest", 0, "docref", 0, "identifier")
               id_slug = member_id.to_s
                 .gsub(/[^A-Za-z0-9._-]+/, "-").gsub(/-{2,}/, "-")
                 .gsub(/\A-|-\z/, "")
-              semantics_before = Dir.children(store_dir)
-                .select { |f| f.end_with?(".semantic.xml") }
               compile = { install_fonts: false }
               compile[:novalid] = true if no_valid == "1"
               collection = Metanorma::Collection.parse(one_path)
@@ -232,37 +231,25 @@ module Suma
                 compile: compile,
               )
               unless id_slug.empty?
-                # A warm artefact cache makes the render a full cache hit:
-                # no new artefact files appear, so a produced-files delta
-                # never fires. The collection's own keys are what the
-                # renderer stored under, so alias every semantic artefact
-                # keyed by them to the docref slug as well.
-                store_keys = (collection.bibdatas || {}).keys
-                produced = Dir.children(store_dir).select do |f|
-                  f.end_with?(".semantic.xml")
-                end - semantics_before
-                if produced.empty?
-                  store_keys.each do |key|
-                    src_slug = key.to_s
-                      .gsub(/[^A-Za-z0-9._-]+/, "-").gsub(/-{2,}/, "-")
-                      .gsub(/\A-|-\z/, "")
-                    next if src_slug.empty? || src_slug == id_slug
+                # Alias strictly from the collection's own bibdata keys:
+                # they are the docids this member's render stored under.
+                # A produced-files delta is not safe here - with
+                # concurrent workers another child's render lands in the
+                # shared store mid-flight, and a delta would alias other
+                # members' documents under this docref (suma#167).
+                (collection.bibdatas || {}).keys.each do |key|
+                  src_slug = key.to_s
+                    .gsub(/[^A-Za-z0-9._-]+/, "-").gsub(/-{2,}/, "-")
+                    .gsub(/\A-|-\z/, "")
+                  next if src_slug.empty? || src_slug == id_slug
 
-                    Dir[File.join(store_dir,
-                                  "#{src_slug}.*.semantic.xml")].each do |f|
-                      alias_name = f.sub(
-                        %r{/#{Regexp.escape(src_slug)}.},
-                        "/#{id_slug}.",
-                      )
-                      FileUtils.cp(f, alias_name)
-                    end
-                  end
-                end
-                produced.each do |f|
-                  if (m = f.match(/\A(.*).([0-9a-f]+).semantic.xml\z/))
-                    alias_name = "#{id_slug}.#{m[2]}.semantic.xml"
-                    alias_path = File.join(store_dir, alias_name)
-                    FileUtils.cp(File.join(store_dir, f), alias_path)
+                  Dir[File.join(store_dir,
+                                "#{src_slug}.*.semantic.xml")].each do |f|
+                    alias_name = f.sub(
+                      %r{/#{Regexp.escape(src_slug)}.},
+                      "/#{id_slug}.",
+                    )
+                    FileUtils.cp(f, alias_name)
                   end
                 end
               end
@@ -326,21 +313,81 @@ module Suma
     end
 
     # Assemble a manifest of the stored stubs and reinflate them into the site.
+    # The original manifest tree is preserved (nested collections,
+    # attachments, per-member sectionsplit) with each member entry swapped
+    # for its stored stub; the render resolves paths against the
+    # reinflate manifest's own directory, so every path the render reads
+    # is absolutized against the collection root (suma#168, suma#169).
     def reinflate(members)
       reinf_dir = File.join(@output_directory, "_staged_reinflate")
       FileUtils.mkdir_p(reinf_dir)
       docrefs = stored_docrefs(members, reinf_dir)
+      write_reinflate_manifest(docrefs, reinf_dir)
+      run_render(manifest_path: File.join(reinf_dir, "reinflate.yml"),
+                 opts: reinflate_render_options)
+    end
+
+    def write_reinflate_manifest(docrefs, reinf_dir)
+      rebuilt = with_stubbed_members(manifest["manifest"], docrefs, [0])
       reinf_path = File.join(reinf_dir, "reinflate.yml")
       File.write(reinf_path,
-                 base_manifest.merge("manifest" => collection_manifest(docrefs)).to_yaml)
+                 base_manifest.merge("manifest" => rebuilt).to_yaml)
       Utils.log "[staged] reinflating #{docrefs.size} stored members -> " \
                 "#{@output_directory}"
-      run_render(
-        manifest_path: reinf_path,
-        opts: { format: @formats, output_folder: @output_directory,
-                reinflate: true, coverpage: @coverpage,
-                compile: compile_flags }.compact,
-      )
+    end
+
+    def reinflate_render_options
+      {
+        format: @formats,
+        output_folder: File.expand_path(@output_directory),
+        reinflate: true,
+        coverpage: @coverpage && File.expand_path(@coverpage, @config_dir),
+        compile: compile_flags,
+      }.compact
+    end
+
+    # Deep-copy the manifest tree, replacing each member entry (same
+    # predicate and pre-order as collection_members) with its stub docref,
+    # and absolutizing non-member filerefs (attachments) against the
+    # collection root.
+    def with_stubbed_members(node, docrefs, counter)
+      case node
+      when Array
+        node.map { |child| with_stubbed_members(child, docrefs, counter) }
+      when Hash
+        with_stubbed_members_hash(node, docrefs, counter)
+      else
+        node
+      end
+    end
+
+    def with_stubbed_members_hash(node, docrefs, counter)
+      rewritten = node.dup
+      rewritten.each_key do |key|
+        rewritten[key] = rewrite_entry_value(key, rewritten[key], docrefs, counter)
+      end
+      stub_for(rewritten, docrefs, counter) || rewritten
+    end
+
+    def rewrite_entry_value(key, value, docrefs, counter)
+      if %w[file fileref].include?(key) && value &&
+          !Pathname.new(value).absolute?
+        File.expand_path(value, @config_dir)
+      else
+        with_stubbed_members(value, docrefs, counter)
+      end
+    end
+
+    def stub_for(node, docrefs, counter)
+      return unless member_entry?(node)
+
+      index = counter[0]
+      counter[0] += 1
+      docrefs[index]
+    end
+
+    def member_entry?(node)
+      (node["fileref"] || node["file"]) && !truthy?(node["attachment"])
     end
 
     def compile_flags

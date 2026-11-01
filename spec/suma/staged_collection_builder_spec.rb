@@ -111,6 +111,33 @@ RSpec.describe Suma::StagedCollectionBuilder do
     end
   end
 
+  describe "#with_stubbed_members" do
+    # Positional stub docrefs as stored_docrefs would emit them for the
+    # members of the manifest above (ISO 1, ISO 2, ISO 3).
+    let(:docrefs) do
+      [0, 1, 2].map do |i|
+        { "fileref" => "/tmp/reinf/member_#{i}.xml",
+          "identifier" => "ISO #{i + 1}" }
+      end
+    end
+
+    it "preserves the tree and swaps only member entries" do
+      builder = builder_for(manifest, coverpage: "cover.html")
+      rebuilt = builder.send(:with_stubbed_members,
+                             builder.send(:manifest)["manifest"], docrefs, [0])
+      subs = rebuilt["manifest"]
+      expect(subs[0]["title"]).to eq("Standards")
+      expect(subs[0]["docref"].map { |d| d["fileref"] })
+        .to eq(["/tmp/reinf/member_0.xml", "/tmp/reinf/member_1.xml"])
+      expect(subs[1]["docref"]).to eq(
+        { "fileref" => "/tmp/reinf/member_2.xml", "identifier" => "ISO 3" },
+      )
+      attach = subs[2]["docref"][0]
+      expect(attach["identifier"]).to eq("logo.svg")
+      expect(attach["fileref"]).to end_with("/logo.svg")
+    end
+  end
+
   describe "child artefact alias wiring" do
     let(:dig_path) { ["manifest", "manifest", 0, "docref", 0, "identifier"] }
 
@@ -130,10 +157,19 @@ RSpec.describe Suma::StagedCollectionBuilder do
     # a stray `\A` in the source becomes `A` in the generated file: the
     # alias matcher then matches nothing and reinflate fails with "no
     # stored artefact". Pin the generated regex text, not just the source.
-    it "generates a child script whose alias regexes keep their anchors" do
+    it "generates a child script whose slug trim keeps its anchors" do
       script = builder.send(:child_script)
-      expect(script).to include(%(match(/\\A(.*).([0-9a-f]+).semantic.xml\\z/)))
       expect(script).to include(%(.gsub(/\\A-|-\\z/, "")))
+    end
+
+    # The alias source is the collection's own bibdata keys, never a
+    # produced-files delta: with concurrent workers another child's
+    # render lands in the shared store mid-flight, and a delta would
+    # alias other members' documents under this docref (suma#167).
+    it "generates a child script that aliases from the render's bibdatas keys" do
+      script = builder.send(:child_script)
+      expect(script).to include("(collection.bibdatas || {}).keys")
+      expect(script).not_to include("semantics_before")
     end
   end
 end
