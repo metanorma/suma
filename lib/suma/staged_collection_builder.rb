@@ -79,7 +79,7 @@ module Suma
       stage_members(staged)
       return if @shard || @isolate
 
-      reinflate(reinflate_selection(members))
+      reinflate(reinflate_selection(members), members)
     end
 
     private
@@ -367,13 +367,18 @@ module Suma
     # for its stored stub; the render resolves paths against the
     # reinflate manifest's own directory, so every path the render reads
     # is absolutized against the collection root (suma#168, suma#169).
-    def reinflate(members)
+    def reinflate(render_members, all_members = render_members)
       reinf_dir = File.join(@output_directory, "_staged_reinflate")
       FileUtils.mkdir_p(reinf_dir)
-      docrefs = stored_docrefs(members, reinf_dir)
+      # Stub every member: the render passes read each member's stored
+      # file for the anchors and cross-references, whatever this run is
+      # going to render. A reinflate shard additionally restricts the
+      # rendered members; sibling runs over the same store render the
+      # rest.
+      docrefs = stored_docrefs(all_members, reinf_dir)
       write_reinflate_manifest(docrefs, reinf_dir)
       run_render(manifest_path: File.join(reinf_dir, "reinflate.yml"),
-                 opts: reinflate_render_options)
+                 opts: reinflate_render_options(render_members))
     end
 
     def write_reinflate_manifest(docrefs, reinf_dir)
@@ -385,14 +390,18 @@ module Suma
                 "#{@output_directory}"
     end
 
-    def reinflate_render_options
-      {
+    def reinflate_render_options(render_members = nil)
+      opts = {
         format: @formats,
         output_folder: File.expand_path(@output_directory),
         reinflate: true,
         coverpage: @coverpage && File.expand_path(@coverpage, @config_dir),
         compile: compile_flags,
-      }.compact
+      }
+      if @reinflate_shard && render_members
+        opts[:only_members] = render_members.filter_map { |m| m["identifier"] }
+      end
+      opts.compact
     end
 
     # Deep-copy the manifest tree, replacing each member entry (same

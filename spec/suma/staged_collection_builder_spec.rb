@@ -160,6 +160,23 @@ RSpec.describe Suma::StagedCollectionBuilder do
     end
   end
 
+  describe "#reinflate_render_options with a reinflate shard" do
+    let(:members) { builder.send(:collection_members) }
+
+    it "restricts the rendered members to the slice's identifiers" do
+      slice = builder_for(manifest, reinflate_shard: [1, 2])
+        .send(:reinflate_selection, members)
+      opts = builder_for(manifest, reinflate_shard: [1, 2])
+        .send(:reinflate_render_options, slice)
+      expect(opts[:only_members]).to eq(["ISO 2"])
+    end
+
+    it "sets no render restriction without a reinflate shard" do
+      expect(builder.send(:reinflate_render_options, members))
+        .not_to have_key(:only_members)
+    end
+  end
+
   describe "#with_stubbed_members" do
     # Positional stub docrefs as stored_docrefs would emit them for the
     # members of the manifest above (ISO 1, ISO 2, ISO 3).
