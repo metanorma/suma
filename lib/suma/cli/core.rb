@@ -37,6 +37,10 @@ module Suma
       option :staged_shard, type: :string,
                             desc: "Render only this shard as INDEX/TOTAL" \
                                   "(requires --staged)"
+      option :staged_shard_isolate, type: :string,
+                                    desc: "Stage only the member whose " \
+                                          "fileref contains this slug " \
+                                          "(requires --staged)"
       option :incremental, type: :boolean, default: false,
                            desc: "Re-render only changed schemas and dependents"
       option :state_file, type: :string,
