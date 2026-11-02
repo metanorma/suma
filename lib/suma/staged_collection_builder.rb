@@ -55,7 +55,7 @@ module Suma
     def initialize(collection_config_path:, output_directory:, coverpage: nil,
                    store_dir: nil, formats: %i[xml html], no_valid: false,
                    workers: 1, batch_size: DEFAULT_BATCH_SIZE,
-                   shard: nil, isolate: nil) # rubocop:disable Metrics/ParameterLists
+                   shard: nil, isolate: nil, reinflate_shard: nil) # rubocop:disable Metrics/ParameterLists
       @config_path = collection_config_path
       @config_dir = File.dirname(File.expand_path(collection_config_path))
       @output_directory = output_directory
@@ -67,6 +67,7 @@ module Suma
       @batch_size = [batch_size.to_i, 1].max
       @shard = shard
       @isolate = isolate
+      @reinflate_shard = reinflate_shard
     end
 
     def build
@@ -75,14 +76,10 @@ module Suma
       members = collection_members
       staged = staged_selection(members)
       Utils.log shard_log(staged.size, members.size)
-      if @workers == 1
-        unstaged_members(staged).each_with_index { |member, i| stage_member(member, i) }
-      else
-        stage_parallel(staged)
-      end
+      stage_members(staged)
       return if @shard || @isolate
 
-      reinflate(members)
+      reinflate(reinflate_selection(members))
     end
 
     private
@@ -91,6 +88,30 @@ module Suma
     # modulo shard when both are given.
     def staged_selection(members)
       @isolate ? isolate_members(members) : shard_members(members)
+    end
+
+    # Render the staged members, serially or across the worker pool.
+    def stage_members(staged)
+      if @workers == 1
+        unstaged_members(staged).each_with_index { |member, i| stage_member(member, i) }
+      else
+        stage_parallel(staged)
+      end
+    end
+
+    # The reinflated slice: all members unless a reinflate shard is given,
+    # in which case only the members matching +index % total+ render into
+    # the output directory. Disjoint reinflate slices of one collection can
+    # run as parallel build jobs over the same store: each renders its own
+    # members' sections, cross-references resolve through the restored
+    # anchors of the whole store, and the written files are disjoint.
+    def reinflate_selection(members)
+      return members unless @reinflate_shard
+
+      index, total = @reinflate_shard
+      members.each_with_index.filter_map do |member, position|
+        member if (position % total) == index
+      end
     end
 
     # A shard stages the members whose position in the member order matches
