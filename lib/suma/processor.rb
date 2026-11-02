@@ -14,7 +14,7 @@ module Suma
     def initialize(metanorma_yaml_path:, schemas_all_path:, compile: true,
                    output_directory: "_site", staged: false,
                    staged_workers: 1, staged_batch_size: nil,
-                   staged_shard: nil,
+                   staged_shard: nil, staged_shard_isolate: nil,
                    incremental: false, state_file: nil, jobs: 1,
                    provenance_file: nil, sign_method: nil, sign_key: nil,
                    no_valid: false)
@@ -28,6 +28,7 @@ module Suma
       @staged_workers = staged_workers
       @staged_batch_size = staged_batch_size
       @staged_shard = staged_shard
+      @staged_shard_isolate = staged_shard_isolate
       @incremental = incremental
       @state_file = state_file
       @jobs = jobs
@@ -190,6 +191,7 @@ module Suma
           batch_size: @staged_batch_size ||
             StagedCollectionBuilder::DEFAULT_BATCH_SIZE,
           shard: @staged_shard,
+          isolate: @staged_shard_isolate,
         ).build
       else
         Metanorma::Collection.parse(COLLECTION_OUTPUT_PATH)

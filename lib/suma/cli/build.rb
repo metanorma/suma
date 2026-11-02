@@ -29,6 +29,13 @@ module Suma
                                   "INDEXth member and skips reinflate, so " \
                                   "disjoint shards can render concurrently " \
                                   "into a shared store (requires --staged)"
+      option :staged_shard_isolate, type: :string,
+                                    desc: "Stage only the single member " \
+                                          "whose fileref contains this " \
+                                          "slug (e.g. iso-10303-104) and " \
+                                          "skip reinflate: gives a " \
+                                          "mega-member a build run of its " \
+                                          "own (requires --staged)"
       option :incremental, type: :boolean, default: false,
                            desc: "Re-render only changed schemas and their " \
                                  "transitive dependents (state file defaults " \
@@ -86,7 +93,8 @@ module Suma
         { staged: options[:staged],
           staged_workers: options[:staged_workers],
           staged_batch_size: options[:staged_batch_size],
-          staged_shard: parse_shard(options[:staged_shard]) }
+          staged_shard: parse_shard(options[:staged_shard]),
+          staged_shard_isolate: options[:staged_shard_isolate] }
       end
 
       def parse_shard(value)

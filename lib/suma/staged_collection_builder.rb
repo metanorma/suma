@@ -49,12 +49,13 @@ module Suma
     # entries, so children cannot race. +shard+ is an [index, total] pair:
     # only members whose position satisfies +index % total+ are staged and
     # reinflation is skipped, so disjoint shards of one collection can render
-    # concurrently in separate build runs into a shared store. (a
-    # data-declaring initializer)
+    # concurrently in separate build runs into a shared store. +isolate+ is
+    # a fileref slug with the same shard semantics for a single member.
+    # (a data-declaring initializer)
     def initialize(collection_config_path:, output_directory:, coverpage: nil,
                    store_dir: nil, formats: %i[xml html], no_valid: false,
                    workers: 1, batch_size: DEFAULT_BATCH_SIZE,
-                   shard: nil) # rubocop:disable Metrics/ParameterLists
+                   shard: nil, isolate: nil) # rubocop:disable Metrics/ParameterLists
       @config_path = collection_config_path
       @config_dir = File.dirname(File.expand_path(collection_config_path))
       @output_directory = output_directory
@@ -65,25 +66,32 @@ module Suma
       @workers = [workers.to_i, 1].max
       @batch_size = [batch_size.to_i, 1].max
       @shard = shard
+      @isolate = isolate
     end
 
     def build
       FileUtils.mkdir_p(@output_directory)
       FileUtils.mkdir_p(@store_dir)
       members = collection_members
-      staged = shard_members(members)
+      staged = staged_selection(members)
       Utils.log shard_log(staged.size, members.size)
       if @workers == 1
         unstaged_members(staged).each_with_index { |member, i| stage_member(member, i) }
       else
         stage_parallel(staged)
       end
-      return if @shard
+      return if @shard || @isolate
 
       reinflate(members)
     end
 
     private
+
+    # The staged slice of the collection: an isolate selection wins over a
+    # modulo shard when both are given.
+    def staged_selection(members)
+      @isolate ? isolate_members(members) : shard_members(members)
+    end
 
     # A shard stages the members whose position in the member order matches
     # +index % total+; the full member list is unchanged.
@@ -96,9 +104,29 @@ module Suma
       end
     end
 
+    # Isolation stages the single member whose fileref path contains the
+    # +isolate+ slug (e.g. a mega-member that needs a whole runner to
+    # itself, away from sibling workers), and skips reinflation like a
+    # shard. Empty selection means the slug matched nothing, which is a
+    # caller error worth failing on rather than silently rendering
+    # nothing.
+    def isolate_members(members)
+      staged = members.select do |member|
+        File.basename(member["fileref"]).include?(@isolate)
+      end
+      return staged unless staged.empty?
+
+      raise ArgumentError,
+            "--staged-shard-isolate matched no member for #{@isolate.inspect}"
+    end
+
     def shard_log(staged_count, total_count)
       line = "[staged] #{total_count} members; workers: #{@workers}; " \
              "batch size: #{@batch_size}; store: #{@store_dir}"
+      if @isolate
+        return "#{line}; isolate #{@isolate.inspect}: staging " \
+               "#{staged_count}, skipping reinflate"
+      end
       return line unless @shard
 
       "#{line}; shard #{@shard[0]}/#{@shard[1]}: staging #{staged_count}, " \

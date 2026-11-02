@@ -111,6 +111,29 @@ RSpec.describe Suma::StagedCollectionBuilder do
     end
   end
 
+  describe "#isolate_members" do
+    let(:members) { builder.send(:collection_members) }
+
+    it "stages exactly the member whose fileref basename contains the slug" do
+      picked = builder_for(manifest, isolate: "b")
+        .send(:isolate_members, members)
+      expect(picked.map { |m| m["identifier"] }).to eq(["ISO 2"])
+    end
+
+    it "raises on a slug that matches no member" do
+      expect do
+        builder_for(manifest, isolate: "nope").send(:isolate_members, members)
+      end.to raise_error(ArgumentError, /matched no member/)
+    end
+  end
+
+  describe "#shard_log with isolate" do
+    it "reports the isolate selection and the reinflate skip" do
+      log = builder_for(manifest, isolate: "b").send(:shard_log, 1, 3)
+      expect(log).to include('isolate "b": staging 1, skipping reinflate')
+    end
+  end
+
   describe "#with_stubbed_members" do
     # Positional stub docrefs as stored_docrefs would emit them for the
     # members of the manifest above (ISO 1, ISO 2, ISO 3).
