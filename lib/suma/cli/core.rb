@@ -41,6 +41,9 @@ module Suma
                                     desc: "Stage only the member whose " \
                                           "fileref contains this slug " \
                                           "(requires --staged)"
+      option :staged_reinflate_shard, type: :string,
+                                      desc: "Reinflate only this shard as " \
+                                            "INDEX/TOTAL (requires --staged)"
       option :incremental, type: :boolean, default: false,
                            desc: "Re-render only changed schemas and dependents"
       option :state_file, type: :string,

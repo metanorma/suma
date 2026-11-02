@@ -36,6 +36,16 @@ module Suma
                                           "skip reinflate: gives a " \
                                           "mega-member a build run of its " \
                                           "own (requires --staged)"
+      option :staged_reinflate_shard, type: :string,
+                                      desc: "Reinflate only this shard of " \
+                                            "the collection as INDEX/TOTAL " \
+                                            "(e.g. 2/4): stage everything " \
+                                            "(warm store = skips), render " \
+                                            "the slice's members into the " \
+                                            "site, so parallel reinflate " \
+                                            "jobs over one store write " \
+                                            "disjoint sections (requires " \
+                                            "--staged)"
       option :incremental, type: :boolean, default: false,
                            desc: "Re-render only changed schemas and their " \
                                  "transitive dependents (state file defaults " \
@@ -94,7 +104,8 @@ module Suma
           staged_workers: options[:staged_workers],
           staged_batch_size: options[:staged_batch_size],
           staged_shard: parse_shard(options[:staged_shard]),
-          staged_shard_isolate: options[:staged_shard_isolate] }
+          staged_shard_isolate: options[:staged_shard_isolate],
+          staged_reinflate_shard: parse_shard(options[:staged_reinflate_shard]) }
       end
 
       def parse_shard(value)

@@ -134,6 +134,32 @@ RSpec.describe Suma::StagedCollectionBuilder do
     end
   end
 
+  describe "#reinflate_selection" do
+    let(:members) { builder.send(:collection_members) }
+
+    def reinflate_ids(shard)
+      builder_for(manifest, reinflate_shard: shard)
+        .send(:reinflate_selection, members).map { |m| m["identifier"] }
+    end
+
+    it "keeps every member when no reinflate shard is given" do
+      expect(builder.send(:reinflate_selection, members)).to eq(members)
+    end
+
+    it "selects the members matching index % total, in order" do
+      expect(reinflate_ids([0, 2])).to eq(["ISO 1", "ISO 3"])
+      expect(reinflate_ids([1, 2])).to eq(["ISO 2"])
+    end
+
+    it "partitions the members across all reinflate shards of a total" do
+      picked = (0...3).flat_map do |i|
+        builder_for(manifest, reinflate_shard: [i, 3])
+          .send(:reinflate_selection, members)
+      end
+      expect(picked).to eq(members)
+    end
+  end
+
   describe "#with_stubbed_members" do
     # Positional stub docrefs as stored_docrefs would emit them for the
     # members of the manifest above (ISO 1, ISO 2, ISO 3).
