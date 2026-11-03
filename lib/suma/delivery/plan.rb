@@ -34,6 +34,78 @@ module Suma
         plan
       end
 
+      class << self
+        # Identity of one part as its collection.yml bibdata declares it:
+        # the docid string, the docid type (the prefix for per-doc
+        # directory names when the id carries none), and the copyright
+        # year (:copyright-year: in document.adoc wins, falling back to
+        # bibdata.copyright.from).
+        def identity(part_dir)
+          coll = YAML.safe_load_file(File.join(part_dir.to_s, "collection.yml"),
+                                     aliases: true)
+          bibdata = coll["bibdata"] || {}
+          { "doc_id" => fetch_doc_id(bibdata, part_dir),
+            "docid_type" => docid_node(bibdata)["type"].to_s,
+            "year" => derive_year(part_dir, bibdata) }
+        end
+
+        def fetch_doc_id(bibdata, part_dir)
+          id = docid_node(bibdata)["id"]
+          id || Pathname.new(part_dir).basename.to_s.delete_prefix("iso-")
+        end
+
+        def derive_year(part_dir, bibdata)
+          adoc = File.join(part_dir.to_s, "document.adoc")
+          return copyright_from_bibdata(bibdata) unless File.exist?(adoc)
+
+          File.foreach(adoc) do |line|
+            if (m = line.match(/\A:copyright-year:\s*(\d+)/))
+              return m[1]
+            end
+          end
+          copyright_from_bibdata(bibdata)
+        end
+
+        def copyright_from_bibdata(bibdata)
+          from = bibdata.dig("copyright", "from")
+          from ? from.to_s : "0000"
+        end
+
+        def docid_node(bibdata)
+          node = bibdata["docid"] || {}
+          node = node.first if node.is_a?(Array)
+          node.is_a?(Hash) ? node : {}
+        end
+
+        # collection.yml filerefs point at plain_schemas/ (build-time
+        # output); the source lives at schemas/ under the same suffix.
+        def resolve_exp_source(fileref, part_dir, repo_root)
+          raw = (Pathname.new(part_dir) + fileref).expand_path
+          return raw if raw.exist? && under_repo?(raw, repo_root)
+
+          candidate = Pathname.new(raw.to_s.sub("/plain_schemas/", "/schemas/"))
+          candidate.exist? ? candidate : nil
+        end
+
+        def under_repo?(path, repo_root)
+          base = Pathname.new(repo_root).expand_path
+          path.expand_path.to_s.start_with?("#{base}/")
+        end
+
+        def walk_docrefs(node, acc = [])
+          return acc unless node.is_a?(Hash)
+
+          docref = node["docref"]
+          [docref].compact.flatten.each do |entry|
+            next unless entry.is_a?(Hash)
+
+            acc << entry
+            walk_docrefs(entry, acc)
+          end
+          acc
+        end
+      end
+
       private
 
       def collection_path
@@ -77,8 +149,8 @@ module Suma
         coll = YAML.safe_load_file(File.join(part_dir, "collection.yml"),
                                    aliases: true)
         bibdata = coll["bibdata"] || {}
-        doc_id = fetch_doc_id(bibdata, part_dir)
-        year = derive_year(part_dir, bibdata)
+        doc_id = self.class.fetch_doc_id(bibdata, part_dir)
+        year = self.class.derive_year(part_dir, bibdata)
         exp_files = exp_sources(part_dir, coll)
         inputs = inventory(part_dir) + exp_files
 
@@ -106,27 +178,11 @@ module Suma
       end
 
       def fetch_doc_id(bibdata, part_dir)
-        node = bibdata["docid"] || {}
-        node = node.first if node.is_a?(Array)
-        id = node && node["id"]
-        id || part_dir.basename.to_s.delete_prefix("iso-")
+        self.class.fetch_doc_id(bibdata, Pathname.new(part_dir))
       end
 
       def derive_year(part_dir, bibdata)
-        adoc = File.join(part_dir, "document.adoc")
-        return copyright_from_bibdata(bibdata) unless File.exist?(adoc)
-
-        File.foreach(adoc) do |line|
-          if (m = line.match(/\A:copyright-year:\s*(\d+)/))
-            return m[1]
-          end
-        end
-        copyright_from_bibdata(bibdata)
-      end
-
-      def copyright_from_bibdata(bibdata)
-        from = bibdata.dig("copyright", "from")
-        from ? from.to_s : "0000"
+        self.class.derive_year(part_dir, bibdata)
       end
 
       def inventory(part_dir)
@@ -148,36 +204,13 @@ module Suma
       end
 
       def exp_sources(part_dir, coll)
-        entries = walk_docrefs(coll["manifest"] || {})
+        entries = self.class.walk_docrefs(coll["manifest"] || {})
         entries.filter_map do |entry|
           ref = entry["fileref"]
           next unless ref.is_a?(String) && ref.end_with?(".exp")
 
           resolve_exp_source(ref, part_dir)
         end
-      end
-
-      def walk_docrefs(node, acc = [])
-        return acc unless node.is_a?(Hash)
-
-        docref = node["docref"]
-        [docref].compact.flatten.each do |entry|
-          next unless entry.is_a?(Hash)
-
-          acc << entry
-          walk_docrefs(entry, acc)
-        end
-        acc
-      end
-
-      # collection.yml filerefs point at plain_schemas/ (build-time
-      # output); the source lives at schemas/ under the same suffix.
-      def resolve_exp_source(fileref, part_dir)
-        raw = (part_dir + fileref).expand_path
-        return raw if raw.exist? && under_repo?(raw)
-
-        candidate = Pathname.new(raw.to_s.sub("/plain_schemas/", "/schemas/"))
-        candidate.exist? ? candidate : nil
       end
 
       def sha256_files(paths)
@@ -199,11 +232,15 @@ module Suma
 
       def rel_or_abs(path)
         path = Pathname.new(path)
-        under_repo?(path) ? path.relative_path_from(repo_root).to_s : path.to_s
+        if self.class.under_repo?(path, repo_root)
+          path.relative_path_from(repo_root).to_s
+        else
+          path.to_s
+        end
       end
 
-      def under_repo?(path)
-        path.expand_path.to_s.start_with?("#{repo_root.expand_path}/")
+      def resolve_exp_source(fileref, part_dir)
+        self.class.resolve_exp_source(fileref, part_dir, repo_root)
       end
 
       def build_commit
