@@ -12,7 +12,7 @@ module Suma
     autoload :ExtractTerms,     "suma/cli/extract_terms"
     autoload :GenerateRegister, "suma/cli/generate_register"
     autoload :GenerateSchemas,  "suma/cli/generate_schemas"
-    autoload :Srl,              "suma/cli/srl"
+    autoload :Delivery, "suma/cli/delivery"
     autoload :IngestTranslations, "suma/cli/ingest_translations"
     autoload :PackageGcr,       "suma/cli/package_gcr"
     autoload :Reformat,         "suma/cli/reformat"

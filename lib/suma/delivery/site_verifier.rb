@@ -5,7 +5,7 @@ require "pathname"
 require "leptris"
 
 module Suma
-  module Srl
+  module Delivery
     # Site-wide link verification (port of site_manifest.py verify_links):
     # every cross-file href in the stitched site must resolve to a file,
     # and every fragment must resolve to an anchor in its target file.

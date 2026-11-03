@@ -6,7 +6,7 @@ require "tmpdir"
 # The frame-navigation delivery postprocess contract, pinned against
 # suma2srl.py: index surgery, frame onclick wiring, target="info", and
 # the section-page sidebar suppression.
-RSpec.describe Suma::Srl::FrameNav do
+RSpec.describe Suma::Delivery::FrameNav do
   def write(path, content)
     path.parent.mkpath
     path.write(content)

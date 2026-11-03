@@ -66,6 +66,11 @@ module Suma
       option :no_valid, type: :boolean, default: false,
                         desc: "Skip Metanorma document validation " \
                               "(equivalent of metanorma --no-valid)"
+      option :unresolved_eref_markers, type: :boolean, default: false,
+                                       desc: "Emit <span class=\"unresolved-eref\"> " \
+                                             "markers for cross-document erefs " \
+                                             "(isodoc 3.7.9+; consumed by the " \
+                                             "SRL stitcher)"
 
       def build(metanorma_site_manifest)
         unless File.exist?(metanorma_site_manifest)
@@ -95,6 +100,7 @@ module Suma
           sign_method: options[:sign],
           sign_key: options[:sign_key],
           no_valid: options[:no_valid],
+          unresolved_eref_markers: options[:unresolved_eref_markers],
           **staged_options(options),
         ).run
       end

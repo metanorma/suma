@@ -77,6 +77,7 @@ Layout/LineLength:
     - 'spec/suma/register_manifest_generator_spec.rb'
     - 'spec/suma/schema_category_spec.rb'
     - 'spec/suma/schema_comparer_integration_spec.rb'
+    - 'spec/suma/delivery/plan_spec.rb'
     - 'spec/suma/schema_discovery_spec.rb'
     - 'spec/suma/schema_exporter_spec.rb'
     - 'spec/suma/schema_index_spec.rb'
@@ -87,9 +88,10 @@ Layout/LineLength:
     - 'spec/suma/term_extractor_spec.rb'
     - 'spec/suma/urn_spec.rb'
     - 'suma.gemspec'
-    - 'spec/suma/srl/frame_nav_spec.rb'
-    - 'spec/suma/srl/site_verifier_spec.rb'
-    - 'spec/suma/srl/stitcher_spec.rb'
+    - 'spec/suma/delivery/frame_nav_spec.rb'
+    - 'spec/suma/delivery/site_verifier_spec.rb'
+    - 'spec/suma/delivery/stitcher_spec.rb'
+    - 'spec/suma/delivery/plan_spec.rb'
 
 # Offense count: 2
 # Configuration parameters: IgnoreLiteralBranches, IgnoreConstantBranches, IgnoreDuplicateElseBranch.
@@ -147,7 +149,7 @@ Metrics/AbcSize:
     - 'lib/suma/worker_pool.rb'
     - 'spec/suma/cli/build_integration_spec.rb'
     - 'spec/suma/reproducibility_spec.rb'
-    - spec/suma/srl/stitcher_spec.rb
+    - spec/suma/delivery/stitcher_spec.rb
 
 # Offense count: 2
 # Configuration parameters: CountComments, Max, CountAsOne, AllowedMethods, AllowedPatterns, inherit_mode.
@@ -259,6 +261,7 @@ Performance/CollectionLiteralInLoop:
     - 'spec/suma/cli/export_spec.rb'
     - 'spec/suma/cli_spec.rb'
     - 'spec/suma/schema_comparer_integration_spec.rb'
+    - 'spec/suma/delivery/plan_spec.rb'
 
 # Offense count: 2
 # Configuration parameters: Prefixes, AllowedPatterns.
@@ -312,6 +315,7 @@ RSpec/ExampleLength:
     - 'spec/suma/schema_category_spec.rb'
     - 'spec/suma/schema_collection_rebuild_targets_spec.rb'
     - 'spec/suma/schema_comparer_integration_spec.rb'
+    - 'spec/suma/delivery/plan_spec.rb'
     - 'spec/suma/schema_comparer_spec.rb'
     - 'spec/suma/schema_compiler_spec.rb'
     - 'spec/suma/schema_discovery_spec.rb'
@@ -330,9 +334,10 @@ RSpec/ExampleLength:
     - 'spec/suma/urn_resolver_spec.rb'
     - 'spec/suma/urn_spec.rb'
     - 'spec/suma/worker_pool_spec.rb'
-    - 'spec/suma/srl/frame_nav_spec.rb'
-    - 'spec/suma/srl/site_verifier_spec.rb'
-    - 'spec/suma/srl/stitcher_spec.rb'
+    - 'spec/suma/delivery/frame_nav_spec.rb'
+    - 'spec/suma/delivery/site_verifier_spec.rb'
+    - 'spec/suma/delivery/stitcher_spec.rb'
+    - 'spec/suma/delivery/plan_spec.rb'
 
 # Offense count: 4
 # Configuration parameters: Max, AllowedIdentifiers, AllowedPatterns.
@@ -340,18 +345,21 @@ RSpec/IndexedLet:
   Exclude:
     - 'spec/suma/cli/export_spec.rb'
     - 'spec/suma/schema_comparer_integration_spec.rb'
+    - 'spec/suma/delivery/plan_spec.rb'
 
 # Offense count: 22
 # Configuration parameters: AssignmentOnly.
 RSpec/InstanceVariable:
   Exclude:
     - 'spec/suma/schema_comparer_integration_spec.rb'
+    - 'spec/suma/delivery/plan_spec.rb'
 
 # Offense count: 1
 # This cop supports safe autocorrection (--autocorrect).
 RSpec/IteratedExpectation:
   Exclude:
     - 'spec/suma/schema_comparer_integration_spec.rb'
+    - 'spec/suma/delivery/plan_spec.rb'
 
 # Offense count: 1
 # Configuration parameters: .
@@ -401,6 +409,7 @@ RSpec/MultipleExpectations:
     - 'spec/suma/schema_cache_spec.rb'
     - 'spec/suma/schema_category_spec.rb'
     - 'spec/suma/schema_comparer_integration_spec.rb'
+    - 'spec/suma/delivery/plan_spec.rb'
     - 'spec/suma/schema_compiler_spec.rb'
     - 'spec/suma/schema_discovery_spec.rb'
     - 'spec/suma/schema_exporter_spec.rb'
@@ -417,9 +426,10 @@ RSpec/MultipleExpectations:
     - 'spec/suma/term_extractor_spec.rb'
     - 'spec/suma/urn_resolver_spec.rb'
     - 'spec/suma/worker_pool_spec.rb'
-    - 'spec/suma/srl/frame_nav_spec.rb'
-    - 'spec/suma/srl/site_verifier_spec.rb'
-    - 'spec/suma/srl/stitcher_spec.rb'
+    - 'spec/suma/delivery/frame_nav_spec.rb'
+    - 'spec/suma/delivery/site_verifier_spec.rb'
+    - 'spec/suma/delivery/stitcher_spec.rb'
+    - 'spec/suma/delivery/plan_spec.rb'
 
 # Offense count: 3
 # Configuration parameters: Max, AllowedGroups.
@@ -445,6 +455,7 @@ RSpec/SpecFilePathFormat:
 RSpec/StubbedMock:
   Exclude:
     - 'spec/suma/schema_comparer_integration_spec.rb'
+    - 'spec/suma/delivery/plan_spec.rb'
 
 # Offense count: 2
 # Configuration parameters: Max.
