@@ -75,6 +75,27 @@ module Suma
                   "from #{result['source_collection']}"
       end
 
+      desc "pack PART", "Capture a part's built _site/ into a " \
+                        "stitcher-ready bundle: normalize the per-doc " \
+                        "layout, scan anchors and unresolved-eref spans, " \
+                        "copy the owned schema attachments, and write " \
+                        "<srl-build-base>/parts/<part>/bundle.json"
+      option :srl_build_base, type: :string,
+                              desc: "SRL build base holding plan.json and " \
+                                    "wt/<part>/_site (default: " \
+                                    "$SRL_BUILD_BASE or ~/work/srl-build)"
+      option :repo_root, type: :string, default: ".",
+                         desc: "Repository root holding the part's " \
+                               "collection.yml"
+      option :skip_layout, type: :boolean, default: false,
+                           desc: "Skip layout normalization (assume " \
+                                 "already done)"
+
+      def pack(part)
+        result = Suma::Delivery::Pack.new(**pack_options(part)).pack
+        Utils.log "Packed #{part}: #{result.iso_name} into #{result.bundle_dir}"
+      end
+
       desc "frame-nav SITE_DIR", "Post-process a stitched site for " \
                                  "frame navigation: strip the index chrome, " \
                                  "build the top-level index, wire onclick " \
@@ -122,6 +143,16 @@ module Suma
           repo_root: options[:repo_root],
           collection: options[:collection],
           out: options[:out],
+        }
+      end
+
+      def pack_options(part)
+        {
+          part: part,
+          srl_build_base: options[:srl_build_base] || ENV["SRL_BUILD_BASE"] ||
+            File.expand_path("~/work/srl-build"),
+          repo_root: options[:repo_root],
+          skip_layout: options[:skip_layout],
         }
       end
     end

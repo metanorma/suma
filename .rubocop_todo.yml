@@ -92,6 +92,7 @@ Layout/LineLength:
     - 'spec/suma/delivery/site_verifier_spec.rb'
     - 'spec/suma/delivery/stitcher_spec.rb'
     - 'spec/suma/delivery/plan_spec.rb'
+    - 'spec/suma/delivery/pack_spec.rb'
 
 # Offense count: 2
 # Configuration parameters: IgnoreLiteralBranches, IgnoreConstantBranches, IgnoreDuplicateElseBranch.
@@ -150,6 +151,7 @@ Metrics/AbcSize:
     - 'spec/suma/cli/build_integration_spec.rb'
     - 'spec/suma/reproducibility_spec.rb'
     - spec/suma/delivery/stitcher_spec.rb
+    - spec/suma/delivery/pack_spec.rb
 
 # Offense count: 2
 # Configuration parameters: CountComments, Max, CountAsOne, AllowedMethods, AllowedPatterns, inherit_mode.
@@ -338,6 +340,7 @@ RSpec/ExampleLength:
     - 'spec/suma/delivery/site_verifier_spec.rb'
     - 'spec/suma/delivery/stitcher_spec.rb'
     - 'spec/suma/delivery/plan_spec.rb'
+    - 'spec/suma/delivery/pack_spec.rb'
 
 # Offense count: 4
 # Configuration parameters: Max, AllowedIdentifiers, AllowedPatterns.
@@ -353,6 +356,7 @@ RSpec/InstanceVariable:
   Exclude:
     - 'spec/suma/schema_comparer_integration_spec.rb'
     - 'spec/suma/delivery/plan_spec.rb'
+    - 'spec/suma/delivery/pack_spec.rb'
 
 # Offense count: 1
 # This cop supports safe autocorrection (--autocorrect).
@@ -430,6 +434,7 @@ RSpec/MultipleExpectations:
     - 'spec/suma/delivery/site_verifier_spec.rb'
     - 'spec/suma/delivery/stitcher_spec.rb'
     - 'spec/suma/delivery/plan_spec.rb'
+    - 'spec/suma/delivery/pack_spec.rb'
 
 # Offense count: 3
 # Configuration parameters: Max, AllowedGroups.

@@ -5,6 +5,7 @@ module Suma
   # per-part sites and resolve their unresolved cross-document references.
   module Delivery
     autoload :FrameNav, "suma/delivery/frame_nav"
+    autoload :Pack, "suma/delivery/pack"
     autoload :Plan, "suma/delivery/plan"
     autoload :SiteVerifier, "suma/delivery/site_verifier"
     autoload :Stitcher, "suma/delivery/stitcher"
