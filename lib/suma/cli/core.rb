@@ -183,6 +183,9 @@ module Suma
       desc "validate SUBCOMMAND ...ARGS", "Validate express documents"
       subcommand "validate", Cli::Validate
 
+      desc "srl SUBCOMMAND ...ARGS", "SRL delivery: stitch per-part bundles into one site"
+      subcommand "srl", Cli::Srl
+
       desc "resolve [URN]", "Resolve URNs to canonical JSON + HTML artifacts" # Mirrors so Core accepts the switches Cli::Resolve reparses; the
       # inner class owns their declarations.
       option :manifest, type: :string, required: true,

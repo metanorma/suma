@@ -34,6 +34,7 @@ module Suma
   autoload :NullCache,              "suma/null_cache"
   autoload :OutputCanonicalizer,    "suma/output_canonicalizer"
   autoload :OwlProjection,          "suma/owl_projection"
+  autoload :Srl,                    "suma/srl"
   autoload :RegisterManifestGenerator, "suma/register_manifest_generator"
   autoload :SchemaCache,            "suma/schema_cache"
   autoload :SchemaCategory,         "suma/schema_category"
