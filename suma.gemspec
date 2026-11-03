@@ -34,8 +34,8 @@ Gem::Specification.new do |spec| # rubocop:disable Metrics/BlockLength
   spec.require_paths = ["lib"]
 
   spec.add_dependency "expressir"
-  spec.add_dependency "leptris"
   spec.add_dependency "glossarist", "~> 2.8", ">= 2.8.7"
+  spec.add_dependency "leptris"
   spec.add_dependency "lutaml-model", "~> 0.8.0"
   spec.add_dependency "metanorma", "~> 2.3"
   spec.add_dependency "plurimath"
