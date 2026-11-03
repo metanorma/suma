@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "nokogiri"
+require "leptris"
 
 module Suma
   module Srl
@@ -42,7 +42,7 @@ module Suma
 
       def process_index
         path = @site_dir / "index.html"
-        doc = Nokogiri::HTML(path.read)
+        doc = Leptris::XML.parse_html(path.read)
         strip_index_chrome(doc)
         top_level = build_top_level(doc)
         wire_index_links(doc, top_level)
@@ -53,9 +53,9 @@ module Suma
 
       def strip_index_chrome(doc)
         doc.xpath("//text()[contains(., 'Attachments')]")
-          .each { |t| t.parent.remove }
+          .each { |t| t.parent.remove_child(t) }
         doc.xpath("//text()[contains(., 'STEP Resources Library')]")
-          .each { |t| t.replace("") }
+          .each { |t| t.parent.remove_child(t) }
         doc.css("nav a").each do |a|
           next unless a.parent&.parent&.name == "ul"
 
@@ -64,9 +64,10 @@ module Suma
         end
       end
 
-      # BeautifulSoup's unwrap: replace the node with its children.
+      # Replace the node with its children (BeautifulSoup's unwrap).
       def unwrap(node)
-        node.replace(node.children)
+        node.children.each { |c| node.add_previous_sibling(c) }
+        node.parent.remove_child(node)
       end
 
       # href -> the first page of that document (for the onclick target).
@@ -90,7 +91,7 @@ module Suma
         doc_path = @site_dir / href
         return nil unless doc_path.exist?
 
-        first = Nokogiri::HTML(doc_path.read).at_css("a[href]")
+        first = Leptris::XML.parse_html(doc_path.read).at_css("a[href]")
         return nil unless first
 
         subdir = File.dirname(href)
@@ -117,11 +118,10 @@ module Suma
       def inject_frameset_script(doc)
         # Idempotent: drop previously injected scripts first.
         doc.xpath("//script").each do |s|
-          s.remove if s.text.include?("window.top")
+          s.parent.remove_child(s) if s.text.include?("window.top")
         end
         head = doc.at_css("head") || doc.at_css("html").prepend_child("<head/>")
-        script = Nokogiri::HTML::DocumentFragment.parse("")
-          .document.create_element("script")
+        script = doc.create_element("script")
         script.content = FRAMESET_JS
         head.add_child(script)
       end
@@ -135,7 +135,7 @@ module Suma
           doc_path = @site_dir / href
           next unless doc_path.exist?
 
-          doc = Nokogiri::HTML(doc_path.read)
+          doc = Leptris::XML.parse_html(doc_path.read)
           doc.css("a").each { |a| a["target"] = "info" }
           doc_path.write(doc.to_html)
         end
