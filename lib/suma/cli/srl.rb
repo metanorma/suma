@@ -20,9 +20,9 @@ module Suma
                             desc: "Skip fragment checking (file existence only)"
 
       def verify(site_dir)
-        result = Srl::SiteVerifier.new(site_dir, **verify_options).verify
+        result = Suma::Srl::SiteVerifier.new(site_dir, **verify_options).verify
         log_verify(result)
-        raise "broken links found" unless result.broken_count.zero?
+        raise "broken links found (#{result.broken_count})" unless result.broken_count.zero?
       end
 
       private
@@ -67,7 +67,7 @@ module Suma
                              desc: "Branch recorded in build-info.json"
 
       def stitch(bundles_dir)
-        result = Srl::Stitcher.new(**stitch_options(bundles_dir)).stitch
+        result = Suma::Srl::Stitcher.new(**stitch_options(bundles_dir)).stitch
         Utils.log "Stitched #{result.parts.size} into #{options[:out]}: " \
                   "#{result.resolved} ok, #{result.broken} broken"
       end
