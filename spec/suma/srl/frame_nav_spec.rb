@@ -18,8 +18,13 @@ RSpec.describe Suma::Srl::FrameNav do
       <nav>
         <p>STEP Resources Library (SRL)</p>
         <ul>
-          <li><div><a href="ISO_A_2025/ISO_A_2025_index.html">Part A</a></div></li>
-          <li><div><a href="ISO_B_2025.pdf">Part B single</a></div></li>
+          <li>Document<ul>
+            <li><div><a href="ISO_A_2025/ISO_A_2025_index.html">Part A</a></div></li>
+            <li><div><a href="ISO_B_2025.pdf">Part B single</a></div></li>
+          </ul></li>
+          <li>Attachments<ul>
+            <li><a href="plain_schemas/x/x.exp">x.exp</a></li>
+          </ul></li>
         </ul>
         <h2>Attachments</h2>
         <ul><li><a href="logo.svg">logo</a></li></ul>
@@ -52,6 +57,11 @@ RSpec.describe Suma::Srl::FrameNav do
       expect(index).to include("parent.info.location='ISO_B_2025.pdf'")
       expect(index).to include(described_class::FRAMESET_JS)
       expect(index).not_to include("Attachments")
+      # The Document/Attachments wrappers collapse; the attachment
+      # subtree dies with the decomposed element (A/B-caught against
+      # the Python pipeline on the real reference site).
+      expect(index).not_to include("x.exp")
+      expect(index).to include("Part A")
       expect(index).not_to include("STEP Resources Library")
     end
   end
