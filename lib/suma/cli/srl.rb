@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "json"
 require "thor"
 
 module Suma
@@ -8,6 +9,42 @@ module Suma
     # rendered per-part bundles into one stitched site with resolved
     # cross-document references.
     class Srl < Thor
+      desc "verify SITE_DIR",
+           "Verify every link in the stitched site resolves: cross-file " \
+           "hrefs to files, fragments to anchors in their target. The " \
+           "production gate is zero broken links; exits 1 on any break. " \
+           "Intra-file fragment hrefs are reported but do not fail."
+      option :out, type: :string,
+                   desc: "Also write the report as JSON to this path"
+      option :no_fragments, type: :boolean, default: false,
+                            desc: "Skip fragment checking (file existence only)"
+
+      def verify(site_dir)
+        result = Srl::SiteVerifier.new(site_dir, **verify_options).verify
+        log_verify(result)
+        raise "broken links found" unless result.broken_count.zero?
+      end
+
+      private
+
+      def verify_options
+        { check_fragments: !options[:no_fragments] }
+      end
+
+      def log_verify(result)
+        report = result.report
+        write_report(report) if options[:out]
+        Utils.log "Links: #{report['total_links']} total, " \
+                  "#{report['broken_links'].size} broken; " \
+                  "fragments: #{report['total_fragments']} total, " \
+                  "#{report['broken_fragments'].size} broken; " \
+                  "#{report['cross_document_links']} cross-document"
+      end
+
+      def write_report(report)
+        File.write(options[:out], JSON.pretty_generate(report))
+      end
+
       desc "stitch BUNDLES_DIR",
            "Merge per-part SRL bundles (each bundle.json + site/) into one " \
            "_site/, resolving every unresolved-eref span through the " \
@@ -34,8 +71,6 @@ module Suma
         Utils.log "Stitched #{result.parts.size} into #{options[:out]}: " \
                   "#{result.resolved} ok, #{result.broken} broken"
       end
-
-      private
 
       def stitch_options(bundles_dir)
         {

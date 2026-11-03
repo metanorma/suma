@@ -4,7 +4,7 @@ require "erb"
 require "fileutils"
 require "json"
 require "pathname"
-require "nokogiri"
+require "leptris"
 
 module Suma
   module Srl
@@ -193,7 +193,7 @@ module Suma
       # are yielded as audit records.
       def patch_file_xrefs(html_file, out_dir, registries)
         owning_iso = infer_owning_iso(html_file, out_dir)
-        doc = Nokogiri::HTML(html_file.read)
+        doc = Leptris::XML.parse_html(html_file.read)
         resolved = 0
         doc.css("span.unresolved-eref").each do |span|
           target = resolve_bibitemid(span["data-bibitemid"].to_s, registries)

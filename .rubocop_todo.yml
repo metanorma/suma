@@ -87,8 +87,9 @@ Layout/LineLength:
     - 'spec/suma/term_extractor_spec.rb'
     - 'spec/suma/urn_spec.rb'
     - 'suma.gemspec'
-    - spec/suma/srl/frame_nav_spec.rb
-    - spec/suma/srl/stitcher_spec.rb
+    - 'spec/suma/srl/frame_nav_spec.rb'
+    - 'spec/suma/srl/site_verifier_spec.rb'
+    - 'spec/suma/srl/stitcher_spec.rb'
 
 # Offense count: 2
 # Configuration parameters: IgnoreLiteralBranches, IgnoreConstantBranches, IgnoreDuplicateElseBranch.
@@ -329,8 +330,9 @@ RSpec/ExampleLength:
     - 'spec/suma/urn_resolver_spec.rb'
     - 'spec/suma/urn_spec.rb'
     - 'spec/suma/worker_pool_spec.rb'
-    - spec/suma/srl/frame_nav_spec.rb
-    - spec/suma/srl/stitcher_spec.rb
+    - 'spec/suma/srl/frame_nav_spec.rb'
+    - 'spec/suma/srl/site_verifier_spec.rb'
+    - 'spec/suma/srl/stitcher_spec.rb'
 
 # Offense count: 4
 # Configuration parameters: Max, AllowedIdentifiers, AllowedPatterns.
@@ -415,8 +417,9 @@ RSpec/MultipleExpectations:
     - 'spec/suma/term_extractor_spec.rb'
     - 'spec/suma/urn_resolver_spec.rb'
     - 'spec/suma/worker_pool_spec.rb'
-    - spec/suma/srl/frame_nav_spec.rb
-    - spec/suma/srl/stitcher_spec.rb
+    - 'spec/suma/srl/frame_nav_spec.rb'
+    - 'spec/suma/srl/site_verifier_spec.rb'
+    - 'spec/suma/srl/stitcher_spec.rb'
 
 # Offense count: 3
 # Configuration parameters: Max, AllowedGroups.
