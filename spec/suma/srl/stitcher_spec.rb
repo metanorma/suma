@@ -85,8 +85,9 @@ RSpec.describe Suma::Srl::Stitcher do
       expect(result.broken).to eq(1)
 
       a_html = (out / "ISO_10303-41_2025/ISO_10303-41_2025_section_0.html").read
-      expected_a = '<a href="../ISO_10303-43_2025/ISO_10303-43_2025_section_1.html#' \
-        "#{anchor_b}\" class=\"resolved-eref\">Representation</a>"
+      expected_a = '<a href="../ISO_10303-43_2025/' \
+                   'ISO_10303-43_2025_section_1.html#' \
+                   "#{anchor_b}\" class=\"resolved-eref\">Representation</a>"
       expect(a_html).to include(expected_a)
       expect(a_html).to include(
         '<a href="../plain_schemas/resources/action_schema/action_schema.exp" ' \
