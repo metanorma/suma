@@ -22,7 +22,8 @@ module Suma
       def verify(site_dir)
         result = Suma::Srl::SiteVerifier.new(site_dir, **verify_options).verify
         log_verify(result)
-        raise "broken links found (#{result.broken_count})" unless result.broken_count.zero?
+        raise "broken links found (#{result.broken_count})" unless
+          result.broken_count.zero?
       end
 
       private
