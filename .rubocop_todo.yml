@@ -87,6 +87,7 @@ Layout/LineLength:
     - 'spec/suma/term_extractor_spec.rb'
     - 'spec/suma/urn_spec.rb'
     - 'suma.gemspec'
+    - spec/suma/srl/frame_nav_spec.rb
     - spec/suma/srl/stitcher_spec.rb
 
 # Offense count: 2
@@ -328,6 +329,7 @@ RSpec/ExampleLength:
     - 'spec/suma/urn_resolver_spec.rb'
     - 'spec/suma/urn_spec.rb'
     - 'spec/suma/worker_pool_spec.rb'
+    - spec/suma/srl/frame_nav_spec.rb
     - spec/suma/srl/stitcher_spec.rb
 
 # Offense count: 4
@@ -413,6 +415,7 @@ RSpec/MultipleExpectations:
     - 'spec/suma/term_extractor_spec.rb'
     - 'spec/suma/urn_resolver_spec.rb'
     - 'spec/suma/worker_pool_spec.rb'
+    - spec/suma/srl/frame_nav_spec.rb
     - spec/suma/srl/stitcher_spec.rb
 
 # Offense count: 3
