@@ -7,7 +7,7 @@ require "pathname"
 require "leptris"
 
 module Suma
-  module Srl
+  module Delivery
     # Merge independently rendered per-part sites into a single _site/,
     # rewriting each part's <span class="unresolved-eref"
     # data-bibitemid="…"> markers into cross-document <a href> elements

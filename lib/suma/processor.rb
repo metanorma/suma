@@ -18,7 +18,7 @@ module Suma
                    staged_reinflate_shard: nil,
                    incremental: false, state_file: nil, jobs: 1,
                    provenance_file: nil, sign_method: nil, sign_key: nil,
-                   no_valid: false)
+                   no_valid: false, unresolved_eref_markers: false)
       @metanorma_yaml_path = metanorma_yaml_path
       @schemas_all_path = schemas_all_path
       @compile_flag = compile
@@ -40,6 +40,7 @@ module Suma
       # Skip Metanorma document validation (metanorma `--no-valid`). Opt-in:
       # for collections whose flavor's validators are still in flight.
       @no_valid = no_valid
+      @unresolved_eref_markers = unresolved_eref_markers
     end
 
     def run
@@ -189,6 +190,7 @@ module Suma
           output_directory: output_directory,
           coverpage: collection_coverpage(collection_config),
           no_valid: @no_valid,
+          unresolved_eref_markers: @unresolved_eref_markers,
           workers: @staged_workers,
           batch_size: @staged_batch_size ||
             StagedCollectionBuilder::DEFAULT_BATCH_SIZE,
@@ -213,6 +215,7 @@ module Suma
     def compile_flags
       { install_fonts: false }.tap do |flags|
         flags[:novalid] = true if @no_valid
+        flags[:unresolved_eref_markers] = true if @unresolved_eref_markers
       end
     end
 

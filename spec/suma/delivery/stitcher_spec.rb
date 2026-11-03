@@ -8,7 +8,7 @@ require "tmpdir"
 # (scripts/suma2srl/srl_stitch.py, TCSC410303-2952): registry resolution of
 # the three bibitemid shapes, span rewriting, synthesized index, audit
 # records, and the inject invariants.
-RSpec.describe Suma::Srl::Stitcher do
+RSpec.describe Suma::Delivery::Stitcher do
   def write(path, content)
     path.parent.mkpath
     path.write(content)

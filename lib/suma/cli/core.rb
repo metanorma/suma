@@ -58,6 +58,9 @@ module Suma
                         desc: "Signing key (sigstore signs keylessly when omitted)"
       option :no_valid, type: :boolean, default: false,
                         desc: "Skip Metanorma document validation"
+      option :unresolved_eref_markers, type: :boolean, default: false,
+                                       desc: "Emit unresolved-eref span " \
+                                             "markers for the stitcher"
       def build(_site_manifest)
         Cli::Build.start
       end
@@ -184,7 +187,7 @@ module Suma
       subcommand "validate", Cli::Validate
 
       desc "srl SUBCOMMAND ...ARGS", "SRL delivery: stitch per-part bundles into one site"
-      subcommand "srl", Cli::Srl
+      subcommand "delivery", Cli::Delivery
 
       desc "resolve [URN]", "Resolve URNs to canonical JSON + HTML artifacts" # Mirrors so Core accepts the switches Cli::Resolve reparses; the
       # inner class owns their declarations.

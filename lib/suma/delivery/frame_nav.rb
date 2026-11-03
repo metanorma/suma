@@ -3,7 +3,7 @@
 require "leptris"
 
 module Suma
-  module Srl
+  module Delivery
     # Frame-navigation delivery postprocess (port of suma2srl.py): turns a
     # stitched site into the SRL frameset presentation.
     #

@@ -54,6 +54,7 @@ module Suma
     # (a data-declaring initializer)
     def initialize(collection_config_path:, output_directory:, coverpage: nil,
                    store_dir: nil, formats: %i[xml html], no_valid: false,
+                   unresolved_eref_markers: false,
                    workers: 1, batch_size: DEFAULT_BATCH_SIZE,
                    shard: nil, isolate: nil, reinflate_shard: nil) # rubocop:disable Metrics/ParameterLists
       @config_path = collection_config_path
@@ -63,6 +64,7 @@ module Suma
       @store_dir = store_dir || File.join(output_directory, STORE_DIRNAME)
       @formats = formats
       @no_valid = no_valid
+      @unresolved_eref_markers = unresolved_eref_markers
       @workers = [workers.to_i, 1].max
       @batch_size = [batch_size.to_i, 1].max
       @shard = shard
@@ -451,6 +453,7 @@ module Suma
     def compile_flags
       { install_fonts: false }.tap do |flags|
         flags[:novalid] = true if @no_valid
+        flags[:unresolved_eref_markers] = true if @unresolved_eref_markers
       end
     end
 

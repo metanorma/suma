@@ -7,7 +7,7 @@ require "tmpdir"
 # site_manifest.py verify_links: cross-file hrefs must resolve, fragments
 # must resolve against the target's anchors, .err.html files are exempt,
 # and intra-file fragment breakage is reported without failing.
-RSpec.describe Suma::Srl::SiteVerifier do
+RSpec.describe Suma::Delivery::SiteVerifier do
   def write(path, content)
     path.parent.mkpath
     path.write(content)
