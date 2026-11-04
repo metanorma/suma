@@ -384,7 +384,8 @@ module Suma
     end
 
     def write_reinflate_manifest(docrefs, reinf_dir)
-      rebuilt = with_stubbed_members(manifest["manifest"], docrefs, [0])
+      rebuilt = with_stubbed_members(manifest["manifest"], docrefs, [0],
+                                     reinf_dir)
       reinf_path = File.join(reinf_dir, "reinflate.yml")
       File.write(reinf_path,
                  base_manifest.merge("manifest" => rebuilt).to_yaml)
@@ -409,33 +410,131 @@ module Suma
     # Deep-copy the manifest tree, replacing each member entry (same
     # predicate and pre-order as collection_members) with its stub docref,
     # and absolutizing non-member filerefs (attachments) against the
-    # collection root.
-    def with_stubbed_members(node, docrefs, counter)
+    # collection root. A member entry referencing a nested collection
+    # manifest additionally has that manifest's attachment docrefs grafted
+    # beside the stub: metanorma grafts nested manifests only around a
+    # surviving referencing entry, which the stub is not, so the reinflate
+    # manifest has to carry the attachment entries itself (suma#169).
+    def with_stubbed_members(node, docrefs, counter, reinf_dir)
       case node
       when Array
-        node.map { |child| with_stubbed_members(child, docrefs, counter) }
+        node.flat_map do |child|
+          rewritten = with_stubbed_members(child, docrefs, counter, reinf_dir)
+          [rewritten, *carried_attachments(child, reinf_dir)]
+        end
       when Hash
-        with_stubbed_members_hash(node, docrefs, counter)
+        with_stubbed_members_hash(node, docrefs, counter, reinf_dir)
       else
         node
       end
     end
 
-    def with_stubbed_members_hash(node, docrefs, counter)
+    def with_stubbed_members_hash(node, docrefs, counter, reinf_dir)
       rewritten = node.dup
       rewritten.each_key do |key|
-        rewritten[key] = rewrite_entry_value(key, rewritten[key], docrefs, counter)
+        rewritten[key] =
+          rewrite_entry_value(key, rewritten[key], docrefs, counter, reinf_dir)
       end
       stub_for(rewritten, docrefs, counter) || rewritten
     end
 
-    def rewrite_entry_value(key, value, docrefs, counter)
+    def rewrite_entry_value(key, value, docrefs, counter, reinf_dir)
       if %w[file fileref].include?(key) && value &&
           !Pathname.new(value).absolute?
         File.expand_path(value, @config_dir)
       else
-        with_stubbed_members(value, docrefs, counter)
+        with_stubbed_members(value, docrefs, counter, reinf_dir)
       end
+    end
+
+    # The attachment docrefs a member entry's nested collection manifest
+    # declares, as one grouping node to graft after the member's stub.
+    # The filerefs are re-expressed relative to +reinf_dir+ (where the
+    # reinflate manifest is written), so the render resolves each source
+    # and derives the destination path the plain build does: the leading
+    # ../ climb is truncated into the output directory.
+    def carried_attachments(member, reinf_dir)
+      return [] unless member.is_a?(Hash) && member_entry?(member)
+
+      ref = member["fileref"] || member["file"]
+      return [] unless manifest_ref?(ref)
+
+      attachments = []
+      collect_nested_attachments(ref, @config_dir, attachments, reinf_dir)
+      return [] if attachments.empty?
+
+      [{ "level" => "attachments", "title" => "Attachments",
+         "identifier" => [member["identifier"], "attachments"]
+           .compact.join("-"),
+         "docref" => attachments }]
+    end
+
+    def collect_nested_attachments(ref, dir, out, reinf_dir)
+      path = File.expand_path(ref, dir)
+      tree = nested_manifest_tree(path) or return
+      collect_attachments(tree, File.dirname(path), out, reinf_dir)
+    end
+
+    # Every attachment docref of a (nested) manifest tree, in declaration
+    # order: attachment entries are carried with their fileref re-expressed
+    # relative to +reinf_dir+; entries referencing further nested manifests
+    # recurse into those files; every other entry is walked in place.
+    def collect_attachments(node, dir, out, reinf_dir)
+      case node
+      when Array
+        node.each { |child| collect_attachments(child, dir, out, reinf_dir) }
+      when Hash
+        collect_attachments_hash(node, dir, out, reinf_dir)
+      end
+    end
+
+    def collect_attachments_hash(node, dir, out, reinf_dir)
+      dispatch_attachments(node, dir, out, reinf_dir)
+      node.each_value { |value| collect_attachments(value, dir, out, reinf_dir) }
+    end
+
+    # An attachment entry is carried with its fileref re-expressed; an
+    # entry referencing a further nested manifest recurses into that file.
+    def dispatch_attachments(node, dir, out, reinf_dir)
+      ref = node["fileref"] || node["file"]
+      return unless ref
+
+      if truthy?(node["attachment"])
+        out << carried_attachment_entry(node, dir, reinf_dir)
+      elsif manifest_ref?(ref)
+        collect_nested_attachments(ref, dir, out, reinf_dir)
+      end
+    end
+
+    def carried_attachment_entry(node, dir, reinf_dir)
+      carried = node.dup
+      %w[fileref file].each do |key|
+        next unless carried[key]
+
+        carried[key] = reinf_relative(File.expand_path(carried[key], dir),
+                                      reinf_dir)
+      end
+      carried
+    end
+
+    def reinf_relative(path, reinf_dir)
+      base = Pathname.new(File.expand_path(reinf_dir))
+      Pathname.new(File.expand_path(path)).relative_path_from(base).to_s
+    end
+
+    def manifest_ref?(ref)
+      /\.ya?ml\z/.match?(ref)
+    end
+
+    # The manifest tree of a nested collection manifest file: its +manifest+
+    # node, the same node metanorma grafts at render time. A file that is
+    # not a collection manifest carries nothing.
+    def nested_manifest_tree(path)
+      return unless File.file?(path)
+
+      nested = YAML.load_file(path)
+      tree = nested.is_a?(Hash) ? nested["manifest"] : nil
+      tree if tree.is_a?(Hash) || tree.is_a?(Array)
     end
 
     def stub_for(node, docrefs, counter)
