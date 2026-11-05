@@ -84,7 +84,10 @@ module Suma
           concept.localization(lang)
         end
 
-        filename = "#{concept.uuid.gsub(/[^\w.-]/, '_')}.yaml"
+        # Key files by the stable identifier (schema.entity), not the UUID:
+        # unchanged concepts keep their filename across regenerations, and
+        # diffs of generated datasets stay readable (iso-10303#820).
+        filename = "#{concept.data.id}.yaml"
         File.write(File.join(output_dir, filename), doc.to_yamls,
                    encoding: "utf-8")
       end

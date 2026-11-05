@@ -76,6 +76,21 @@ RSpec.describe Suma::TermExtractor do
                                 "*.yaml")).any?).to be true
     end
 
+    it "keys output files by concept identifier, keeping the UUID inside" do
+      extractor = described_class.new(schema_manifest_file, test_output_path,
+                                      urn: "urn:iso:std:iso:10303:-2:ed-2:en")
+      concepts = extractor.call.flat_map(&:managed_concepts)
+
+      concepts.each do |concept|
+        path = File.join(test_output_path, "#{concept.data.id}.yaml")
+        expect(File).to exist(path)
+
+        content = File.read(path)
+        expect(content).to include("identifier: #{concept.data.id}")
+        expect(content).to include(concept.uuid)
+      end
+    end
+
     it "raises ENOENT when the manifest file does not exist" do
       extractor = described_class.new("/nonexistent/path.yml", test_output_path,
                                       urn: "urn:iso:std:iso:10303:-2:ed-2:en")
