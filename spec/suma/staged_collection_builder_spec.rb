@@ -467,5 +467,20 @@ RSpec.describe Suma::StagedCollectionBuilder do
       expect(script).to include("(collection.bibdatas || {}).keys")
       expect(script).not_to include("semantics_before")
     end
+
+    # bibdatas is empty for corpus manifests (no bibdata entries), so the
+    # bibdatas loop above never aliases anything: on a cold store
+    # reinflate dies with "no stored artefact" (suma#181). metanorma
+    # records the identifier -> docid mapping on the child's own
+    # post-render manifest; the script must alias from that map too.
+    it "generates a child script that aliases via the manifest identifier_aliases" do
+      script = builder.send(:child_script)
+      expect(script).to include("collection.manifest.identifier_aliases")
+    end
+
+    it "generates a child script whose alias loop keeps identical-slug guards" do
+      script = builder.send(:child_script)
+      expect(script).to include("next if src.empty? || dst.empty? || src == dst")
+    end
   end
 end

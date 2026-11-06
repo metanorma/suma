@@ -304,6 +304,37 @@ module Suma
                   end
                 end
               end
+
+              # The corpus manifests carry no bibdata, so bibdatas is
+              # empty and the loop above never runs (suma#181): the
+              # artefacts stay keyed under the document's own docid and
+              # reinflate - looking up by the docref identifier - finds
+              # nothing on a cold store ("no stored artefact"). metanorma
+              # resolves every manifest identifier to the document docid
+              # during populate and records the mapping on the manifest
+              # itself (identifier_aliases, raw -> resolved). That map is
+              # the child's own post-render collection - reading it is
+              # race-free per the suma#167 discipline.
+              aliases = begin
+                collection.manifest.identifier_aliases || {}
+              rescue NoMethodError
+                {}
+              end
+              aliases.each do |original, resolved|
+                src = resolved.to_s
+                  .gsub(/[^A-Za-z0-9._-]+/, "-").gsub(/-{2,}/, "-")
+                  .gsub(/\A-|-\z/, "")
+                dst = original.to_s
+                  .gsub(/[^A-Za-z0-9._-]+/, "-").gsub(/-{2,}/, "-")
+                  .gsub(/\A-|-\z/, "")
+                next if src.empty? || dst.empty? || src == dst
+
+                Dir[File.join(store_dir, "#{src}.*.semantic.xml")].each do |f|
+                  FileUtils.cp(
+                    f, f.sub(%r{/#{Regexp.escape(src)}\.}, "/#{dst}."),
+                  )
+                end
+              end
               warn format("[staged worker %d] batch %d/%d member %d OK (%ds)",
                           Process.pid, idx + 1, count, j, Time.now - t0)
             ensure
