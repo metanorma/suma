@@ -39,9 +39,11 @@ gem "metanorma-core", github: "metanorma/metanorma-core", branch: "main"
 # and crashes collection renders. Revert to the released gem once an
 # isodoc release carries the allowance.
 gem "isodoc", github: "metanorma/isodoc", branch: "main"
-# relaton 3 prerelease floor: names the family prerelease for
-# resolution (isodoc's relaton-render range alone is prerelease-blind).
-gem "relaton", "~> 3.0.0.pre.alpha"
+# relaton floor: isodoc main (post-relaton#462 consolidation) requires
+# relaton ~> 3.1.1 -- the consolidated relaton gem absorbed
+# relaton-cli/relaton-render, whose standalone lines stop being the
+# interface.
+gem "relaton", "~> 3.1.1"
 # gem "metanorma-plugin-lutaml", github: "metanorma/metanorma-plugin-lutaml", branch: "main"
 # gem "metanorma-standoc", github: "metanorma/metanorma-standoc", branch: "main"
 # gem "expressir", github: "lutaml/expressir", branch: "main"
