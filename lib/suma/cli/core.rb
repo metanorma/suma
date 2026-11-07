@@ -67,6 +67,9 @@ module Suma
 
       desc "generate-schemas METANORMA_MANIFEST_FILE SCHEMA_MANIFEST_FILE",
            "Generate EXPRESS schema manifest file from Metanorma site manifest"
+      option :exclude_paths, type: :string, aliases: "-e",
+                             desc: "Exclude schemas paths by pattern " \
+                                   "(e.g. `*_lf.exp`)"
       def generate_schemas(_metanorma_manifest_file, _schema_manifest_file)
         Cli::GenerateSchemas.start
       end
