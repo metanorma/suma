@@ -65,8 +65,7 @@ gem "rubocop-rspec"
 # this shim (verified: HTML builds LoadError without it).
 # Re-evaluate once suma rides released isodoc.
 gem "sassc-embedded", "~> 1.0"
-# relaton-render's floor (>= 2.0.0.pre.alpha.6) admits the stale June
-# 2.2.0.pre prerelease, which predates lutaml-model 0.8.78's strict
-# collection checks (duplicate <edition> raise). 2.1.9 is the current
-# lutaml-model-0.8 line.
-gem "relaton-bib", "2.1.9"
+# The standalone relaton-bib pin is gone with the relaton#462
+# consolidation: relaton ~> 3.1.1 embeds Relaton::Bib, and loading the
+# standalone gem alongside it double-defines every Relaton class
+# (RequestError superclass mismatch at require "metanorma").
