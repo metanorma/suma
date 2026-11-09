@@ -23,12 +23,14 @@ module Suma
 
     attr_reader :schema, :id, :output_path, :template
 
-    def initialize(schema:, output_path:, template:, no_valid: false)
+    def initialize(schema:, output_path:, template:, no_valid: false,
+                   extensions: nil)
       @schema = schema
       @id = schema.id
       @output_path = output_path
       @template = template
       @no_valid = no_valid
+      @extensions_override = extensions
     end
 
     def compile
@@ -48,13 +50,17 @@ module Suma
     end
 
     def extensions
-      template.extensions
+      @extensions_override || template.extensions
     end
 
     # Options handed to Metanorma::Compile. Exposed for specs.
     def compile_options
       { agree_to_terms: true, install_fonts: false }.tap do |options|
         options[:novalid] = true if @no_valid
+        if @extensions_override
+          options[:extension_keys] =
+            @extensions_override.split(",").map(&:strip).map(&:to_sym)
+        end
       end
     end
 

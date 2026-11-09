@@ -10,6 +10,9 @@ module Suma
            "Build collection specified in site manifest (`metanorma*.yml`)"
       option :compile, type: :boolean, default: true,
                        desc: "Compile or skip compile of collection"
+      option :ext, type: :string, aliases: "-x",
+                   desc: "Comma-separated schema-doc output formats " \
+                         "(e.g. html) - overrides the template defaults"
       option :schemas_all_path, type: :string, aliases: "-s",
                                 desc: "Generate file that contains all schemas in the collection."
       option :staged, type: :boolean, default: false,
@@ -100,6 +103,7 @@ module Suma
           sign_method: options[:sign],
           sign_key: options[:sign_key],
           no_valid: options[:no_valid],
+          ext: options[:ext],
           unresolved_eref_markers: options[:unresolved_eref_markers],
           **staged_options(options),
         ).run

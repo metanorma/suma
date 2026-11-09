@@ -52,6 +52,14 @@ RSpec.describe Suma::SchemaCompiler do
       )
       expect(document_compiler.extensions).to eq("xml")
     end
+
+    it "overrides the template when an extension set is given" do
+      overridden = described_class.new(
+        schema: schema, output_path: tmpdir, template: template,
+        extensions: "html",
+      )
+      expect(overridden.extensions).to eq("html")
+    end
   end
 
   describe "#output_xml_path" do
@@ -75,6 +83,18 @@ RSpec.describe Suma::SchemaCompiler do
 
       expect(skipping.compile_options)
         .to eq(agree_to_terms: true, install_fonts: false, novalid: true)
+    end
+
+    it "passes the extension override as extension_keys" do
+      overridden = described_class.new(
+        schema: schema, output_path: tmpdir, template: template,
+        extensions: "html, pdf"
+      )
+
+      expect(overridden.compile_options).to eq(
+        agree_to_terms: true, install_fonts: false,
+        extension_keys: %i[html pdf],
+      )
     end
   end
 

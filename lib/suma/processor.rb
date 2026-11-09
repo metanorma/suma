@@ -18,7 +18,8 @@ module Suma
                    staged_reinflate_shard: nil,
                    incremental: false, state_file: nil, jobs: 1,
                    provenance_file: nil, sign_method: nil, sign_key: nil,
-                   no_valid: false, unresolved_eref_markers: false)
+                   no_valid: false, unresolved_eref_markers: false,
+                   ext: nil)
       @metanorma_yaml_path = metanorma_yaml_path
       @schemas_all_path = schemas_all_path
       @compile_flag = compile
@@ -40,6 +41,7 @@ module Suma
       # Skip Metanorma document validation (metanorma `--no-valid`). Opt-in:
       # for collections whose flavor's validators are still in flight.
       @no_valid = no_valid
+      @ext = ext
       @unresolved_eref_markers = unresolved_eref_markers
     end
 
@@ -147,6 +149,7 @@ module Suma
           state_file: @state_file,
           jobs: @jobs,
           no_valid: @no_valid,
+          ext: @ext,
         },
       )
 
