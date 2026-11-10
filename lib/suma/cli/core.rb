@@ -23,6 +23,9 @@ module Suma
            "Build collection specified in site manifest (`metanorma*.yml`)"
       # Mirrors so Core accepts the switches Cli::Build reparses; the inner
       # class owns their declarations.
+      option :ext, type: :string, aliases: "-x",
+                   desc: "Comma-separated schema-doc output formats " \
+                         "(e.g. html) - overrides the template defaults"
       option :compile, type: :boolean, default: true,
                        desc: "Compile or skip compile of collection"
       option :schemas_all_path, type: :string, aliases: "-s",
