@@ -59,7 +59,7 @@ module Suma
         options[:novalid] = true if @no_valid
         if @extensions_override
           options[:extension_keys] =
-            @extensions_override.split(",").map(&:strip).map(&:to_sym)
+            @extensions_override.split(",").map { |x| x.strip.to_sym }
         end
       end
     end

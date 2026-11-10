@@ -148,39 +148,33 @@ RSpec.describe Suma::NoteProcessor do
       expect(described_class::REDUNDANT_NOTE_REGEX).to be_frozen
     end
   end
-end
-
-RSpec.describe Suma::NoteProcessor do
-  let(:xref_to_mention) do
-    ->(full_ref, display) { "{{urn:#{full_ref},#{display}}}" }
-  end
 
   describe ".call with expressg figure remarks" do
-  it "drops svgmap figure blocks from the notes" do
-    svgmap_remark = <<~REMARK
-      [=Aec_whole_life_object.__expressg]
-      [.svgmap]
-      ====
-      image::aecexpg1.svg[]
+    it "drops svgmap figure blocks from the notes" do
+      svgmap_remark = <<~REMARK
+        [=Aec_whole_life_object.__expressg]
+        [.svgmap]
+        ====
+        image::aecexpg1.svg[]
 
-      * <<express:classification_schema.class>>; 1
-      * <<express:management_resources_schema.attribute_classification_assignment>>; 2
-      ====
-    REMARK
-    result = described_class.call(svgmap_remark,
-                                  definitions: [],
-                                  xref_to_mention: xref_to_mention)
-    expect(result).to eq([])
-  end
+        * <<express:classification_schema.class>>; 1
+        * <<express:management_resources_schema.attribute_classification_assignment>>; 2
+        ====
+      REMARK
+      result = described_class.call(svgmap_remark,
+                                    definitions: [],
+                                    xref_to_mention: xref_to_mention)
+      expect(result).to eq([])
+    end
 
-  it "keeps prose remarks alongside a dropped figure block" do
-    remarks = <<~REMARK
-      An **applied attribute classification assignment** is a type of thing.
-    REMARK
-    result = described_class.call(remarks,
-                                  definitions: [],
-                                  xref_to_mention: xref_to_mention)
-    expect(result.map(&:content).join).to include("applied attribute classification assignment")
+    it "keeps prose remarks alongside a dropped figure block" do
+      remarks = <<~REMARK
+        An **applied attribute classification assignment** is a type of thing.
+      REMARK
+      result = described_class.call(remarks,
+                                    definitions: [],
+                                    xref_to_mention: xref_to_mention)
+      expect(result.map(&:content).join).to include("applied attribute classification assignment")
     end
   end
 end
