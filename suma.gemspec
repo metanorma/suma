@@ -33,6 +33,8 @@ Gem::Specification.new do |spec| # rubocop:disable Metrics/BlockLength
   spec.executables = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
+  # Bundled gem required directly by lib code: base64 in jsdai/figure_image.rb (metanorma/metanorma#669)
+  spec.add_dependency "base64"
   spec.add_dependency "expressir"
   spec.add_dependency "glossarist", "~> 2.8", ">= 2.8.7"
   spec.add_dependency "leptris"
