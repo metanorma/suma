@@ -78,10 +78,19 @@ module Suma
     private
 
     def build_initial_notes
-      trimmed = trim_definition(remarks)
+      trimmed = trim_definition(remarks_without_figure_blocks)
       return [] unless trimmed && !trimmed.empty?
 
       [Glossarist::V3::DetailedDefinition.new(content: trimmed)]
+    end
+
+    # Expressg figure blocks are figure metadata, not note prose: their
+    # `.svgmap` hotspot lists render through the schema document itself,
+    # and treating them as notes leaks `<<express:...>>` hotspot targets
+    # into concept notes as mis-namespaced citations that fold corrupt
+    # at rest (iso-10303 part-2: 2 corrupted mentions).
+    def remarks_without_figure_blocks
+      Array(remarks).reject { |remark| remark.to_s.include?("[.svgmap]") }
     end
 
     def trim_definition(definition)
