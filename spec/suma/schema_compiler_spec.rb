@@ -56,7 +56,7 @@ RSpec.describe Suma::SchemaCompiler do
     it "overrides the template when an extension set is given" do
       overridden = described_class.new(
         schema: schema, output_path: tmpdir, template: template,
-        extensions: "html",
+        extensions: "html"
       )
       expect(overridden.extensions).to eq("html")
     end
@@ -93,7 +93,7 @@ RSpec.describe Suma::SchemaCompiler do
 
       expect(overridden.compile_options).to eq(
         agree_to_terms: true, install_fonts: false,
-        extension_keys: %i[html pdf],
+        extension_keys: %i[html pdf]
       )
     end
   end

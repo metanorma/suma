@@ -88,13 +88,20 @@ module Suma
       private
 
       def run(manifest, options)
-        schemas_all_path = options[:schemas_all_path] ||
-          manifest.gsub("metanorma", "schemas")
-
         Processor.new(
           metanorma_yaml_path: manifest,
-          schemas_all_path: schemas_all_path,
-          compile: options[:compile],
+          schemas_all_path: schemas_all_path(manifest, options),
+          **processor_options(options),
+          **staged_options(options),
+        ).run
+      end
+
+      def schemas_all_path(manifest, options)
+        options[:schemas_all_path] || manifest.gsub("metanorma", "schemas")
+      end
+
+      def processor_options(options)
+        { compile: options[:compile],
           output_directory: "_site",
           incremental: options[:incremental],
           state_file: options[:state_file],
@@ -104,9 +111,7 @@ module Suma
           sign_key: options[:sign_key],
           no_valid: options[:no_valid],
           ext: options[:ext],
-          unresolved_eref_markers: options[:unresolved_eref_markers],
-          **staged_options(options),
-        ).run
+          unresolved_eref_markers: options[:unresolved_eref_markers] }
       end
 
       def staged_options(options)
