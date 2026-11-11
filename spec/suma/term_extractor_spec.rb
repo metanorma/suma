@@ -171,5 +171,24 @@ RSpec.describe Suma::TermExtractor do
       expect(document.localizations.map { |l| l.data.language_code })
         .to contain_exactly("eng", "fra")
     end
+
+    it "qualifies imported supertype citations with the declaring schema" do
+      # applied_action_assignment is SUBTYPE OF (action_assignment); the
+      # fixture imports action_assignment from management_resources_schema
+      # via a USE FROM item list. The citation must name the declaring
+      # schema, not the citing one (iso-10303#835): the citing schema has
+      # no anchor for the declaration, so the rendered reference dies.
+      extractor = described_class.new(schema_manifest_file, test_output_path,
+                                      urn: "urn:iso:std:iso:10303:-2:ed-2:en")
+      results = extractor.call
+
+      concept = results.flat_map(&:managed_concepts)
+                       .find { |c| c.data.id == "Activity_mim.applied_action_assignment" }
+      expect(concept).not_to be_nil
+
+      content = concept.localization("eng").data.definition.first.content
+      expect(content).to include("tech:management_resources_schema.action_assignment")
+      expect(content).not_to include("tech:Activity_mim.action_assignment")
+    end
   end
 end

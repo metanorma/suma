@@ -288,7 +288,8 @@ module Suma
           "#{entity_name_to_text(entity.id)} #{entity_ref}"
       else
         entity_subtypes = subtypes.map do |e|
-          urn_mention(express_entity_urn("#{schema.id}.#{e.id}"), e.id)
+          owner = declaring_schema_id(schema, e.id) || schema.id
+          urn_mention(express_entity_urn("#{owner}.#{e.id}"), e.id)
         end
 
         "#{entity_type} that is a type of " \
@@ -296,6 +297,43 @@ module Suma
           "that represents the " \
           "#{entity_name_to_text(entity.id)} #{entity_ref}"
       end
+    end
+
+    # The schema an imported declaration is declared in, resolved through
+    # +schema+'s interfaces — the same resolution the source remark xrefs
+    # carry: a local declaration wins; then a USE FROM item naming the
+    # declaration; then a single bare USE FROM. nil leaves the citation
+    # unqualified-with-owner, since inventing an owner would be wrong
+    # (iso-10303#835: the citing schema is not the declaring schema).
+    def declaring_schema_id(schema, entity_id)
+      return schema.id if schema.entities.any? { |e| e.id == entity_id }
+
+      item_matches = []
+      bare_sources = []
+      schema.interfaces.each do |interface|
+        source = interface.schema&.id
+        next unless source && interface.kind == "USE"
+
+        items = Array(interface.items)
+        if items.empty?
+          bare_sources << source
+        elsif items.any? { |item| import_item_id(item) == entity_id }
+          item_matches << source
+        end
+      end
+
+      if item_matches.uniq.one?
+        item_matches.first
+      elsif item_matches.empty? && bare_sources.uniq.one?
+        bare_sources.first
+      end
+    end
+
+    # The imported declaration's name as written in the USE FROM list:
+    # InterfaceItem carries it on #ref (the reference node), with #id
+    # holding the local rename when present.
+    def import_item_id(item)
+      item.ref&.id || item.id
     end
   end
 end
