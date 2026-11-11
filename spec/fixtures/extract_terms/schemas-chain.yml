@@ -1,0 +1,13 @@
+schemas:
+  Outer_arm:
+    path: modules/chain/outer_arm.exp
+  Middle_arm:
+    path: modules/chain/middle_arm.exp
+  Deep_arm:
+    path: modules/chain/deep_arm.exp
+  Other_arm:
+    path: modules/chain/other_arm.exp
+  Outer_ambiguous_arm:
+    path: modules/chain/outer_ambiguous_arm.exp
+  Twin_arm:
+    path: modules/chain/twin_arm.exp

@@ -1,0 +1,7 @@
+SCHEMA Deep_arm;
+
+ENTITY deep_thing;
+  name : STRING;
+END_ENTITY;
+
+END_SCHEMA;

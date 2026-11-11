@@ -1,0 +1,11 @@
+SCHEMA Twin_arm;
+
+ENTITY deep_thing;
+  name : STRING;
+END_ENTITY;
+
+ENTITY twin_thing;
+  name : STRING;
+END_ENTITY;
+
+END_SCHEMA;

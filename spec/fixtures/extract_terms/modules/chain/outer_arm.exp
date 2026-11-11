@@ -1,0 +1,10 @@
+SCHEMA Outer_arm;
+
+USE FROM Middle_arm;
+
+ENTITY outer_thing
+  SUBTYPE OF (deep_thing);
+  name : STRING;
+END_ENTITY;
+
+END_SCHEMA;

@@ -1,0 +1,7 @@
+SCHEMA Other_arm;
+
+ENTITY other_thing;
+  name : STRING;
+END_ENTITY;
+
+END_SCHEMA;

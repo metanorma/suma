@@ -1,0 +1,7 @@
+SCHEMA Middle_arm;
+
+USE FROM Deep_arm;
+
+USE FROM Other_arm;
+
+END_SCHEMA;
