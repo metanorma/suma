@@ -1,0 +1,12 @@
+SCHEMA Outer_ambiguous_arm;
+
+USE FROM Deep_arm;
+
+USE FROM Twin_arm;
+
+ENTITY ambiguous_thing
+  SUBTYPE OF (deep_thing);
+  name : STRING;
+END_ENTITY;
+
+END_SCHEMA;

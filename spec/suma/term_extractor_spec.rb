@@ -183,12 +183,66 @@ RSpec.describe Suma::TermExtractor do
       results = extractor.call
 
       concept = results.flat_map(&:managed_concepts)
-                       .find { |c| c.data.id == "Activity_mim.applied_action_assignment" }
+        .find { |c| c.data.id == "Activity_mim.applied_action_assignment" }
       expect(concept).not_to be_nil
 
       content = concept.localization("eng").data.definition.first.content
       expect(content).to include("tech:management_resources_schema.action_assignment")
       expect(content).not_to include("tech:Activity_mim.action_assignment")
+    end
+
+    describe "transitive declaring-schema resolution (iso-10303#835)" do
+      let(:chain_manifest_file) do
+        File.expand_path("../fixtures/extract_terms/schemas-chain.yml", __dir__)
+      end
+
+      def chain_concepts
+        extractor = described_class.new(chain_manifest_file, test_output_path,
+                                        urn: "urn:iso:std:iso:10303:-2:ed-2:en")
+        extractor.call.flat_map(&:managed_concepts)
+      end
+
+      def concept_content(id)
+        concept = chain_concepts.find { |c| c.data.id == id }
+        expect(concept).not_to be_nil
+        concept.localization("eng").data.definition.first.content
+      end
+
+      it "resolves a declaration two bare USE FROMs away through branching" do
+        # outer_thing SUBTYPE OF (deep_thing); Outer_arm barely uses
+        # Middle_arm, which barely uses Deep_arm AND Other_arm — both
+        # sibling branches must be searched, and only Deep_arm declares
+        # the entity (the Primitive_solids_arm shape from #835).
+        content = concept_content("Outer_arm.outer_thing")
+        expect(content).to include("tech:Deep_arm.deep_thing")
+        expect(content).not_to include("tech:Middle_arm.deep_thing")
+        expect(content).not_to include("tech:Outer_arm.deep_thing")
+      end
+
+      it "keeps the citing schema when sibling branches disagree" do
+        # Outer_ambiguous_arm barely uses Deep_arm and Twin_arm, and BOTH
+        # declare deep_thing — no single declarer emerges, so the citation
+        # stays qualified with the citing schema rather than guessing.
+        content = concept_content("Outer_ambiguous_arm.ambiguous_thing")
+        expect(content).to include("tech:Outer_ambiguous_arm.deep_thing")
+      end
+
+      it "still trusts a USE FROM item list without walking" do
+        # The #187 case, pinned: applied_action_assignment's supertype is
+        # named in an item list (USE FROM management_resources_schema
+        # (action_assignment)) — an item list is a terminal claim, so the
+        # declaration needs no sibling parse even though the bare
+        # USE FROM Activity_method_mim sits in the same fixture outside
+        # the manifest.
+        extractor = described_class.new(schema_manifest_file, test_output_path,
+                                        urn: "urn:iso:std:iso:10303:-2:ed-2:en")
+        results = extractor.call
+
+        concept = results.flat_map(&:managed_concepts)
+          .find { |c| c.data.id == "Activity_mim.applied_action_assignment" }
+        content = concept.localization("eng").data.definition.first.content
+        expect(content).to include("tech:management_resources_schema.action_assignment")
+      end
     end
   end
 end

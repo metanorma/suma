@@ -300,33 +300,97 @@ module Suma
     end
 
     # The schema an imported declaration is declared in, resolved through
-    # +schema+'s interfaces — the same resolution the source remark xrefs
-    # carry: a local declaration wins; then a USE FROM item naming the
-    # declaration; then a single bare USE FROM. nil leaves the citation
-    # unqualified-with-owner, since inventing an owner would be wrong
-    # (iso-10303#835: the citing schema is not the declaring schema).
+    # +schema+'s USE-FROM closure — the same resolution the source remark
+    # xrefs carry: a local declaration wins; otherwise the USE FROM edges
+    # (item-naming ones first, then bare ones) are walked transitively,
+    # and a single distinct declaring schema wins. nil leaves the citation
+    # qualified with the citing schema, since inventing an owner would be
+    # wrong (iso-10303#835: the declarer can sit more than one USE FROM
+    # away, and sibling branches must all be searched before settling).
     def declaring_schema_id(schema, entity_id)
-      return schema.id if schema.entities.any? { |e| e.id == entity_id }
+      declarers = declaring_schemas(schema, entity_id, [])
+      declarers.uniq.one? ? declarers.first : nil
+    end
 
+    # Distinct schema ids within +schema+'s USE-FROM closure declaring
+    # +entity_id+. An interface whose item list names the declaration
+    # claims it outright (that is what the item list means in EXPRESS) —
+    # those sources are terminal candidates. Bare USE FROMs carry no
+    # claim, so they are walked; a bare source outside the manifest
+    # cannot be verified and stands as its own candidate. Each branch
+    # tracks its own visited list so sibling imports are searched
+    # independently; re-entering a schema on the same branch ends it.
+    def declaring_schemas(schema, entity_id, visited)
+      return [] if visited.include?(schema.id)
+
+      visited << schema.id
+      return [schema.id] if schema.entities.any? { |e| e.id == entity_id }
+
+      item_matches, bare_sources = use_from_sources(schema, entity_id)
+      return item_matches.uniq if item_matches.any?
+
+      walk_bare_sources(bare_sources, entity_id, visited)
+    end
+
+    def walk_bare_sources(bare_sources, entity_id, visited)
+      bare_sources.uniq.flat_map do |source|
+        loaded = loaded_schema(source)
+        if loaded
+          declaring_schemas(loaded, entity_id, visited.dup)
+        else
+          [source]
+        end
+      end
+    end
+
+    # The USE FROM interfaces of +schema+ relevant to +entity_id+: the
+    # sources whose item list names it, and the bare USE FROM sources.
+    def use_from_sources(schema, entity_id)
       item_matches = []
       bare_sources = []
       schema.interfaces.each do |interface|
-        source = interface.schema&.id
-        next unless source && interface.kind == "USE"
-
-        items = Array(interface.items)
-        if items.empty?
-          bare_sources << source
-        elsif items.any? { |item| import_item_id(item) == entity_id }
-          item_matches << source
+        case interface_claim(interface, entity_id)
+        when :item then item_matches << interface.schema.id
+        when :bare then bare_sources << interface.schema.id
         end
       end
 
-      if item_matches.uniq.one?
-        item_matches.first
-      elsif item_matches.empty? && bare_sources.uniq.one?
-        bare_sources.first
-      end
+      [item_matches, bare_sources]
+    end
+
+    # :item when the interface's item list names the declaration, :bare
+    # for a bare USE FROM, nil when the interface is irrelevant to it.
+    def interface_claim(interface, entity_id)
+      source = interface.schema&.id
+      return nil unless source && interface.kind == "USE"
+
+      items = Array(interface.items)
+      return :bare if items.empty?
+      return :item if item_names?(items, entity_id)
+
+      nil
+    end
+
+    def item_names?(items, entity_id)
+      items.any? { |item| import_item_id(item) == entity_id }
+    end
+
+    # Sibling schema by EXPRESS id, parsed on demand from the schema
+    # manifest and memoized — the walk only touches schemas a citation
+    # chain actually names.
+    def loaded_schema(id)
+      @loaded_schemas ||= {}
+      return @loaded_schemas[id] if @loaded_schemas.key?(id)
+
+      path = schema_manifest_paths[id]
+      @loaded_schemas[id] =
+        path && Expressir::Express::Parser.from_file(path)&.schemas&.first
+    end
+
+    def schema_manifest_paths
+      @schema_manifest_paths ||=
+        Expressir::SchemaManifest.from_file(@schema_manifest_file).schemas
+          .to_h { |entry| [entry.id, entry.path] }
     end
 
     # The imported declaration's name as written in the USE FROM list:
