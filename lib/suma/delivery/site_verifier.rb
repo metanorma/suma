@@ -19,6 +19,10 @@ module Suma
       # rubocop:disable Metrics/MethodLength, Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
       SCHEME_RE = %r{\A(?:https?:|mailto:|javascript:|data:)}
 
+      # Metanorma's unresolved-citation rendering prefix; a page carrying
+      # it cites an express reference the corpus never resolved.
+      MISSING_EXPRESS_MARKER = "Missing:express"
+
       Report = Struct.new(:report, keyword_init: true) do
         def broken_count
           report["broken_links"].size + report["broken_fragments"].size
@@ -39,10 +43,15 @@ module Suma
         anchor_index = build_anchor_index
         html_files.each do |html_file|
           rel_path = html_file.relative_path_from(@site_dir).to_s
-          doc = Leptris::XML.parse_html(html_file.read)
+          content = html_file.read
+          if content.include?(MISSING_EXPRESS_MARKER)
+            report["missing_express_pages"] << rel_path
+          end
+          doc = Leptris::XML.parse_html(content)
           verify_intra_fragments(doc, rel_path, html_file, report)
           verify_links(doc, rel_path, html_file, anchor_index, report)
         end
+        report["inventory"] = site_inventory
         Report.new(report: report)
       end
 
@@ -60,6 +69,26 @@ module Suma
           "total_intra_fragments" => 0,
           "resolved_intra_fragments" => 0,
           "broken_intra_fragments" => [],
+          "missing_express_pages" => [],
+          "inventory" => {},
+        }
+      end
+
+      # The stitched site's shape: the counts the delivery contract is
+      # stated against (section pages, index pages, schema attachments,
+      # schema doc pages).
+      def site_inventory
+        {
+          "sections" => Dir.glob("#{@site_dir}/**/member_*.xml.*.html")
+            .count { |f| !f.end_with?(".err.html") },
+          "index_pages" => Dir.glob("#{@site_dir}/**/*_index.html").size,
+          "schema_attachments" =>
+            Dir.glob("#{@site_dir}/plain_schemas/**/*.exp").size,
+          "schema_docs" => if Dir.exist?("#{@site_dir}/schema_docs")
+                             Dir.children("#{@site_dir}/schema_docs").size
+                           else
+                             0
+                           end,
         }
       end
 
