@@ -18,7 +18,6 @@ module Suma
       # without making it clearer.
       # rubocop:disable Metrics/MethodLength, Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
       SCHEME_RE = %r{\A(?:https?:|mailto:|javascript:|data:)}
-      BARE_INTEGER_RE = /\A\d+\z/
 
       Report = Struct.new(:report, keyword_init: true) do
         def broken_count
@@ -104,7 +103,10 @@ module Suma
           href = a["href"].to_s.strip
           next if href.empty? || href.start_with?("#")
           next if href.match?(SCHEME_RE)
-          next if href.match?(BARE_INTEGER_RE)
+
+          # Bare integers are counted, not skipped: an unbound svgmap
+          # hotspot emits its ordinal as the href, and a link to a
+          # nonexistent file "12" is dead whatever the key form.
 
           file_part, fragment = href.split("#", 2)
           file_part = file_part.delete_prefix("./")
