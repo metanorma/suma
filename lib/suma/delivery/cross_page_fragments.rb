@@ -91,7 +91,7 @@ module Suma
           next if pages == [path]
 
           scope = scope_of(id)
-          next unless scope == frag || scope.end_with?(".#{frag}")
+          next unless scope && (scope == frag || scope.end_with?(".#{frag}"))
 
           [id, pages]
         end

@@ -97,6 +97,23 @@ RSpec.describe Suma::Delivery::CrossPageFragments do
     result, href = repair_and_first_href(ghost_page, "solo.html")
     expect([result[:unresolved], href]).to eq([1, "#nowhere"])
   end
+
+  it "skips unscoped anchors instead of crashing on them" do
+    pages = stamped_declaration_pages.merge(
+      "doc_a.html" => "<html><body>" \
+                      "<p id='plain_anchor_ISO_10303-42_2025'>" \
+                      "not a scope</p>" \
+                      "<p id='geometry_schema.curve_ISO_10303-42_2025'>" \
+                      "curve</p>" \
+                      "</body></html>",
+    )
+    result, href = repair_and_first_href(pages, "doc_b.html")
+    # The plain anchor (its stem ends with a stamp, so it has no scope
+    # match) must be tolerated; the scoped one still resolves.
+    expect([result[:remapped],
+            href]).to eq([1,
+                          "doc_a.html#geometry_schema.curve_ISO_10303-42_2025"])
+  end
 end
 
 # rubocop:enable RSpec/MultipleExpectations, RSpec/ExampleLength, RSpec/MultipleMemoizedHelpers, RSpec/ScatteredLet, RSpec/ImplicitBlockExpectation
