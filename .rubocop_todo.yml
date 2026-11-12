@@ -276,6 +276,7 @@ RSpec/ContextWording:
 # Configuration parameters: Max, CountAsOne.
 RSpec/ExampleLength:
   Exclude:
+    - 'spec/suma/delivery/expectations_spec.rb'
     - 'spec/suma/anchor_validator_spec.rb'
     - 'spec/suma/artifact_server_spec.rb'
     - 'spec/suma/build_plan_spec.rb'
@@ -375,6 +376,7 @@ RSpec/MessageSpies:
 # Configuration parameters: Max.
 RSpec/MultipleExpectations:
   Exclude:
+    - 'spec/suma/delivery/expectations_spec.rb'
     - 'spec/suma/artifact_server_spec.rb'
     - 'spec/suma/change_classification_spec.rb'
     - 'spec/suma/change_impact_spec.rb'

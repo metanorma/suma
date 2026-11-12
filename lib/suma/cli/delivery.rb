@@ -21,13 +21,22 @@ module Suma
                    desc: "Also write the report as JSON to this path"
       option :no_fragments, type: :boolean, default: false,
                             desc: "Skip fragment checking (file existence only)"
+      option :expectations, type: :string,
+                            desc: "YAML manifest of site-shape thresholds " \
+                                  "(sections_min, index_pages, " \
+                                  "schema_attachments_min, schema_docs_min, " \
+                                  "missing_express_max, broken_links_max); " \
+                                  "violations fail the verify"
 
       def verify(site_dir)
         result = Suma::Delivery::SiteVerifier.new(site_dir,
                                                   **verify_options).verify
         log_verify(result)
+        failures = expectation_failures(result)
         raise "broken links found (#{result.broken_count})" unless
           result.broken_count.zero?
+        raise "expectations violated: #{failures.join('; ')}" unless
+          failures.empty?
       end
 
       desc "resolve-fragments SITE_DIR",
@@ -125,14 +134,40 @@ module Suma
         { check_fragments: !options[:no_fragments] }
       end
 
+      def load_expectations
+        return unless options[:expectations]
+
+        Suma::Delivery::Expectations
+          .from_yaml(File.read(options[:expectations]))
+      end
+
+      def expectation_failures(result)
+        expectations = load_expectations or return []
+        expectations.violations(result.report["inventory"],
+                                result.report["broken_links"])
+      end
+
       def log_verify(result)
-        report = result.report
-        write_report(report) if options[:out]
-        Utils.log "Links: #{report['total_links']} total, " \
-                  "#{report['broken_links'].size} broken; " \
-                  "fragments: #{report['total_fragments']} total, " \
-                  "#{report['broken_fragments'].size} broken; " \
-                  "#{report['cross_document_links']} cross-document"
+        write_report(result.report) if options[:out]
+        Utils.log verify_summary(result)
+      end
+
+      def verify_summary(result)
+        r = result.report
+        "Links: #{r['total_links']} total, #{r['broken_links'].size} " \
+          "broken; fragments: #{r['total_fragments']} total, " \
+          "#{r['broken_fragments'].size} broken; " \
+          "#{r['cross_document_links']} cross-document; " \
+          "#{inventory_summary(r)}"
+      end
+
+      def inventory_summary(report)
+        inv = report["inventory"]
+        "site: sections=#{inv['sections']} " \
+          "indexes=#{inv['index_pages']} " \
+          "attachments=#{inv['schema_attachments']} " \
+          "schema_docs=#{inv['schema_docs']}; " \
+          "missing-express pages=#{report['missing_express_pages'].size}"
       end
 
       def write_report(report)

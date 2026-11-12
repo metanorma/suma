@@ -91,4 +91,31 @@ RSpec.describe Suma::Delivery::SiteVerifier do
       expect(verify(root).broken_count).to be_zero
     end
   end
+
+  it "inventories the site shape and scans for missing-express pages" do
+    Dir.mktmpdir do |dir|
+      root = Pathname.new(dir)
+      write(root / "ISO_A_2025/ISO_A_2025_index.html",
+            "<html><body>fine</body></html>")
+      write(root / "ISO_A_2025/member_a.xml.1.html",
+            '<html><body><a href="12">unbound</a></body></html>')
+      write(root / "ISO_A_2025/member_b.xml.2.err.html",
+            "<html><body>Missing:express:secret</body></html>")
+      write(root / "ISO_A_2025/member_c.xml.3.html",
+            "<html><body>Missing:express:basis_schema.x</body></html>")
+      write(root / "plain_schemas/a.exp", "(* schema *)")
+      Dir.mkdir(root / "schema_docs")
+      FileUtils.touch(root / "schema_docs/a.adoc")
+
+      report = verify(root).report
+
+      # The .err.html page is exempt from the walk and the inventory.
+      expect(report["inventory"]).to eq(
+        "sections" => 2, "index_pages" => 1,
+        "schema_attachments" => 1, "schema_docs" => 1
+      )
+      expect(report["missing_express_pages"])
+        .to eq(["ISO_A_2025/member_c.xml.3.html"])
+    end
+  end
 end
