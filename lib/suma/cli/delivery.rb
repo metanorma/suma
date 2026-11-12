@@ -30,6 +30,19 @@ module Suma
           result.broken_count.zero?
       end
 
+      desc "resolve-fragments SITE_DIR",
+           "Assembly-time cross-page fragment resolution: repoint " \
+           "same-page fragment hrefs whose target renders on exactly " \
+           "one other page of the stitched site. Ambiguous matches are " \
+           "left untouched."
+      def resolve_fragments(site_dir)
+        result = Suma::Delivery::CrossPageFragments.new(site_dir).repair
+        Utils.log "Fragments: #{result[:own]} own-page fine, " \
+                  "#{result[:remapped]} remapped cross-page, " \
+                  "#{result[:ambiguous]} ambiguous left, " \
+                  "#{result[:unresolved]} unresolved"
+      end
+
       desc "stitch BUNDLES_DIR",
            "Merge per-part bundles (each bundle.json + site/) into one " \
            "_site/, resolving every unresolved-eref span through the " \
