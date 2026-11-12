@@ -24,15 +24,20 @@ module Suma
       end
 
       # Human-readable violation lines for every threshold the +inventory+
-      # and +broken_links+ breach; unset thresholds stay silent.
+      # and +broken_links+ breach; unset thresholds stay silent. The name
+      # suffix is the comparison: `_min` floors, `_max` caps, a bare name
+      # (index_pages) is exact.
       def violations(inventory, broken_links)
         actuals(inventory, broken_links).filter_map do |name, actual|
           limit = public_send(name) or next
-          min = name.end_with?("_min")
-          met = min ? actual >= limit : actual <= limit
+          relation = relation_of(name)
+          met = case relation
+                when "at least" then actual >= limit
+                when "at most" then actual <= limit
+                else actual == limit
+                end
           next if met
 
-          relation = min ? "at least" : "at most"
           format("%<name>s: got %<actual>d, expected %<relation>s " \
                  "%<limit>d", name: name, actual: actual,
                               relation: relation, limit: limit)
@@ -40,6 +45,13 @@ module Suma
       end
 
       private
+
+      def relation_of(name)
+        return "at least" if name.end_with?("_min")
+        return "at most" if name.end_with?("_max")
+
+        "exactly"
+      end
 
       # Every threshold's observed value, keyed by threshold name.
       def actuals(inventory, broken_links)
