@@ -6,6 +6,7 @@ module Suma
   module Delivery
     autoload :FrameNav, "suma/delivery/frame_nav"
     autoload :CrossPageFragments, "suma/delivery/cross_page_fragments"
+    autoload :Expectations, "suma/delivery/expectations"
     autoload :Pack, "suma/delivery/pack"
     autoload :Plan, "suma/delivery/plan"
     autoload :SiteVerifier, "suma/delivery/site_verifier"
