@@ -11,9 +11,9 @@ RSpec.describe Suma::Delivery::Expectations do
     described_class.new(**attrs)
   end
 
-  let(:inventory) do
-    { "sections" => 650, "index_pages" => 43,
-      "schema_attachments" => 120, "schema_docs" => 101,
+  let(:report) do
+    { "inventory" => { "sections" => 650, "index_pages" => 43,
+                       "schema_attachments" => 120, "schema_docs" => 101 },
       "missing_express_pages" => [] }
   end
   let(:broken_links) { [] }
@@ -22,13 +22,16 @@ RSpec.describe Suma::Delivery::Expectations do
     e = expectations(sections_min: 650, index_pages: 43,
                      schema_attachments_min: 100, schema_docs_min: 101)
 
-    expect(e.violations(inventory, broken_links)).to be_empty
+    expect(e.violations(report, broken_links)).to be_empty
   end
 
   it "treats a bare threshold (index_pages) as exact" do
     e = expectations(index_pages: 43)
 
-    failures = e.violations({ **inventory, "index_pages" => 44 }, [])
+    failures = e.violations(
+      { **report,
+        "inventory" => { **report["inventory"], "index_pages" => 44 } }, []
+    )
 
     expect(failures).to eq(["index_pages: got 44, expected exactly 43"])
   end
@@ -38,7 +41,7 @@ RSpec.describe Suma::Delivery::Expectations do
                      schema_attachments_min: 130, schema_docs_min: 110,
                      missing_express_max: 0, broken_links_max: 2)
 
-    failures = e.violations({ **inventory, "missing_express_pages" => %w[a b] },
+    failures = e.violations({ **report, "missing_express_pages" => %w[a b] },
                             %w[l1 l2 l3])
 
     expect(failures).to contain_exactly(
