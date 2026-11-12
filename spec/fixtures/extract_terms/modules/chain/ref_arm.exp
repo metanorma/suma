@@ -1,0 +1,11 @@
+SCHEMA Ref_arm;
+
+REFERENCE FROM Deep_arm
+  (deep_thing);
+
+ENTITY ref_thing
+  SUBTYPE OF (deep_thing);
+  name : STRING;
+END_ENTITY;
+
+END_SCHEMA;

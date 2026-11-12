@@ -243,6 +243,15 @@ RSpec.describe Suma::TermExtractor do
         content = concept.localization("eng").data.definition.first.content
         expect(content).to include("tech:management_resources_schema.action_assignment")
       end
+
+      it "resolves through a REFERENCE FROM item list" do
+        # The 300-row shape from the 2026-11-12 measurement: resource
+        # schemas import through REFERENCE FROM, and those edges carry
+        # the declaring schema the same way USE FROM ones do.
+        content = concept_content("Ref_arm.ref_thing")
+        expect(content).to include("tech:Deep_arm.deep_thing")
+        expect(content).not_to include("tech:Ref_arm.deep_thing")
+      end
     end
   end
 end

@@ -343,8 +343,11 @@ module Suma
       end
     end
 
-    # The USE FROM interfaces of +schema+ relevant to +entity_id+: the
-    # sources whose item list names it, and the bare USE FROM sources.
+    # The interface edges of +schema+ relevant to +entity_id+: the
+    # sources whose item list names it, and the bare-interface sources.
+    # Both USE FROM and REFERENCE FROM carry the declaring-schema edge —
+    # resource schemas import through REFERENCE FROM, and their citations
+    # mis-qualify exactly like USE FROM ones (iso-10303#835).
     def use_from_sources(schema, entity_id)
       item_matches = []
       bare_sources = []
@@ -359,10 +362,10 @@ module Suma
     end
 
     # :item when the interface's item list names the declaration, :bare
-    # for a bare USE FROM, nil when the interface is irrelevant to it.
+    # for a bare interface, nil when the interface is irrelevant to it.
     def interface_claim(interface, entity_id)
       source = interface.schema&.id
-      return nil unless source && interface.kind == "USE"
+      return nil unless source && %w[USE REFERENCE].include?(interface.kind)
 
       items = Array(interface.items)
       return :bare if items.empty?
