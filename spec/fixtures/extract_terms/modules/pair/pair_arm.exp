@@ -1,0 +1,13 @@
+SCHEMA Pair_arm;
+
+ENTITY paired_thing
+  SUBTYPE OF (sibling_thing);
+  name : STRING;
+END_ENTITY;
+
+ENTITY ambiguous_thing
+  SUBTYPE OF (alt_thing);
+  name : STRING;
+END_ENTITY;
+
+END_SCHEMA;

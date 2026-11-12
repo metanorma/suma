@@ -1,0 +1,7 @@
+schemas:
+  Pair_arm:
+    path: modules/pair/pair_arm.exp
+  Pair_mim:
+    path: modules/pair/pair_mim.exp
+  Pair_twin:
+    path: modules/pair/pair_twin.exp

@@ -227,6 +227,43 @@ RSpec.describe Suma::TermExtractor do
         expect(content).to include("tech:Outer_ambiguous_arm.deep_thing")
       end
 
+      def pair_concepts
+        manifest = File.expand_path(
+          "../fixtures/extract_terms/schemas-pair.yml", __dir__
+        )
+        extractor = described_class.new(
+          manifest, test_output_path, urn: "urn:iso:std:iso:10303:-2:ed-2:en"
+        )
+        extractor.call.flat_map(&:managed_concepts)
+      end
+
+      def pair_concept_content(id)
+        concept = pair_concepts.find { |c| c.data.id == id }
+        expect(concept).not_to be_nil
+        concept.localization("eng").data.definition.first.content
+      end
+
+      it "resolves a cross-pair citation to the sibling schema that declares it" do
+        # Pair_arm cites sibling_thing (SUBTYPE OF) with NO interface edge
+        # to Pair_mim — the _arm/_mim shape: the closure walk finds
+        # nothing, but exactly one manifest schema declares the name, so
+        # the citation binds there (the 148-class wrong qualifiers,
+        # metanorma/suma#197).
+        content = pair_concept_content("Pair_arm.paired_thing")
+        expect(content).to include("tech:Pair_mim.sibling_thing")
+        expect(content).not_to include("tech:Pair_arm.sibling_thing")
+      end
+
+      it "keeps the citing schema when several siblings declare the name" do
+        # Pair_mim AND Pair_twin both declare alt_thing — two declarers
+        # is not a resolution; ambiguous_thing stays qualified with the
+        # citing schema rather than guessing.
+        content = pair_concept_content("Pair_arm.ambiguous_thing")
+        expect(content).to include("tech:Pair_arm.alt_thing")
+        expect(content).not_to include("tech:Pair_mim.alt_thing")
+        expect(content).not_to include("tech:Pair_twin.alt_thing")
+      end
+
       it "still trusts a USE FROM item list without walking" do
         # The #187 case, pinned: applied_action_assignment's supertype is
         # named in an item list (USE FROM management_resources_schema

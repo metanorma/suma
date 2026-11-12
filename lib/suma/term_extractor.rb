@@ -288,7 +288,7 @@ module Suma
           "#{entity_name_to_text(entity.id)} #{entity_ref}"
       else
         entity_subtypes = subtypes.map do |e|
-          owner = declaring_schema_id(schema, e.id) || schema.id
+          owner = declaring_owner(schema, e.id)
           urn_mention(express_entity_urn("#{owner}.#{e.id}"), e.id)
         end
 
@@ -297,6 +297,13 @@ module Suma
           "that represents the " \
           "#{entity_name_to_text(entity.id)} #{entity_ref}"
       end
+    end
+
+    # The owner a supertype citation qualifies with: the closure declarer,
+    # else the sibling-schema declarer, else the citing schema.
+    def declaring_owner(schema, entity_id)
+      declaring_schema_id(schema, entity_id) ||
+        sibling_declaring_schema_id(entity_id) || schema.id
     end
 
     # The schema an imported declaration is declared in, resolved through
@@ -319,6 +326,39 @@ module Suma
         @declaring_schema_cache[[schema.id, entity_id]] =
           declarers.uniq.one? ? declarers.first : nil
       end
+    end
+
+    # When the closure walk finds no declarer, the declaration may sit
+    # in a sibling schema with no interface edge to the citing one: the
+    # _arm/_mim pairs cite across without USE FROM/REFERENCE FROM, so
+    # `X_arm.Y` lands on a concept declared under `X_mim` (TRThurman's
+    # 148 distinct wrong-qualifier targets, iso-10303#835 /
+    # metanorma/suma#197). Scan the manifest's schemas for the entity
+    # name; exactly one declarer resolves, several stay nil.
+    def sibling_declaring_schema_id(entity_id)
+      @sibling_cache ||= {}
+      @sibling_cache.fetch(entity_id) do
+        declarers = declarers_in_manifest(entity_id)
+        unique_declarer(declarers)
+      end
+    end
+
+    # The manifest schemas whose entity collection declares +entity_id+.
+    def declarers_in_manifest(entity_id)
+      schema_manifest_paths.keys.filter_map do |id|
+        loaded = loaded_schema(id)
+        declares_entity?(loaded, entity_id) ? id : nil
+      end
+    end
+
+    def declares_entity?(schema, entity_id)
+      schema&.entities&.any? { |e| e.id == entity_id } ? true : false
+    end
+
+    # The single distinct declarer, or nil when none or several — an
+    # ambiguous name never resolves to a guess.
+    def unique_declarer(declarers)
+      declarers.uniq.one? ? declarers.first : nil
     end
 
     # Distinct schema ids within +schema+'s USE-FROM closure declaring
