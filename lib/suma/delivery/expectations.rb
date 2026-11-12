@@ -23,12 +23,12 @@ module Suma
         map "broken_links_max", to: :broken_links_max
       end
 
-      # Human-readable violation lines for every threshold the +inventory+
+      # Human-readable violation lines for every threshold the +report+
       # and +broken_links+ breach; unset thresholds stay silent. The name
       # suffix is the comparison: `_min` floors, `_max` caps, a bare name
       # (index_pages) is exact.
-      def violations(inventory, broken_links)
-        actuals(inventory, broken_links).filter_map do |name, actual|
+      def violations(report, broken_links)
+        actuals(report, broken_links).filter_map do |name, actual|
           limit = public_send(name) or next
           relation = relation_of(name)
           next if relation_met?(relation, actual, limit)
@@ -56,14 +56,18 @@ module Suma
         end
       end
 
-      # Every threshold's observed value, keyed by threshold name.
-      def actuals(inventory, broken_links)
+      # Every threshold's observed value, keyed by threshold name. The
+      # inventory carries the shape counts; missing_express_pages is a
+      # top-level report key.
+      def actuals(report, broken_links)
+        inventory = report["inventory"] || {}
         {
           "sections_min" => inventory["sections"],
           "index_pages" => inventory["index_pages"],
           "schema_attachments_min" => inventory["schema_attachments"],
           "schema_docs_min" => inventory["schema_docs"],
-          "missing_express_max" => inventory["missing_express_pages"].size,
+          "missing_express_max" =>
+            Array(report["missing_express_pages"]).size,
           "broken_links_max" => broken_links.size,
         }
       end

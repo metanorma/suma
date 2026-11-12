@@ -143,7 +143,7 @@ module Suma
 
       def expectation_failures(result)
         expectations = load_expectations or return []
-        expectations.violations(result.report["inventory"],
+        expectations.violations(result.report,
                                 result.report["broken_links"])
       end
 
