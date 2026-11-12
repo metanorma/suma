@@ -31,12 +31,7 @@ module Suma
         actuals(inventory, broken_links).filter_map do |name, actual|
           limit = public_send(name) or next
           relation = relation_of(name)
-          met = case relation
-                when "at least" then actual >= limit
-                when "at most" then actual <= limit
-                else actual == limit
-                end
-          next if met
+          next if relation_met?(relation, actual, limit)
 
           format("%<name>s: got %<actual>d, expected %<relation>s " \
                  "%<limit>d", name: name, actual: actual,
@@ -51,6 +46,14 @@ module Suma
         return "at most" if name.end_with?("_max")
 
         "exactly"
+      end
+
+      def relation_met?(relation, actual, limit)
+        case relation
+        when "at least" then actual >= limit
+        when "at most" then actual <= limit
+        else actual == limit
+        end
       end
 
       # Every threshold's observed value, keyed by threshold name.
