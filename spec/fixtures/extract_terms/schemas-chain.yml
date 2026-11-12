@@ -11,3 +11,5 @@ schemas:
     path: modules/chain/outer_ambiguous_arm.exp
   Twin_arm:
     path: modules/chain/twin_arm.exp
+  Ref_arm:
+    path: modules/chain/ref_arm.exp
