@@ -1,0 +1,11 @@
+SCHEMA Pair_mim;
+
+ENTITY sibling_thing
+  name : STRING;
+END_ENTITY;
+
+ENTITY alt_thing
+  name : STRING;
+END_ENTITY;
+
+END_SCHEMA;
