@@ -25,6 +25,14 @@ RSpec.describe Suma::Delivery::Expectations do
     expect(e.violations(inventory, broken_links)).to be_empty
   end
 
+  it "treats a bare threshold (index_pages) as exact" do
+    e = expectations(index_pages: 43)
+
+    failures = e.violations({ **inventory, "index_pages" => 44 }, [])
+
+    expect(failures).to eq(["index_pages: got 44, expected exactly 43"])
+  end
+
   it "flags every shortfall, minima and maxima in one pass" do
     e = expectations(sections_min: 700, index_pages: 40,
                      schema_attachments_min: 130, schema_docs_min: 110,
@@ -35,7 +43,7 @@ RSpec.describe Suma::Delivery::Expectations do
 
     expect(failures).to contain_exactly(
       "sections_min: got 650, expected at least 700",
-      "index_pages: got 43, expected at most 40",
+      "index_pages: got 43, expected exactly 40",
       "schema_attachments_min: got 120, expected at least 130",
       "schema_docs_min: got 101, expected at least 110",
       "missing_express_max: got 2, expected at most 0",
