@@ -308,8 +308,17 @@ module Suma
     # wrong (iso-10303#835: the declarer can sit more than one USE FROM
     # away, and sibling branches must all be searched before settling).
     def declaring_schema_id(schema, entity_id)
-      declarers = declaring_schemas(schema, entity_id, [])
-      declarers.uniq.one? ? declarers.first : nil
+      # The closure walk is deterministic per (schema, entity); the
+      # corpus repeats the same lookups across thousands of concepts and
+      # the walk dominated extract-terms wall time once the transitive
+      # USE FROM and REFERENCE FROM edges landed (TRThurman: 2m24s on
+      # 0.5.31 → 9m16s on 0.5.33).
+      @declaring_schema_cache ||= {}
+      @declaring_schema_cache.fetch([schema.id, entity_id]) do
+        declarers = declaring_schemas(schema, entity_id, [])
+        @declaring_schema_cache[[schema.id, entity_id]] =
+          declarers.uniq.one? ? declarers.first : nil
+      end
     end
 
     # Distinct schema ids within +schema+'s USE-FROM closure declaring
