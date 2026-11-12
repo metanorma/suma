@@ -3,10 +3,11 @@
 require "spec_helper"
 require "tmpdir"
 
-# The site-wide link verification contract, pinned against
-# site_manifest.py verify_links: cross-file hrefs must resolve, fragments
-# must resolve against the target's anchors, .err.html files are exempt,
-# and intra-file fragment breakage is reported without failing.
+# The site-wide link verification contract: cross-file hrefs must
+# resolve, fragments must resolve against the target's anchors, .err.html
+# files are exempt, intra-file fragment breakage is reported without
+# failing, and bare-integer hrefs (unbound imagemap hotspots) count as
+# broken links — dead whatever the key form.
 RSpec.describe Suma::Delivery::SiteVerifier do
   def write(path, content)
     path.parent.mkpath
@@ -44,12 +45,13 @@ RSpec.describe Suma::Delivery::SiteVerifier do
 
       report = verify(root).report
 
-      # The scheme and bare-integer hrefs are excluded from the total,
-      # matching the Python scanner; .err.html files from the walk entirely.
-      expect(report["total_links"]).to eq(3)
+      # The scheme href is excluded from the total; the bare-integer
+      # href ("42", an unbound imagemap hotspot) is counted and broken —
+      # a link to a nonexistent file is dead whatever the key form.
+      expect(report["total_links"]).to eq(4)
       expect(report["resolved_links"]).to eq(2)
       expect(report["broken_links"].map { |b| b["href"] })
-        .to contain_exactly("missing.html")
+        .to contain_exactly("missing.html", "42")
 
       expect(report["total_fragments"]).to eq(2)
       expect(report["resolved_fragments"]).to eq(1)
@@ -59,7 +61,7 @@ RSpec.describe Suma::Delivery::SiteVerifier do
       expect(report["cross_document_links"]).to eq(0)
 
       # .err.html links are exempt from the walk entirely.
-      expect(report["total_links"]).to eq(3)
+      expect(report["total_links"]).to eq(4)
     end
   end
 
@@ -74,8 +76,9 @@ RSpec.describe Suma::Delivery::SiteVerifier do
       expect(result.report["resolved_intra_fragments"]).to eq(1)
       expect(result.report["broken_intra_fragments"].first["fragment"])
         .to eq("nowhere-here")
-      # The gate counts only cross-file breaks.
-      expect(result.broken_count).to eq(2)
+      # The gate counts only cross-file breaks: the broken file link
+      # plus the bare-integer hotspot href.
+      expect(result.broken_count).to eq(3)
     end
   end
 
