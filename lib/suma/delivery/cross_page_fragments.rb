@@ -106,7 +106,16 @@ module Suma
       end
 
       def relative_href(from, to)
-        from.dirname.join(to.basename).relative_path_from(from.dirname).to_s
+        # The path FROM the citing page's directory TO the target page's
+        # own location. Joining the target's basename loses its directory:
+        # a schema-doc page citing a member page then emitted
+        # `member_0.xml.11.html#…`, unresolvable from schema_docs/ depth
+        # (TRThurman, iso-10303#835 — every remapped link broke).
+        to.realpath.relative_path_from(from.dirname.realpath).to_s
+      rescue Errno::ENOENT
+        # The target page does not exist on disk; leave the relative
+        # computation to fail softly by naming the page as stored.
+        to.basename.to_s
       end
 
       def html_pages
