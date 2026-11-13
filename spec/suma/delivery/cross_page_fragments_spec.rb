@@ -93,6 +93,30 @@ RSpec.describe Suma::Delivery::CrossPageFragments do
     expect([result[:ambiguous], href]).to eq([1, "#shared"])
   end
 
+  it "writes remapped hrefs that open from the citing page's directory" do
+    # A schema-doc page at schema_docs/pair/doc.html citing a member
+    # page at the site root: the href must carry the ../ step, not just
+    # the target's basename (TRThurman, iso-10303#835 — every remapped
+    # link on a schema page was written unresolvable).
+    write_pages(
+      "member_0.xml.11.html" =>
+        "<html><body><p id='the_target'>decl</p></body></html>",
+      "schema_docs/pair/doc.html" =>
+        "<html><body><a href='#the_target'>term</a></body></html>",
+    )
+    result = described_class.new(site_dir).repair
+    a = Leptris::XML.parse_html(site_dir.join("schema_docs/pair/doc.html").read)
+      .css("a").first
+
+    expect([result[:remapped], a["href"]]).to eq(
+      [1, "../../member_0.xml.11.html#the_target"],
+    )
+    page, fragment = a["href"].split("#")
+    expect(site_dir.join("schema_docs/pair", page)).to be_file
+    expect(site_dir.join("schema_docs/pair", page).read)
+      .to include(%(id="#{fragment}"))
+  end
+
   it "counts unresolved fragments without touching them" do
     result, href = repair_and_first_href(ghost_page, "solo.html")
     expect([result[:unresolved], href]).to eq([1, "#nowhere"])

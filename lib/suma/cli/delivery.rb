@@ -14,8 +14,9 @@ module Suma
     class Delivery < Thor
       desc "verify SITE_DIR",
            "Verify every link in the stitched site resolves: cross-file " \
-           "hrefs to files, fragments to anchors in their target. The " \
-           "production gate is zero broken links; exits 1 on any break. " \
+           "hrefs to files, fragments to anchors in their target. Without " \
+           "--expectations the gate is zero broken links; with one, the " \
+           "manifest's thresholds (broken_links_max included) govern. " \
            "Intra-file fragment hrefs are reported but do not fail."
       option :out, type: :string,
                    desc: "Also write the report as JSON to this path"
@@ -33,10 +34,22 @@ module Suma
                                                   **verify_options).verify
         log_verify(result)
         failures = expectation_failures(result)
-        raise "broken links found (#{result.broken_count})" unless
-          result.broken_count.zero?
-        raise "expectations violated: #{failures.join('; ')}" unless
-          failures.empty?
+        verify_failures(result, failures)
+      end
+
+      # Without an expectations manifest the contract is zero broken
+      # links. With one, broken_links_max IS the broken-link contract:
+      # the unconditional raise would fire first and make the cap
+      # unreachable (TRThurman, iso-10303#835).
+      def verify_failures(result, failures)
+        if options[:expectations]
+          raise "expectations violated: #{failures.join('; ')}" unless
+            failures.empty?
+        elsif result.broken_count.zero?
+          nil
+        else
+          raise "broken links found (#{result.broken_count})"
+        end
       end
 
       desc "resolve-fragments SITE_DIR",
