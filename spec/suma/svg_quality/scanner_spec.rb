@@ -76,9 +76,11 @@ RSpec.describe Suma::SvgQuality::Scanner do
     end
   end
 
-  describe "DEFAULT_PROFILE" do
-    it "is :metanorma" do
-      expect(described_class::DEFAULT_PROFILE).to eq(:metanorma)
+  describe "default_profile" do
+    it "resolves the metanorma profile shipped by metanorma-standoc" do
+      expect(described_class.default_profile)
+        .to end_with("svg_conform_profile/metanorma.yml")
+      expect(File).to exist(described_class.default_profile)
     end
   end
 

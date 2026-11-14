@@ -1,6 +1,6 @@
 SCHEMA Pair_twin;
 
-ENTITY alt_thing
+ENTITY alt_thing;
   name : STRING;
 END_ENTITY;
 

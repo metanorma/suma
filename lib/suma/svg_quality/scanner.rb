@@ -13,13 +13,24 @@ module Suma
     # +#call(index, total, report)+. +NullProgress+ is the default
     # no-op; the CLI passes a lambda that writes to +$stderr+.
     class Scanner
-      DEFAULT_PROFILE = :metanorma
+      # The operative metanorma profile ships from metanorma-standoc by
+      # path: svg_conform's bundled copy is a sample only, and the
+      # "metanorma" engine name fails loudly by design (svg_conform#132).
+      STANDOC_PROFILE_PATH =
+        "lib/metanorma/standoc/svg_conform_profile/metanorma.yml"
+
+      def self.default_profile
+        File.join(
+          Gem::Specification.find_by_name("metanorma-standoc").gem_dir,
+          STANDOC_PROFILE_PATH,
+        )
+      end
 
       attr_reader :profile, :progress
 
-      def initialize(profile: DEFAULT_PROFILE,
+      def initialize(profile: nil,
                      progress: NullProgress.new)
-        @profile = profile
+        @profile = profile || self.class.default_profile
         @progress = progress
       end
 

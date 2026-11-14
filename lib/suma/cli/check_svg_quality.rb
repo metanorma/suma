@@ -11,7 +11,7 @@ module Suma
     class CheckSvgQuality
       DATA_PATH = "schemas"
       DEFAULT_PATTERN = "**/*.svg"
-      DEFAULT_PROFILE = :metanorma
+      DEFAULT_PROFILE = Suma::SvgQuality::Scanner.default_profile
 
       def initialize(pattern: DEFAULT_PATTERN, profile: DEFAULT_PROFILE,
                      format: "terminal", output: nil, min_errors: nil,
