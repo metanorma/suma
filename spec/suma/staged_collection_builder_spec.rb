@@ -662,5 +662,23 @@ RSpec.describe Suma::StagedCollectionBuilder do
 
       expect(builder.unstaged_members(members).map { |m| m["identifier"] }).to eq(%w[ISO-2])
     end
+
+    # The worker option channel crosses the process boundary as JSON, not
+    # Marshal (CodeQL rb/unsafe-deserialization): round-trip the exact
+    # render-option shape.
+    describe "worker option channel" do
+      def render_opts
+        { format: %i[xml html], output_folder: "/tmp/out",
+          preserve_unresolved: true, artifact_store_dir: "/store",
+          compile: { install_fonts: false, novalid: true },
+          only_members: ["ISO 1"], reinflate: true, bare: true }
+      end
+
+      it "round-trips render options through JSON without Marshal" do
+        worker = Suma::StagedCollectionBuilder::Worker
+        expect(worker.load_options(worker.dump_options(render_opts)))
+          .to eq(render_opts)
+      end
+    end
   end
 end

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "json"
 require "yaml"
 require "fileutils"
 require "metanorma"
@@ -8,7 +9,7 @@ module Suma
   class StagedCollectionBuilder
     # The code the staged builder's child processes run. Children are
     # spawned as `ruby -e 'require "suma"; Worker.run'` with the mode and
-    # paths on ARGV and render options Marshal-encoded on STDIN. All
+    # paths on ARGV and render options JSON-encoded on STDIN. All
     # worker logic lives here as real, spec-testable methods: the previous
     # implementation embedded this code as generated script strings, which
     # is unauditable and shipped dead code once (suma#166 - an
@@ -52,13 +53,40 @@ module Suma
         render_with_options(manifest_path)
       end
 
-      # The render options arrive from the parent over STDIN, Marshal-
-      # encoded. The writer is this builder's own run_render in the same
-      # process tree and bundle - a trusted, same-toolchain channel, not
-      # user input.
+      # The render options arrive from the parent over STDIN as JSON (not
+      # Marshal: deserializing a stream is rb/unsafe-deserialization, and
+      # the payload is plain strings, booleans, arrays, and nested hashes
+      # - JSON expresses it exactly, with symbols restored below).
       def render_with_options(manifest_path)
-        opts = Marshal.load($stdin.read) # rubocop:disable Security/MarshalLoad
-        Metanorma::Collection.parse(manifest_path).render(opts)
+        Metanorma::Collection.parse(manifest_path)
+          .render(load_options($stdin.read))
+      end
+
+      # Parent side: symbols and hash keys become strings for the wire.
+      def dump_options(opts)
+        JSON.generate(dump_value(opts))
+      end
+
+      # Child side: restore symbol top-level keys, symbol :format values,
+      # and the nested :compile hash.
+      def load_options(json)
+        opts = JSON.parse(json).to_h { |k, v| [k.to_sym, v] }
+        opts[:format] = opts[:format].map(&:to_sym) if opts[:format]
+        if opts[:compile]
+          opts[:compile] = opts[:compile].to_h do |k, v|
+            [k.to_sym, v]
+          end
+        end
+        opts
+      end
+
+      def dump_value(value)
+        case value
+        when Hash then value.to_h { |k, v| [k.to_s, dump_value(v)] }
+        when Array then value.map { |v| dump_value(v) }
+        when Symbol then value.to_s
+        else value
+        end
       end
 
       # Batch stage: claim one batch file at a time through O_EXCL
@@ -79,9 +107,9 @@ module Suma
 
       def render_batch(ctx, idx)
         # The batch file is written by this builder's own write_batch_bins
-        # in the same process tree - trusted, same-toolchain data.
-        manifests =
-          Marshal.load(File.binread(batch_file(ctx.config_dir, idx))) # rubocop:disable Security/MarshalLoad
+        # in the same process tree - trusted, same-toolchain data, JSON-
+        # encoded member manifests.
+        manifests = JSON.parse(File.read(batch_file(ctx.config_dir, idx)))
         manifests.each_with_index do |manifest, pos|
           render_batch_member(ctx, idx, pos, manifest)
         end

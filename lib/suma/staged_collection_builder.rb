@@ -284,7 +284,7 @@ module Suma
     def write_batch_bins(batches)
       batches.map.with_index do |batch, i|
         path = File.join(@config_dir, "._suma_batch_#{i}.bin")
-        File.binwrite(path, Marshal.dump(batch))
+        File.write(path, Worker.dump_options(batch))
         path
       end
     end
@@ -605,7 +605,7 @@ module Suma
       argv = [mode, manifest_path]
       argv += [@store_dir, id_slug] if mode == "stage"
       IO.popen([RbConfig.ruby, "-e", CHILD_BOOT, *argv], "wb") do |io|
-        io.write(Marshal.dump(opts))
+        io.write(Worker.dump_options(opts))
         io.close_write
       end
       return if $?.success?
