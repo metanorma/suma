@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "tmpdir"
+require "stringio"
 require "yaml"
 require "fileutils"
 
@@ -481,6 +482,149 @@ RSpec.describe Suma::StagedCollectionBuilder do
     it "generates a child script whose alias loop keeps identical-slug guards" do
       script = builder.send(:child_script)
       expect(script).to include("next if src.empty? || dst.empty? || src == dst")
+    end
+  end
+
+  # The warm-skip identity of one staged-store entry: the digest of the
+  # rendering toolchain that produced it, banked beside the semantic XML
+  # (metanorma/suma#203).
+  describe Suma::StagedCollectionBuilder::StoreEntry do
+    let(:stored) do
+      path = File.join(dir, "doc.abc123.semantic.xml")
+      File.write(path, "<semantic/>")
+      path
+    end
+    let(:dir) { Dir.mktmpdir }
+
+    after { FileUtils.rm_rf(dir) }
+
+    it "reads a legacy entry as having no toolchain identity" do
+      expect(described_class.toolchain_digest(stored)).to be_nil
+      expect(described_class.current?(stored, "a" * 64)).to be(false)
+      expect(described_class.short_digest(stored)).to eq("unknown")
+    end
+
+    it "banks the producing digest and validates entries against it" do
+      described_class.bank(stored, "a" * 64)
+
+      expect(described_class.toolchain_digest(stored)).to eq("a" * 64)
+      expect(described_class.current?(stored, "a" * 64)).to be(true)
+      expect(described_class.current?(stored, "b" * 64)).to be(false)
+      expect(described_class.short_digest(stored)).to eq("a" * 8)
+    end
+
+    it "banks beside the entry, outside the semantic-XML glob" do
+      described_class.bank(stored, "a" * 64)
+
+      expect(Dir[File.join(dir, "*.semantic.xml")]).to eq([stored])
+    end
+  end
+
+  # The durable warm-skip guarantee (metanorma/suma#203): a restored
+  # store entry is trusted only when the toolchain that produced it is
+  # the current one, so a store carried across a toolchain change by a
+  # workflow cache re-renders instead of silently reusing stale renders
+  # (TRThurman, iso-10303#858).
+  describe "toolchain-validated warm-skip" do
+    let(:current_digest) { Suma::Provenance.render_toolchain_digest }
+
+    # Slugs chosen so the store filename is the identifier verbatim.
+    let(:members) do
+      [{ "fileref" => "a.xml", "identifier" => "ISO-1" },
+       { "fileref" => "b.xml", "identifier" => "ISO-2" }]
+    end
+    let(:store) { Dir.mktmpdir }
+    # [members left to render, the builder's provenance log for them]
+    let(:unstaged_and_log) do
+      with_quiet_utils_log do
+        builder_with_store(store).unstaged_members(members)
+      end
+    end
+
+    after { FileUtils.rm_rf(store) }
+
+    def builder_with_store(store)
+      dir = Dir.mktmpdir
+      path = File.join(dir, "collection-output.yaml")
+      File.write(path, "{}")
+      described_class.new(collection_config_path: path,
+                          output_directory: File.join(dir, "_site"),
+                          store_dir: store)
+    end
+
+    # A stored semantic XML entry for +identifier+, named as the
+    # metanorma ArtifactStore names them
+    # (<docid-slug>.<content-hash>.semantic.xml), optionally banked with
+    # a toolchain sidecar.
+    def bank_entry(store, identifier, digest: nil)
+      stored = File.join(store, "#{identifier}.abc123.semantic.xml")
+      File.write(stored, "<semantic/>")
+      described_class::StoreEntry.bank(stored, digest) if digest
+      stored
+    end
+
+    def with_quiet_utils_log
+      buffer = StringIO.new
+      original = Suma::Utils.output
+      Suma::Utils.output = buffer
+      [yield, buffer.string]
+    ensure
+      Suma::Utils.output = original
+    end
+
+    def restored_line(identifier)
+      "[staged] #{identifier}: restored from store " \
+        "(toolchain #{current_digest[0, 8]})"
+    end
+
+    it "skips an entry banked under the current toolchain" do
+      bank_entry(store, "ISO-1", digest: current_digest)
+
+      expect(unstaged_and_log.first.map { |m| m["identifier"] })
+        .to eq(%w[ISO-2])
+      expect(unstaged_and_log.last).to include(restored_line("ISO-1"))
+    end
+
+    it "re-renders an entry banked under a different toolchain" do
+      bank_entry(store, "ISO-1", digest: "0" * 64)
+
+      expect(unstaged_and_log.first.map { |m| m["identifier"] })
+        .to eq(%w[ISO-1 ISO-2])
+      expect(unstaged_and_log.last).to include("[staged] ISO-1: rendering")
+    end
+
+    it "logs that a member with no entry renders" do
+      expect(unstaged_and_log.first.map { |m| m["identifier"] })
+        .to eq(%w[ISO-1 ISO-2])
+      expect(unstaged_and_log.last).to include("[staged] ISO-1: rendering",
+                                               "[staged] ISO-2: rendering")
+    end
+
+    it "re-renders a legacy entry without a banked digest" do
+      stored = bank_entry(store, "ISO-1")
+
+      expect(unstaged_and_log.first.map { |m| m["identifier"] })
+        .to eq(%w[ISO-1 ISO-2])
+      expect(described_class::StoreEntry.toolchain_digest(stored)).to be_nil
+    end
+
+    # The migration: banking after the re-render records the producing
+    # toolchain, so the next warm-skip takes the entry (at most one extra
+    # render per legacy entry, once, then the store is current).
+    it "re-banks a re-rendered legacy entry with the current digest" do
+      stored = bank_entry(store, "ISO-1")
+      builder = builder_with_store(store)
+
+      builder.bank_toolchains(builder.unstaged_members(members))
+      expect(described_class::StoreEntry.toolchain_digest(stored)).to eq(current_digest)
+    end
+
+    it "takes a re-banked entry on the next warm-skip" do
+      bank_entry(store, "ISO-1")
+      builder = builder_with_store(store)
+      builder.bank_toolchains(builder.unstaged_members(members))
+
+      expect(builder.unstaged_members(members).map { |m| m["identifier"] }).to eq(%w[ISO-2])
     end
   end
 end

@@ -108,6 +108,15 @@ module Suma
       @render_toolchain ||= toolchain.merge("render" => render_gems)
     end
 
+    # The toolchain identity in the form cached artifacts record and
+    # compare (the staged store sidecars, the render key, the site-build
+    # key). A digest identifies the toolchain that produced a stored
+    # artifact without restating every gem version beside it.
+    def self.render_toolchain_digest
+      @render_toolchain_digest ||=
+        Digest::SHA256.hexdigest(JSON.generate(render_toolchain))
+    end
+
     def self.render_gems
       gem_specs.select { |spec| render_gem?(spec.name) }
         .sort_by { |spec| [spec.name, spec.version.to_s] }
