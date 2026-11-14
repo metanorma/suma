@@ -435,53 +435,89 @@ RSpec.describe Suma::StagedCollectionBuilder do
     end
   end
 
-  describe "child artefact alias wiring" do
-    let(:dig_path) { ["manifest", "manifest", 0, "docref", 0, "identifier"] }
+  # The child processes run Suma::StagedCollectionBuilder::Worker — real
+  # code in lib/, not generated script strings (the strings shipped dead
+  # code once, suma#166, and could only be pinned as text). These specs
+  # pin the aliasing BEHAVIOR: the store keys on the rendered document's
+  # own docid slug while the parent reinflates and the warm-skip look up
+  # by the docref identifier (suma#204).
+  describe "worker artefact aliasing" do
+    let(:store) { Dir.mktmpdir }
+    let(:id_slug) { "iso-10303-104" }
+    let(:worker) { Suma::StagedCollectionBuilder::Worker }
+    let(:guid_manifest) do
+      { "manifest" => { "manifest" =>
+        [{ "docref" => [{ "identifier" => "ISO 1" }] }] } }
+    end
+
+    after { FileUtils.rm_rf(store) }
+
+    def bank_entry(entry_slug)
+      path = File.join(store, "#{entry_slug}.abc123.semantic.xml")
+      File.write(path, "<semantic/>")
+      path
+    end
+
+    def collection_with(bibdatas = {}, aliases = {})
+      manifest = Struct.new(:identifier_aliases).new(aliases)
+      Struct.new(:bibdatas, :manifest).new(bibdatas, manifest)
+    end
+
+    def expect_stored_alias(identifier)
+      expect(File).to exist(File.join(store, "#{identifier}.abc123.semantic.xml"))
+    end
+
+    def alias_both_sources
+      bank_entry("Guid-marker-doc")
+      bank_entry("resolved-doc")
+      collection = collection_with({ "Guid marker doc" => nil },
+                                   { "ISO 10303-104" => "resolved doc" })
+      Suma::StagedCollectionBuilder::Worker
+        .alias_artifacts(collection, id_slug, store)
+    end
 
     it "digs the docref identifier through the single-member manifest shape" do
-      one = builder.send(:single_member_manifest,
-                         "fileref" => "a.xml", "identifier" => "ISO 1")
-      expect(one.dig(*dig_path)).to eq("ISO 1")
+      expect(worker.member_identifier(guid_manifest)).to eq("ISO 1")
     end
 
-    it "generates a child script that digs the same path" do
-      script = builder.send(:child_script)
-      expect(script)
-        .to include(%(manifest.dig("manifest", "manifest", 0, "docref", 0, "identifier")))
+    it "aliases bibdatas docid entries under the docref identifier" do
+      bank_entry("Guid-marker-doc")
+      worker.alias_from_bibdatas(collection_with("Guid marker doc" => nil),
+                                 id_slug, store)
+      expect_stored_alias(id_slug)
     end
 
-    # The child script rides to the worker in an interpolating heredoc, so
-    # a stray `\A` in the source becomes `A` in the generated file: the
-    # alias matcher then matches nothing and reinflate fails with "no
-    # stored artefact". Pin the generated regex text, not just the source.
-    it "generates a child script whose slug trim keeps its anchors" do
-      script = builder.send(:child_script)
-      expect(script).to include(%(.gsub(/\\A-|-\\z/, "")))
+    it "does not alias the identifier's own slug onto itself" do
+      path = bank_entry(id_slug)
+      worker.alias_from_bibdatas(collection_with(id_slug => nil),
+                                 id_slug, store)
+      expect(Dir[File.join(store, "#{id_slug}.*.semantic.xml")]).to eq([path])
     end
 
-    # The alias source is the collection's own bibdata keys, never a
-    # produced-files delta: with concurrent workers another child's
-    # render lands in the shared store mid-flight, and a delta would
-    # alias other members' documents under this docref (suma#167).
-    it "generates a child script that aliases from the render's bibdatas keys" do
-      script = builder.send(:child_script)
-      expect(script).to include("(collection.bibdatas || {}).keys")
-      expect(script).not_to include("semantics_before")
+    # bibdatas is empty for corpus manifests (no bibdata entries,
+    # suma#181): metanorma records identifier -> docid on the child's own
+    # post-render manifest, and that map drives the aliasing too.
+    it "aliases identifier_aliases resolved docids under the raw identifier" do
+      bank_entry("resolved-doc")
+      aliases = { "ISO 10303-104" => "resolved doc" }
+      worker.alias_from_identifier_aliases(aliases, store)
+      expect_stored_alias("ISO-10303-104")
     end
 
-    # bibdatas is empty for corpus manifests (no bibdata entries), so the
-    # bibdatas loop above never aliases anything: on a cold store
-    # reinflate dies with "no stored artefact" (suma#181). metanorma
-    # records the identifier -> docid mapping on the child's own
-    # post-render manifest; the script must alias from that map too.
-    it "generates a child script that aliases via the manifest identifier_aliases" do
-      script = builder.send(:child_script)
-      expect(script).to include("collection.manifest.identifier_aliases")
+    it "runs both alias sources through alias_artifacts" do
+      alias_both_sources
+      expect_stored_alias(id_slug)
+      expect_stored_alias("ISO-10303-104")
     end
 
-    it "generates a child script whose alias loop keeps identical-slug guards" do
-      script = builder.send(:child_script)
-      expect(script).to include("next if src.empty? || dst.empty? || src == dst")
+    # The \A/\z anchors are load-bearing: they trim leading and trailing
+    # dashes only. Losing them in generated text was the suma#166 defect
+    # (the alias matcher matched nothing and reinflate died with "no
+    # stored artefact") — pin the behavior, not the text.
+    it "slugs with anchored trims" do
+      expect(Suma::StagedCollectionBuilder::Worker.slug("-a--b-")).to eq("a-b")
+      expect(Suma::StagedCollectionBuilder::Worker.slug("a b!c")).to eq("a-b-c")
+      expect(Suma::StagedCollectionBuilder::Worker.slug("--")).to be_empty
     end
   end
 

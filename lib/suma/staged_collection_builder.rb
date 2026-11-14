@@ -37,6 +37,15 @@ module Suma
   class StagedCollectionBuilder
     STORE_DIRNAME = ".metanorma-collection-cache"
 
+    autoload :Worker, "suma/staged_collection_builder/worker"
+
+    # The child-process boot line: one require, no embedded logic. All
+    # worker code lives in Worker (lib/suma/staged_collection_builder/
+    # worker.rb) — generated script strings shipped dead code once
+    # (suma#166) and could only be spec-pinned as text.
+    CHILD_BOOT = 'require "suma"; ' \
+                 "Suma::StagedCollectionBuilder::Worker.run"
+
     # Members rendered per child process: one Metanorma boot amortised over
     # a batch of small members keeps boot cost under a few percent.
     DEFAULT_BATCH_SIZE = 25
@@ -282,7 +291,7 @@ module Suma
 
     def run_batch_workers(count)
       children = Array.new([@workers, count].min) do
-        Process.spawn(RbConfig.ruby, "-e", child_script, @config_dir,
+        Process.spawn(RbConfig.ruby, "-e", CHILD_BOOT, "batch", @config_dir,
                       count.to_s, @store_dir, @output_directory,
                       @no_valid ? "1" : "0", chdir: @config_dir)
       end
@@ -305,122 +314,6 @@ module Suma
     # Child renderer: claims and renders batches until none remain. The
     # Metanorma boot is paid once per child, and GC runs between members to
     # bound the heap. Any render failure exits nonzero and fails the build.
-    def child_script
-      <<~'RUBY'
-        require "yaml"
-        require "fileutils"
-        require "metanorma"
-        config_dir, batch_count, store_dir, out_dir, no_valid = ARGV
-        count = Integer(batch_count)
-        claimed = 0
-        loop do
-          idx = (0...count).find do |i|
-            begin
-              File.open(File.join(config_dir, "._suma_batch_#{i}.claim"),
-                        File::RDWR | File::CREAT | File::EXCL) {}
-              true
-            rescue Errno::EEXIST
-              false
-            end
-          end
-          break unless idx
-
-          manifests = Marshal.load(File.binread(File.join(
-            config_dir, "._suma_batch_#{idx}.bin")))
-          manifests.each_with_index do |manifest, j|
-            one_path = File.join(config_dir,
-                                 "._suma_staged_b#{idx}_#{j}.yml")
-            out = File.join(out_dir, "._staged_out_b#{idx}_#{j}")
-            t0 = Time.now
-            begin
-              File.write(one_path, YAML.dump(manifest))
-              # The artefact store keys on the rendered document's own
-              # docid, while the parent reinflates by the docref
-              # identifier; members whose document docid differs from the
-              # docref (docrefs carrying metanorma's GUID marker) were
-              # therefore unrecoverable ("no stored artefact"). Alias the
-              # artefacts keyed by the render's own bibdata keys under the
-              # docref slug too. Shape: single_member_manifest =>
-              # {"manifest" => {"manifest" => [{"docref" => [dr]}]}}.
-              member_id = manifest.dig("manifest", "manifest", 0, "docref", 0, "identifier")
-              id_slug = member_id.to_s
-                .gsub(/[^A-Za-z0-9._-]+/, "-").gsub(/-{2,}/, "-")
-                .gsub(/\A-|-\z/, "")
-              compile = { install_fonts: false }
-              compile[:novalid] = true if no_valid == "1"
-              collection = Metanorma::Collection.parse(one_path)
-              collection.render(
-                format: [:xml], output_folder: out,
-                preserve_unresolved: true, artifact_store_dir: store_dir,
-                compile: compile,
-              )
-              unless id_slug.empty?
-                # Alias strictly from the collection's own bibdata keys:
-                # they are the docids this member's render stored under.
-                # A produced-files delta is not safe here - with
-                # concurrent workers another child's render lands in the
-                # shared store mid-flight, and a delta would alias other
-                # members' documents under this docref (suma#167).
-                (collection.bibdatas || {}).keys.each do |key|
-                  src_slug = key.to_s
-                    .gsub(/[^A-Za-z0-9._-]+/, "-").gsub(/-{2,}/, "-")
-                    .gsub(/\A-|-\z/, "")
-                  next if src_slug.empty? || src_slug == id_slug
-
-                  Dir[File.join(store_dir,
-                                "#{src_slug}.*.semantic.xml")].each do |f|
-                    alias_name = f.sub(
-                      %r{/#{Regexp.escape(src_slug)}.},
-                      "/#{id_slug}.",
-                    )
-                    FileUtils.cp(f, alias_name)
-                  end
-                end
-              end
-
-              # The corpus manifests carry no bibdata, so bibdatas is
-              # empty and the loop above never runs (suma#181): the
-              # artefacts stay keyed under the document's own docid and
-              # reinflate - looking up by the docref identifier - finds
-              # nothing on a cold store ("no stored artefact"). metanorma
-              # resolves every manifest identifier to the document docid
-              # during populate and records the mapping on the manifest
-              # itself (identifier_aliases, raw -> resolved). That map is
-              # the child's own post-render collection - reading it is
-              # race-free per the suma#167 discipline.
-              aliases = begin
-                collection.manifest.identifier_aliases || {}
-              rescue NoMethodError
-                {}
-              end
-              aliases.each do |original, resolved|
-                src = resolved.to_s
-                  .gsub(/[^A-Za-z0-9._-]+/, "-").gsub(/-{2,}/, "-")
-                  .gsub(/\A-|-\z/, "")
-                dst = original.to_s
-                  .gsub(/[^A-Za-z0-9._-]+/, "-").gsub(/-{2,}/, "-")
-                  .gsub(/\A-|-\z/, "")
-                next if src.empty? || dst.empty? || src == dst
-
-                Dir[File.join(store_dir, "#{src}.*.semantic.xml")].each do |f|
-                  FileUtils.cp(
-                    f, f.sub(%r{/#{Regexp.escape(src)}\.}, "/#{dst}."),
-                  )
-                end
-              end
-              warn format("[staged worker %d] batch %d/%d member %d OK (%ds)",
-                          Process.pid, idx + 1, count, j, Time.now - t0)
-            ensure
-              File.unlink(one_path) rescue nil
-              FileUtils.rm_rf(out) rescue nil
-              GC.start
-            end
-          end
-          claimed += 1
-        end
-        exit 1 if claimed.zero? && count.positive?
-      RUBY
-    end
 
     def manifest
       @manifest ||= YAML.load_file(@config_path)
@@ -461,6 +354,7 @@ module Suma
         opts: { format: [:xml], output_folder: out,
                 preserve_unresolved: true, artifact_store_dir: @store_dir,
                 compile: compile_flags },
+        mode: "stage", id_slug: slug(member["identifier"])
       )
     ensure
       FileUtils.rm_f(one_path)
@@ -698,19 +592,19 @@ module Suma
 
     # Mirrors the store's filename slug (metanorma ArtifactStore#slug).
     def slug(identifier)
-      identifier.to_s.gsub(/[^A-Za-z0-9._-]+/, "-")
-        .gsub(/-{2,}/, "-").gsub(/\A-|-\z/, "")
+      Worker.slug(identifier)
     end
 
     # Render a manifest in a FRESH child process so its memory is reclaimed on
-    # exit. Under +bundle exec+, the child inherits the bundle. Raises on failure.
-    def run_render(manifest_path:, opts:)
-      script = <<~RUBY
-        require "metanorma"
-        opts = Marshal.load(STDIN.read)
-        Metanorma::Collection.parse(#{manifest_path.inspect}).render(opts)
-      RUBY
-      IO.popen([RbConfig.ruby, "-e", script], "wb") do |io|
+    # exit. Under +bundle exec+, the child inherits the bundle. Raises on
+    # failure. +mode+ "render" plain-renders (reinflate); "stage" additionally
+    # aliases the member's store artefacts under +id_slug+, the same aliasing
+    # the batch child path performs (suma#204 - without it the sequential
+    # stage banked docid-slug-only entries and never warm-skipped).
+    def run_render(manifest_path:, opts:, mode: "render", id_slug: nil)
+      argv = [mode, manifest_path]
+      argv += [@store_dir, id_slug] if mode == "stage"
+      IO.popen([RbConfig.ruby, "-e", CHILD_BOOT, *argv], "wb") do |io|
         io.write(Marshal.dump(opts))
         io.close_write
       end
