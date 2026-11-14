@@ -52,6 +52,7 @@ module Suma
           verify_links(doc, rel_path, html_file, anchor_index, report)
         end
         report["inventory"] = site_inventory
+        report["diagnostics"] = Diagnostics.count_site(@site_dir).to_h
         Report.new(report: report)
       end
 
@@ -71,6 +72,7 @@ module Suma
           "broken_intra_fragments" => [],
           "missing_express_pages" => [],
           "inventory" => {},
+          "diagnostics" => {},
         }
       end
 

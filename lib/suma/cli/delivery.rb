@@ -26,8 +26,10 @@ module Suma
                             desc: "YAML manifest of site-shape thresholds " \
                                   "(sections_min, index_pages, " \
                                   "schema_attachments_min, schema_docs_min, " \
-                                  "missing_express_max, broken_links_max); " \
-                                  "violations fail the verify"
+                                  "missing_express_max, broken_links_max, " \
+                                  "diagnostics_max: category => rule => " \
+                                  "max rows over the site's .err.html " \
+                                  "files); violations fail the verify"
 
       def verify(site_dir)
         result = Suma::Delivery::SiteVerifier.new(site_dir,
@@ -175,7 +177,7 @@ module Suma
           "broken; fragments: #{r['total_fragments']} total, " \
           "#{r['broken_fragments'].size} broken; " \
           "#{r['cross_document_links']} cross-document; " \
-          "#{inventory_summary(r)}"
+          "#{inventory_summary(r)}; #{diagnostics_summary(r)}"
       end
 
       def inventory_summary(report)
@@ -185,6 +187,14 @@ module Suma
           "attachments=#{inv['schema_attachments']} " \
           "schema_docs=#{inv['schema_docs']}; " \
           "missing-express pages=#{report['missing_express_pages'].size}"
+      end
+
+      # The err.html census the verify walked: total diagnostic rows over
+      # the categories the site's error reports carry.
+      def diagnostics_summary(report)
+        census = report["diagnostics"] || {}
+        "diagnostics: #{census.sum { |_, rules| rules.values.sum }} rows " \
+          "over #{census.size} categories"
       end
 
       def write_report(report)

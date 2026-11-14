@@ -118,4 +118,28 @@ RSpec.describe Suma::Delivery::SiteVerifier do
         .to eq(["ISO_A_2025/member_c.xml.3.html"])
     end
   end
+
+  # The err.html census rides in the report the expectations gate reads
+  # (metanorma/suma#203): .err.html pages are exempt from the link walk
+  # but counted for diagnostic rows.
+  it "censuses the site's err.html diagnostic rows" do
+    Dir.mktmpdir do |dir|
+      root = Pathname.new(dir)
+      write(root / "ISO_A_2025/document.err.html", <<~HTML)
+        <html><body><h1>document.err.html errors</h1>
+        <ul></ul>
+        <h2 id="Referencing">Referencing</h2>
+        <table border="1"><tbody>
+        <tr class="severity1"><td>1</td><th><code>_a</code></th><td>ISO_56</td>
+        <td>cross-reference target a is undefined</td><td><pre>x</pre></td><td>1</td></tr>
+        <tr class="severity1"><td>2</td><th><code>_b</code></th><td>ISO_56</td>
+        <td>cross-reference target b is undefined</td><td><pre>y</pre></td><td>1</td></tr>
+        </tbody></table>
+        </body></html>
+      HTML
+
+      expect(verify(root).report["diagnostics"])
+        .to eq("Referencing" => { "ISO_56" => 2 })
+    end
+  end
 end

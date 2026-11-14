@@ -76,4 +76,60 @@ RSpec.describe Suma::Delivery::Expectations do
     expect(e.index_pages).to eq(43)
     expect(e.missing_express_max).to eq(0)
   end
+
+  # diagnostics_max: category => rule => cap over the report's err.html
+  # census. The stable row identity is category + rule; codes migrate
+  # (iso-10303#859), so the gate keys on both.
+  describe "diagnostics_max" do
+    let(:report_with_diagnostics) do
+      { **report, "diagnostics" => { "Referencing" => { "ISO_56" => 3 } } }
+    end
+
+    it "passes when no rule exceeds its cap" do
+      e = expectations(diagnostics_max:
+                         { "Referencing" => { "ISO_56" => 3 },
+                           "Style" => { "STANDOC_48" => 0 } })
+
+      expect(e.violations(report_with_diagnostics, [])).to be_empty
+    end
+
+    it "counts a rule absent from the census as zero rows" do
+      e = expectations(diagnostics_max:
+                         { "Referencing" => { "ISO_56" => 0 } })
+
+      expect(e.violations(report, [])).to be_empty
+    end
+
+    it "flags every rule over its cap" do
+      e = expectations(diagnostics_max:
+                         { "Referencing" => { "ISO_56" => 2 },
+                           "Style" => { "ISO_45" => 0 } })
+      failures = e.violations(
+        { **report_with_diagnostics,
+          "diagnostics" => { "Referencing" => { "ISO_56" => 3 },
+                             "Style" => { "ISO_45" => 1 } } },
+        [],
+      )
+
+      expect(failures).to contain_exactly(
+        "Referencing/ISO_56: got 3, expected at most 2",
+        "Style/ISO_45: got 1, expected at most 0",
+      )
+    end
+
+    it "round-trips the nested manifest through YAML" do
+      yaml = <<~YAML
+        diagnostics_max:
+          Referencing:
+            ISO_56: 0
+      YAML
+      e = described_class.from_yaml(yaml)
+
+      expect(e.diagnostics_max).to eq("Referencing" => { "ISO_56" => 0 })
+      expect(e.violations({ **report,
+                            "diagnostics" =>
+                              { "Referencing" => { "ISO_56" => 1 } } }, []))
+        .to eq(["Referencing/ISO_56: got 1, expected at most 0"])
+    end
+  end
 end
