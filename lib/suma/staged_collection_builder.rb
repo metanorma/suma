@@ -41,6 +41,52 @@ module Suma
     # a batch of small members keeps boot cost under a few percent.
     DEFAULT_BATCH_SIZE = 25
 
+    # The warm-skip identity of one staged-store entry (metanorma/suma#203):
+    # the digest of the rendering toolchain that produced it, banked in a
+    # sidecar beside the stored semantic XML (raw hex, the form the
+    # SchemaCompiler render key uses). Presence-keyed reuse is unsound when
+    # a workflow cache carries a store across a toolchain change; an entry
+    # whose sidecar is missing (legacy store) or records a different
+    # toolchain is re-rendered, and every freshly rendered entry is
+    # re-banked — so a restored store converges onto the current toolchain
+    # at the cost of at most one extra render per entry.
+    class StoreEntry
+      SIDECHAR = ".toolchain"
+
+      class << self
+        # Bank +digest+ as the producing toolchain of the entry stored at
+        # +stored_path+.
+        def bank(stored_path, digest)
+          File.write(sidecar_path(stored_path), digest)
+        end
+
+        # The toolchain digest banked for the entry, or nil for a legacy
+        # entry written before banking existed.
+        def toolchain_digest(stored_path)
+          path = sidecar_path(stored_path)
+          File.file?(path) ? File.read(path) : nil
+        end
+
+        # Whether the entry was produced by the toolchain +digest+
+        # identifies. A legacy entry (no sidecar) never matches, so the
+        # first build over an old store re-renders once and re-banks.
+        def current?(stored_path, digest)
+          toolchain_digest(stored_path) == digest
+        end
+
+        # The banked digest truncated for log lines.
+        def short_digest(stored_path)
+          (toolchain_digest(stored_path) || "unknown")[0, 8]
+        end
+
+        private
+
+        def sidecar_path(stored_path)
+          "#{stored_path}#{SIDECHAR}"
+        end
+      end
+    end
+
     # +collection_config_path+ is the emitted collection manifest (the same
     # +collection-output.yaml+ the normal build renders). Member filerefs are
     # relative to its directory, so all per-member manifests are written there.
@@ -84,6 +130,42 @@ module Suma
       reinflate(reinflate_selection(members), members)
     end
 
+    # The warm-skip query (metanorma/suma#203): members whose stored entry
+    # was banked under the CURRENT rendering toolchain are done; every
+    # other member — no stored entry, a legacy entry without a banked
+    # digest, or an entry another toolchain produced — renders again.
+    # A workflow cache can carry a store across a toolchain or content-key
+    # change (TRThurman, iso-10303#858), and presence alone cannot see it:
+    # the banked digest is the durable guarantee the restored store cannot
+    # fake. Each member gets one provenance line: what was taken from the
+    # store and what compiled it, or that it renders.
+    def unstaged_members(members)
+      members.reject do |member|
+        identifier = member["identifier"]
+        stored = identifier && stored_semantic(identifier)
+        if stored && StoreEntry.current?(stored, Provenance.render_toolchain_digest)
+          Utils.log "[staged] #{identifier}: restored from store " \
+                    "(toolchain #{StoreEntry.short_digest(stored)})"
+          true
+        else
+          Utils.log "[staged] #{identifier}: rendering"
+          false
+        end
+      end
+    end
+
+    # Record the rendering toolchain beside every freshly rendered
+    # member's store entry, so the next warm build can trust-or-recheck
+    # it. A legacy entry without a digest is re-rendered once and re-banked
+    # with one (safe migration); a warm-skipped member was already
+    # validated against the current digest and keeps its sidecar.
+    def bank_toolchains(members)
+      members.each do |member|
+        stored = stored_semantic(member["identifier"]) or next
+        StoreEntry.bank(stored, Provenance.render_toolchain_digest)
+      end
+    end
+
     private
 
     # The staged slice of the collection: an isolate selection wins over a
@@ -92,13 +174,16 @@ module Suma
       @isolate ? isolate_members(members) : shard_members(members)
     end
 
-    # Render the staged members, serially or across the worker pool.
+    # Render the staged members, serially or across the worker pool, then
+    # bank every freshly rendered member's toolchain identity.
     def stage_members(staged)
+      unstaged = unstaged_members(staged)
       if @workers == 1
-        unstaged_members(staged).each_with_index { |member, i| stage_member(member, i) }
+        unstaged.each_with_index { |member, i| stage_member(member, i) }
       else
-        stage_parallel(staged)
+        stage_parallel(unstaged)
       end
+      bank_toolchains(unstaged)
     end
 
     # The reinflated slice: all members unless a reinflate shard is given,
@@ -156,19 +241,6 @@ module Suma
         "skipping reinflate"
     end
 
-    # Members already present in the store (their docref-slug artefact
-    # exists) are not re-rendered: an interrupted or repeated build over
-    # a warm store goes straight to reinflate, so the assembly pass costs
-    # minutes instead of re-rendering the whole collection.
-    def unstaged_members(members)
-      members.reject do |member|
-        identifier = member["identifier"]
-        stored = identifier && stored_semantic(identifier)
-        Utils.log "[staged] stored, skipping #{identifier}" if stored
-        stored
-      end
-    end
-
     # Batch the members and run +@workers+ renderer child processes
     # concurrently. Each batch file carries fully-rendered single-member
     # manifests; children claim batches through O_EXCL markers, so a slow
@@ -177,8 +249,9 @@ module Suma
     # child exit hands its memory back to the OS. Members write disjoint,
     # identifier-keyed store entries, so concurrent children cannot race;
     # sectionsplit only happens at reinflate (a single sequential pass).
+    # +members+ is the warm-skip's unstaged remainder.
     def stage_parallel(members)
-      paths, count = write_batch_files(unstaged_members(members))
+      paths, count = write_batch_files(members)
       run_batch_workers(count)
     ensure
       remove_batch_files(paths, count)

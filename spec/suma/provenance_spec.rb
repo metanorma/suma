@@ -25,6 +25,30 @@ RSpec.describe Suma::Provenance do
 
   after { FileUtils.rm_rf(work_dir) }
 
+  describe ".render_toolchain" do
+    it "covers the interpreter, the corpus parser, and every render gem" do
+      expect(described_class.render_toolchain).to include(
+        "ruby" => RUBY_VERSION,
+        "expressir" => Expressir::VERSION,
+        "suma" => Suma::VERSION,
+      )
+      expect(described_class.render_toolchain["render"])
+        .to all(match(/\A(?:metanorma|isodoc)/))
+    end
+  end
+
+  describe ".render_toolchain_digest" do
+    it "digests the toolchain identity stably" do
+      first = described_class.render_toolchain_digest
+
+      expect(described_class.render_toolchain_digest).to eq(first)
+      expect(first).to eq(Digest::SHA256.hexdigest(
+                            JSON.generate(described_class.render_toolchain),
+                          ))
+      expect(first).to match(/\A\h{64}\z/)
+    end
+  end
+
   describe ".record" do
     it "digests inputs and outputs and records toolchain versions" do
       record = described_class.record(
