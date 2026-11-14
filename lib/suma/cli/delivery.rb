@@ -40,15 +40,19 @@ module Suma
       # Without an expectations manifest the contract is zero broken
       # links. With one, broken_links_max IS the broken-link contract:
       # the unconditional raise would fire first and make the cap
-      # unreachable (TRThurman, iso-10303#835).
-      def verify_failures(result, failures)
-        if options[:expectations]
-          raise "expectations violated: #{failures.join('; ')}" unless
-            failures.empty?
-        elsif result.broken_count.zero?
-          nil
-        else
-          raise "broken links found (#{result.broken_count})"
+      # unreachable (TRThurman, iso-10303#835). Defined inside
+      # no_commands so Thor does not register a command for a helper
+      # and warn about the missing usage/description on every run.
+      no_commands do
+        def verify_failures(result, failures)
+          if options[:expectations]
+            raise "expectations violated: #{failures.join('; ')}" unless
+              failures.empty?
+          elsif result.broken_count.zero?
+            nil
+          else
+            raise "broken links found (#{result.broken_count})"
+          end
         end
       end
 
