@@ -13,6 +13,10 @@ module Suma
       attribute :schema_docs_min, :integer
       attribute :missing_express_max, :integer, default: -> { 0 }
       attribute :broken_links_max, :integer, default: -> { 0 }
+      # Category => rule => maximum live diagnostic rows: the stable
+      # identity of an err.html row is category + rule, not the code,
+      # which migrates across metanorma releases (iso-10303#859).
+      attribute :diagnostics_max, :hash
 
       key_value do
         map "sections_min", to: :sections_min
@@ -21,13 +25,22 @@ module Suma
         map "schema_docs_min", to: :schema_docs_min
         map "missing_express_max", to: :missing_express_max
         map "broken_links_max", to: :broken_links_max
+        map "diagnostics_max", to: :diagnostics_max
       end
 
       # Human-readable violation lines for every threshold the +report+
       # and +broken_links+ breach; unset thresholds stay silent. The name
       # suffix is the comparison: `_min` floors, `_max` caps, a bare name
-      # (index_pages) is exact.
+      # (index_pages) is exact. The nested diagnostics_max thresholds
+      # count against the report's diagnostics census.
       def violations(report, broken_links)
+        threshold_violations(report, broken_links) +
+          diagnostics_violations(report["diagnostics"])
+      end
+
+      private
+
+      def threshold_violations(report, broken_links)
         actuals(report, broken_links).filter_map do |name, actual|
           limit = public_send(name) or next
           relation = relation_of(name)
@@ -39,7 +52,20 @@ module Suma
         end
       end
 
-      private
+      # diagnostics_max: { "Referencing" => { "ISO_56" => 0 } }. A rule
+      # absent from the census counts zero rows.
+      def diagnostics_violations(census)
+        Array(diagnostics_max).flat_map do |category, rules|
+          rules.filter_map do |rule, limit|
+            actual = (census || {}).dig(category, rule) || 0
+            next if actual <= limit
+
+            format("%<category>s/%<rule>s: got %<actual>d, expected at " \
+                   "most %<limit>d", category: category, rule: rule,
+                                     actual: actual, limit: limit)
+          end
+        end
+      end
 
       def relation_of(name)
         return "at least" if name.end_with?("_min")
