@@ -56,10 +56,14 @@ module Suma
       # The render options arrive from the parent over STDIN as JSON (not
       # Marshal: deserializing a stream is rb/unsafe-deserialization, and
       # the payload is plain strings, booleans, arrays, and nested hashes
-      # - JSON expresses it exactly, with symbols restored below).
+      # - JSON expresses it exactly, with symbols restored below). Returns
+      # the PARSED COLLECTION, not the render's return: Collection#render
+      # returns the Renderer on current metanorma, and the aliasing reads
+      # the collection's bibdata keys and manifest identifier_aliases.
       def render_with_options(manifest_path)
-        Metanorma::Collection.parse(manifest_path)
-          .render(load_options($stdin.read))
+        collection = Metanorma::Collection.parse(manifest_path)
+        collection.render(load_options($stdin.read))
+        collection
       end
 
       # Parent side: symbols and hash keys become strings for the wire.
@@ -115,16 +119,27 @@ module Suma
         end
       end
 
-      def render_batch_member(ctx, idx, pos, manifest)
-        one_path = File.join(ctx.config_dir, "._suma_staged_b#{idx}_#{pos}.yml")
-        out = File.join(ctx.out_dir, "._staged_out_b#{idx}_#{pos}")
-        started = Time.now
-        render_and_alias(render_member(one_path, ctx, out), manifest, ctx)
-        log_batch_ok(ctx, idx, pos, started)
-      ensure
+      def member_paths(ctx, idx, pos)
+        [File.join(ctx.config_dir, "._suma_staged_b#{idx}_#{pos}.yml"),
+         File.join(ctx.out_dir, "._staged_out_b#{idx}_#{pos}")]
+      end
+
+      def cleanup_batch_files(one_path, out)
         FileUtils.rm_f(one_path)
         FileUtils.rm_rf(out)
         GC.start
+      end
+
+      def render_batch_member(ctx, idx, pos, manifest)
+        one_path, out = member_paths(ctx, idx, pos)
+        started = Time.now
+        begin
+          File.write(one_path, YAML.dump(manifest))
+          render_and_alias(render_member(one_path, ctx, out), manifest, ctx)
+          log_batch_ok(ctx, idx, pos, started)
+        ensure
+          cleanup_batch_files(one_path, out)
+        end
       end
 
       def render_and_alias(collection, manifest, ctx)
