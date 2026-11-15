@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "etc"
 require "fileutils"
 
 module Suma
@@ -42,7 +43,10 @@ module Suma
         annotations: false,
         create_zip: false,
         structure: :preserve,
-        jobs: 1,
+        # Cold-parse parallelism by default: the parsanol parse is the
+        # dominant cost of a vanilla (no cache) build and is GVL-free
+        # (Rust), so N workers is a near-N-fold cut. Pass jobs: to pin it.
+        jobs: Etc.nprocessors,
       }
     end
 
