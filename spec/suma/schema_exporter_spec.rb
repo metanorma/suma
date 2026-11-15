@@ -125,12 +125,11 @@ RSpec.describe Suma::SchemaExporter do
 
       expect(Dir.glob(File.join(output_dir, "*.exp")).length).to eq(2)
     end
-  end
+
   # Vanilla (no flags) builds parse on all cores: the parsanol parse is
   # the dominant cold cost and releases the GVL, so the default worker
   # count is the machine's core count, not 1.
   describe "default worker count" do
-
     it "defaults to the machine core count" do
       exporter = described_class.new(
         schemas: [], output_path: Dir.mktmpdir,
