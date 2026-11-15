@@ -130,6 +130,7 @@ RSpec.describe Suma::SchemaExporter do
   # the dominant cold cost and releases the GVL, so the default worker
   # count is the machine's core count, not 1.
   describe "default worker count" do
+
     it "defaults to the machine core count" do
       exporter = described_class.new(
         schemas: [], output_path: Dir.mktmpdir,
