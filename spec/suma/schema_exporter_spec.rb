@@ -125,6 +125,7 @@ RSpec.describe Suma::SchemaExporter do
 
       expect(Dir.glob(File.join(output_dir, "*.exp")).length).to eq(2)
     end
+  end
 
   # Vanilla (no flags) builds parse on all cores: the parsanol parse is
   # the dominant cold cost and releases the GVL, so the default worker
