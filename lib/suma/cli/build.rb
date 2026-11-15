@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "etc"
 require "thor"
 
 module Suma
@@ -55,9 +56,10 @@ module Suma
                                  "to plain_schemas/.suma-build-state.json)"
       option :state_file, type: :string,
                           desc: "Path to the incremental build state file"
-      option :jobs, type: :numeric, default: 1,
-                    desc: "Concurrent schema export workers (document " \
-                          "compilation remains sequential)"
+      option :jobs, type: :numeric, default: Etc.nprocessors,
+                    desc: "Concurrent schema export workers (the parser " \
+                          "releases the GVL, so this is true parallelism; " \
+                          "document compilation remains sequential)"
       option :provenance, type: :string,
                           desc: "Write a provenance manifest (sha256 of inputs " \
                                 "and outputs + toolchain versions) to this path"
