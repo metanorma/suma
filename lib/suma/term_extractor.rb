@@ -6,6 +6,10 @@ require "glossarist"
 
 module Suma
   class TermExtractor
+    # Emitted in place of a supertype cross-reference the interface walk
+    # cannot resolve: a URN would fabricate an owner for the declaration.
+    UNRESOLVED_TARGET = "target unresolved"
+
     def initialize(schema_manifest_file, output_path, urn:,
                    language_code: "eng", profile: nil, edition: nil,
                    language_codes: nil)
@@ -288,8 +292,7 @@ module Suma
           "#{entity_name_to_text(entity.id)} #{entity_ref}"
       else
         entity_subtypes = subtypes.map do |e|
-          owner = declaring_owner(schema, e.id)
-          urn_mention(express_entity_urn("#{owner}.#{e.id}"), e.id)
+          supertype_mention(schema, e.id)
         end
 
         "#{entity_type} that is a type of " \
@@ -299,21 +302,30 @@ module Suma
       end
     end
 
-    # The owner a supertype citation qualifies with: the closure declarer,
-    # else the sibling-schema declarer, else the citing schema.
-    def declaring_owner(schema, entity_id)
-      declaring_schema_id(schema, entity_id) ||
-        sibling_declaring_schema_id(entity_id) || schema.id
+    # The citation for a supertype named in +schema+: qualified with the
+    # declaring schema resolved through the interface closure, or the
+    # literal "target unresolved". A name the closure does not resolve —
+    # absent, ambiguous, or case-variant (the walk is exact-match, and
+    # EXPRESS spellings vary) — has no verifiable declarer; the manifest
+    # scan that used to guess one emitted citations that mis-cited the
+    # declaration, so no xref is emitted at all (WG 12 position on the
+    # 0.5.42 audit, iso-10303#835).
+    def supertype_mention(schema, entity_id)
+      owner = declaring_schema_id(schema, entity_id)
+      return UNRESOLVED_TARGET unless owner
+
+      urn_mention(express_entity_urn("#{owner}.#{entity_id}"), entity_id)
     end
 
     # The schema an imported declaration is declared in, resolved through
     # +schema+'s USE-FROM closure — the same resolution the source remark
     # xrefs carry: a local declaration wins; otherwise the USE FROM edges
     # (item-naming ones first, then bare ones) are walked transitively,
-    # and a single distinct declaring schema wins. nil leaves the citation
-    # qualified with the citing schema, since inventing an owner would be
-    # wrong (iso-10303#835: the declarer can sit more than one USE FROM
-    # away, and sibling branches must all be searched before settling).
+    # and a single distinct declaring schema wins. nil means unresolved:
+    # supertype_mention then emits the literal "target unresolved" rather
+    # than qualifying the citation with any schema (iso-10303#835: the
+    # declarer can sit more than one USE FROM away, and sibling branches
+    # must all be searched before settling).
     def declaring_schema_id(schema, entity_id)
       # The closure walk is deterministic per (schema, entity); the
       # corpus repeats the same lookups across thousands of concepts and
@@ -326,39 +338,6 @@ module Suma
         @declaring_schema_cache[[schema.id, entity_id]] =
           declarers.uniq.one? ? declarers.first : nil
       end
-    end
-
-    # When the closure walk finds no declarer, the declaration may sit
-    # in a sibling schema with no interface edge to the citing one: the
-    # _arm/_mim pairs cite across without USE FROM/REFERENCE FROM, so
-    # `X_arm.Y` lands on a concept declared under `X_mim` (TRThurman's
-    # 148 distinct wrong-qualifier targets, iso-10303#835 /
-    # metanorma/suma#197). Scan the manifest's schemas for the entity
-    # name; exactly one declarer resolves, several stay nil.
-    def sibling_declaring_schema_id(entity_id)
-      @sibling_cache ||= {}
-      @sibling_cache.fetch(entity_id) do
-        declarers = declarers_in_manifest(entity_id)
-        unique_declarer(declarers)
-      end
-    end
-
-    # The manifest schemas whose entity collection declares +entity_id+.
-    def declarers_in_manifest(entity_id)
-      schema_manifest_paths.keys.filter_map do |id|
-        loaded = loaded_schema(id)
-        declares_entity?(loaded, entity_id) ? id : nil
-      end
-    end
-
-    def declares_entity?(schema, entity_id)
-      schema&.entities&.any? { |e| e.id == entity_id } ? true : false
-    end
-
-    # The single distinct declarer, or nil when none or several — an
-    # ambiguous name never resolves to a guess.
-    def unique_declarer(declarers)
-      declarers.uniq.one? ? declarers.first : nil
     end
 
     # Distinct schema ids within +schema+'s USE-FROM closure declaring

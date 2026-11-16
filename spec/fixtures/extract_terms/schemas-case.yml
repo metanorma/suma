@@ -1,0 +1,7 @@
+schemas:
+  Citing_arm:
+    path: modules/casevariant/citing_arm.exp
+  Decl_arm:
+    path: modules/casevariant/decl_arm.exp
+  Other_schema:
+    path: modules/casevariant/other_schema.exp
