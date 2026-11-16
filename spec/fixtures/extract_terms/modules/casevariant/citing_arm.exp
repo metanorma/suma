@@ -1,0 +1,15 @@
+SCHEMA Citing_arm;
+
+USE FROM Decl_arm;
+
+ENTITY mismatched_thing
+  SUBTYPE OF (gadget);
+  name : STRING;
+END_ENTITY;
+
+ENTITY matched_thing
+  SUBTYPE OF (Holder);
+  name : STRING;
+END_ENTITY;
+
+END_SCHEMA;

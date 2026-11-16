@@ -219,12 +219,17 @@ RSpec.describe Suma::TermExtractor do
         expect(content).not_to include("tech:Outer_arm.deep_thing")
       end
 
-      it "keeps the citing schema when sibling branches disagree" do
+      it "emits target unresolved when sibling branches disagree" do
         # Outer_ambiguous_arm barely uses Deep_arm and Twin_arm, and BOTH
-        # declare deep_thing — no single declarer emerges, so the citation
-        # stays qualified with the citing schema rather than guessing.
+        # declare deep_thing — no single declarer emerges, so no owner is
+        # invented and no xref is emitted (WG 12: the literal, not a guess).
         content = concept_content("Outer_ambiguous_arm.ambiguous_thing")
-        expect(content).to include("tech:Outer_ambiguous_arm.deep_thing")
+        aggregate_failures do
+          expect(content).to include("that is a type of target unresolved")
+          expect(content).not_to include("tech:Outer_ambiguous_arm.deep_thing")
+          expect(content).not_to include("tech:Deep_arm.deep_thing")
+          expect(content).not_to include("tech:Twin_arm.deep_thing")
+        end
       end
 
       def pair_concepts
@@ -243,25 +248,31 @@ RSpec.describe Suma::TermExtractor do
         concept.localization("eng").data.definition.first.content
       end
 
-      it "resolves a cross-pair citation to the sibling schema that declares it" do
+      it "emits target unresolved for a bare name with no interface edge" do
         # Pair_arm cites sibling_thing (SUBTYPE OF) with NO interface edge
-        # to Pair_mim — the _arm/_mim shape: the closure walk finds
-        # nothing, but exactly one manifest schema declares the name, so
-        # the citation binds there (the 148-class wrong qualifiers,
-        # metanorma/suma#197).
+        # to Pair_mim — the _arm/_mim shape. The manifest-wide sibling
+        # scan that used to bind the citation to Pair_mim is gone (WG 12:
+        # a same-spelling declaration elsewhere is not a resolution), so
+        # the citation carries no xref at all.
         content = pair_concept_content("Pair_arm.paired_thing")
-        expect(content).to include("tech:Pair_mim.sibling_thing")
-        expect(content).not_to include("tech:Pair_arm.sibling_thing")
+        aggregate_failures do
+          expect(content).to include("that is a type of target unresolved")
+          expect(content).not_to include("tech:Pair_mim.sibling_thing")
+          expect(content).not_to include("tech:Pair_arm.sibling_thing")
+        end
       end
 
-      it "keeps the citing schema when several siblings declare the name" do
-        # Pair_mim AND Pair_twin both declare alt_thing — two declarers
-        # is not a resolution; ambiguous_thing stays qualified with the
-        # citing schema rather than guessing.
+      it "emits target unresolved when several siblings declare the name" do
+        # Pair_mim AND Pair_twin both declare alt_thing — two declarers is
+        # not a resolution, and the interface walk finds none, so the
+        # citation stays unresolved rather than guessing an owner.
         content = pair_concept_content("Pair_arm.ambiguous_thing")
-        expect(content).to include("tech:Pair_arm.alt_thing")
-        expect(content).not_to include("tech:Pair_mim.alt_thing")
-        expect(content).not_to include("tech:Pair_twin.alt_thing")
+        aggregate_failures do
+          expect(content).to include("that is a type of target unresolved")
+          expect(content).not_to include("tech:Pair_arm.alt_thing")
+          expect(content).not_to include("tech:Pair_mim.alt_thing")
+          expect(content).not_to include("tech:Pair_twin.alt_thing")
+        end
       end
 
       it "still trusts a USE FROM item list without walking" do
@@ -288,6 +299,47 @@ RSpec.describe Suma::TermExtractor do
         content = concept_content("Ref_arm.ref_thing")
         expect(content).to include("tech:Deep_arm.deep_thing")
         expect(content).not_to include("tech:Ref_arm.deep_thing")
+      end
+    end
+
+    describe "interface-only resolution (WG 12 position on 0.5.42)" do
+      let(:case_manifest_file) do
+        File.expand_path("../fixtures/extract_terms/schemas-case.yml", __dir__)
+      end
+
+      def case_concepts
+        extractor = described_class.new(case_manifest_file, test_output_path,
+                                        urn: "urn:iso:std:iso:10303:-2:ed-2:en")
+        extractor.call.flat_map(&:managed_concepts)
+      end
+
+      def case_concept_content(id)
+        concept = case_concepts.find { |c| c.data.id == id }
+        expect(concept).not_to be_nil
+        concept.localization("eng").data.definition.first.content
+      end
+
+      it "does not bind a case-variant supertype to a same-spelling sibling" do
+        # mismatched_thing cites gadget; the USE FROM target Decl_arm
+        # declares Gadget (case-insensitive in EXPRESS, exact-match in the
+        # walk), while Other_schema declares gadget with no interface edge
+        # from Citing_arm. The manifest-wide sibling scan used to bind
+        # the citation to Other_schema; per WG 12 it stays unresolved (the
+        # kinematic_structure screw_pair shape, iso-10303#835).
+        content = case_concept_content("Citing_arm.mismatched_thing")
+        aggregate_failures do
+          expect(content).to include("that is a type of target unresolved")
+          expect(content).not_to include("tech:Other_schema.gadget")
+          expect(content).not_to include("tech:Decl_arm.gadget")
+        end
+      end
+
+      it "still resolves a declaration reachable through USE FROM" do
+        # matched_thing SUBTYPE OF (Holder); bare USE FROM Decl_arm, and
+        # Decl_arm declares Holder exactly — the interface walk qualifies
+        # the citation with the declaring schema as before.
+        content = case_concept_content("Citing_arm.matched_thing")
+        expect(content).to include("tech:Decl_arm.Holder")
       end
     end
   end

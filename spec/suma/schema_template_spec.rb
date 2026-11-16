@@ -31,13 +31,18 @@ RSpec.describe Suma::SchemaTemplate do
         expect(rendered).to include("{% for schema in context.schemas %}")
       end
 
-      it "renders the schema with live cross-reference links under anchors" do
+      it "renders the schema through the hyperlinked listing block" do
         rendered = template.render("schemas.yaml")
         aggregate_failures do
           expect(rendered).to include("[[action_schema]]")
           expect(rendered).to include("[%unnumbered,type=express]")
-          expect(rendered).to include("{{ schema.formatted_hyperlinked_adoc }}")
-          expect(rendered).to include('[source%unnumbered,subs="+macros"]')
+          # the listing method emits the complete source block, fence
+          # included — the template carries no fence of its own
+          expect(rendered).to include(
+            "{{ schema.formatted_hyperlinked_adoc_listing }}",
+          )
+          expect(rendered).not_to include('[source%unnumbered,subs="+macros"]')
+          expect(rendered).not_to include("\n--\n")
         end
       end
 

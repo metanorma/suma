@@ -1,0 +1,11 @@
+SCHEMA Decl_arm;
+
+ENTITY Gadget;
+  name : STRING;
+END_ENTITY;
+
+ENTITY Holder;
+  name : STRING;
+END_ENTITY;
+
+END_SCHEMA;

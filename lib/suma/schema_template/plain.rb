@@ -20,6 +20,9 @@ module Suma
         EXTENSIONS
       end
 
+      # The listing method emits the complete source block — the
+      # [source%unnumbered,subs="+macros"] fence included — so the
+      # template carries no fence of its own.
       def render(path_to_schema_yaml)
         <<~ADOC
           = #{schema_id}
@@ -36,10 +39,7 @@ module Suma
           [%unnumbered,type=express]
           == #{schema_id} #{rendered_anchors}
 
-          [source%unnumbered,subs="+macros"]
-          --
-          {{ schema.formatted_hyperlinked_adoc }}
-          --
+          {{ schema.formatted_hyperlinked_adoc_listing }}
           {% endfor %}
           ----
 

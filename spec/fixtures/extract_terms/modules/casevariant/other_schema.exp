@@ -1,0 +1,7 @@
+SCHEMA Other_schema;
+
+ENTITY gadget;
+  name : STRING;
+END_ENTITY;
+
+END_SCHEMA;
