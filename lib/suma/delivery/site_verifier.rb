@@ -227,11 +227,17 @@ module Suma
       def schema_remarks
         @schema_remarks ||= Dir.glob("#{@site_dir}/plain_schemas/**/*.exp")
           .filter_map do |exp|
-            schema = Expressir::Express::Parser.from_file(exp).schemas.first
+            begin
+              schema = Expressir::Express::Parser.from_file(exp).schemas.first
+            rescue Expressir::Express::Error::SchemaParseFailure => e
+              warn "[suma] unparseable schema attachment: #{exp} " \
+                   "(#{e.message.lines.first.to_s.strip})"
+              next nil
+            end
             next unless schema
 
             [File.basename(exp, ".exp"), schema.remarks]
-          end.to_h
+          end.compact.to_h
       end
 
       def schema_doc_page?(rel_path)
