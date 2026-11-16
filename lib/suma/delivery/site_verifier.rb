@@ -2,6 +2,7 @@
 
 require "json"
 require "pathname"
+require "expressir"
 require "leptris"
 
 module Suma
@@ -23,6 +24,28 @@ module Suma
       # it cites an express reference the corpus never resolved.
       MISSING_EXPRESS_MARKER = "Missing:express"
 
+      # Build-environment paths a published page must never name
+      # (TRThurman, iso-10303#857): paths pointing outside the site root
+      # have no meaning at delivery. Overridable per expectations
+      # through +forbidden_path_prefixes+.
+      DEFAULT_FORBIDDEN_PATH_PREFIXES =
+        %w[/home/ /Users/ /private/var/ /tmp/].freeze
+
+      # The whitespace-normalized fragment of a schema's first own
+      # remark that its schema-doc page must carry.
+      REMARK_EXCERPT_LENGTH = 40
+
+      # Express listings end with the schema-close token; a schema-doc
+      # page whose last token renders outside a listing element closed
+      # its <pre> early and leaked the tail as normal HTML.
+      END_SCHEMA_TOKEN = "END_SCHEMA;"
+
+      # Asciidoc constructs that must never render as page text
+      # (source-authoring residuals): inline macros plus the bare
+      # forced-line-break "+".
+      ASCIIDOC_MACROS_RE = /\b(?:image|link|include)::[^ \t\r\n]*\[\]/
+      LISTING_TAGS = %w[pre code].freeze
+
       Report = Struct.new(:report, keyword_init: true) do
         def broken_count
           report["broken_links"].size + report["broken_fragments"].size
@@ -33,9 +56,15 @@ module Suma
         end
       end
 
-      def initialize(site_dir, check_fragments: true)
+      def initialize(site_dir, check_fragments: true,
+                     forbidden_path_prefixes: nil)
         @site_dir = Pathname.new(site_dir)
         @check_fragments = check_fragments
+        prefixes = Array(forbidden_path_prefixes)
+        @forbidden_path_prefixes =
+          prefixes.empty? ? DEFAULT_FORBIDDEN_PATH_PREFIXES : prefixes
+        @forbidden_path_re =
+          %r{#{Regexp.union(@forbidden_path_prefixes)}[\w./+-]*}
       end
 
       def verify
@@ -50,6 +79,13 @@ module Suma
           doc = Leptris::XML.parse_html(content)
           verify_intra_fragments(doc, rel_path, html_file, report)
           verify_links(doc, rel_path, html_file, anchor_index, report)
+          check_build_dir_references(content, rel_path, report)
+          check_asciidoc_leakage(doc, rel_path, report)
+          check_page_inventory(doc, rel_path, report)
+          next unless schema_doc_page?(rel_path)
+
+          check_listing_completeness(doc, rel_path, report)
+          check_own_remark(doc, rel_path, report)
         end
         report["inventory"] = site_inventory
         report["diagnostics"] = Diagnostics.count_site(@site_dir).to_h
@@ -71,6 +107,13 @@ module Suma
           "resolved_intra_fragments" => 0,
           "broken_intra_fragments" => [],
           "missing_express_pages" => [],
+          "build_dir_pages" => [],
+          "build_dir_occurrences" => 0,
+          "incomplete_listings" => [],
+          "missing_schema_remarks" => [],
+          "asciidoc_leak_pages" => [],
+          "asciidoc_leak_occurrences" => 0,
+          "page_inventory" => {},
           "inventory" => {},
           "diagnostics" => {},
         }
@@ -92,6 +135,107 @@ module Suma
                              0
                            end,
         }
+      end
+
+      # Build-directory leakage: every occurrence of a path under a
+      # forbidden prefix, page-level and occurrence-level.
+      def check_build_dir_references(content, rel_path, report)
+        hits = content.scan(@forbidden_path_re)
+        return if hits.empty?
+
+        report["build_dir_pages"] << rel_path
+        report["build_dir_occurrences"] += hits.size
+      end
+
+      # Asciidoc source constructs leaked as rendered page text,
+      # counted over text nodes only (markup-inside-attributes is not
+      # leakage).
+      def check_asciidoc_leakage(doc, rel_path, report)
+        leaks = doc.xpath("//text()").sum do |node|
+          text = node.text.to_s
+          text.scan(ASCIIDOC_MACROS_RE).size + (text.strip == "+" ? 1 : 0)
+        end
+        return if leaks.zero?
+
+        report["asciidoc_leak_pages"] << rel_path
+        report["asciidoc_leak_occurrences"] += leaks
+      end
+
+      # The per-page inventory ratchet rides in the machine-readable
+      # report: image and link counts per page.
+      def check_page_inventory(doc, rel_path, report)
+        report["page_inventory"][rel_path] = {
+          "imgs" => doc.css("img").size,
+          "links" => doc.css("a[href]").size,
+        }
+      end
+
+      # Schema-doc pages only: a schema listing that closed early
+      # renders its tail as normal HTML, so the final END_SCHEMA; token
+      # no longer sits inside a listing element.
+      def check_listing_completeness(doc, rel_path, report)
+        return if listing_closes?(doc)
+
+        report["incomplete_listings"] << rel_path
+      end
+
+      def listing_closes?(doc)
+        tokens = doc.xpath("//text()")
+        last = tokens.select do |node|
+          node.text&.include?(END_SCHEMA_TOKEN)
+        end.last
+        last && inside_listing?(last)
+      end
+
+      def inside_listing?(node)
+        current = node.parent
+        while current
+          return true if LISTING_TAGS.include?(current.name)
+
+          current = current.parent
+        end
+        false
+      end
+
+      # A schema whose parsed attachment carries its own remarks must
+      # publish them: the page text contains the whitespace-normalized
+      # head of the first remark. Schemas without an attachment on the
+      # site cannot be judged and are skipped.
+      def check_own_remark(doc, rel_path, report)
+        schema_id = File.basename(rel_path, ".html").delete_prefix("doc_")
+        remarks = schema_remarks[schema_id]
+        return if Array(remarks).empty?
+
+        excerpt = whitespace_norm(remarks.first)[0, REMARK_EXCERPT_LENGTH]
+        return if whitespace_norm(page_text(doc)).include?(excerpt)
+
+        report["missing_schema_remarks"] << schema_id
+      end
+
+      # The page's whole text content (Leptris documents expose no
+      # #text of their own).
+      def page_text(doc)
+        doc.xpath("//text()").map { |node| node.text.to_s }.join(" ")
+      end
+
+      def whitespace_norm(text)
+        text.to_s.gsub(/\s+/, " ").strip
+      end
+
+      # One Expressir parse per schema attachment, reused across every
+      # schema-doc page of the site.
+      def schema_remarks
+        @schema_remarks ||= Dir.glob("#{@site_dir}/plain_schemas/**/*.exp")
+          .filter_map do |exp|
+            schema = Expressir::Express::Parser.from_file(exp).schemas.first
+            next unless schema
+
+            [File.basename(exp, ".exp"), schema.remarks]
+          end.to_h
+      end
+
+      def schema_doc_page?(rel_path)
+        File.basename(rel_path).start_with?("doc_")
       end
 
       def html_files

@@ -9,6 +9,7 @@ module Suma
     autoload :Diagnostics, "suma/delivery/diagnostics"
     autoload :Expectations, "suma/delivery/expectations"
     autoload :Pack, "suma/delivery/pack"
+    autoload :PageInventory, "suma/delivery/page_inventory"
     autoload :Plan, "suma/delivery/plan"
     autoload :SiteVerifier, "suma/delivery/site_verifier"
     autoload :Stitcher, "suma/delivery/stitcher"
