@@ -142,4 +142,191 @@ RSpec.describe Suma::Delivery::SiteVerifier do
         .to eq("Referencing" => { "ISO_56" => 2 })
     end
   end
+
+  # The page-shape checks (TRThurman, iso-10303#857): build-directory
+  # leakage, listing completeness, own-remark publication, asciidoc
+  # leakage, and the per-page inventory ratchet.
+  describe "page-shape checks" do
+    let(:remark) { "The demo schema defines the widget entity data type." }
+
+    # A minimal attachment whose schema carries one own remark (an
+    # untagged remark block directly after the SCHEMA statement).
+    let(:demo_exp) do
+      <<~EXP
+        SCHEMA demo_schema;
+
+        (*
+        #{remark}
+        *)
+
+          ENTITY widget;
+            a : STRING;
+          END_ENTITY;
+        END_SCHEMA;
+      EXP
+    end
+
+    def build_shape_site(root, doc_html:, attachment: nil)
+      write(root / "plain_schemas/demo_schema.exp", attachment) if attachment
+      write(root / "schema_docs/doc_demo_schema.html", doc_html)
+    end
+
+    it "counts pages and occurrences of build-directory paths" do
+      Dir.mktmpdir do |dir|
+        root = Pathname.new(dir)
+        write(root / "ISO_A_2025/ISO_A_2025_index.html", <<~HTML)
+          <html><body>
+          <p>staged under /home/trth/work/site/plain_schemas</p>
+          <a href="/Users/trth/notes.html">local note</a>
+          </body></html>
+        HTML
+        write(root / "ISO_A_2025/other.html", "<html><body>clean</body></html>")
+
+        report = verify(root).report
+
+        expect(report["build_dir_pages"])
+          .to eq(["ISO_A_2025/ISO_A_2025_index.html"])
+        expect(report["build_dir_occurrences"]).to eq(2)
+      end
+    end
+
+    it "honors configured forbidden path prefixes" do
+      Dir.mktmpdir do |dir|
+        root = Pathname.new(dir)
+        write(root / "page.html", "<html><body>/export/build/site</body></html>")
+
+        configured = described_class
+          .new(root, forbidden_path_prefixes: ["/export/"]).verify
+        default = described_class.new(root).verify
+
+        expect(configured.report["build_dir_occurrences"]).to eq(1)
+        expect(default.report["build_dir_occurrences"]).to be_zero
+      end
+    end
+
+    it "passes a schema-doc page whose listing closes inside a pre" do
+      Dir.mktmpdir do |dir|
+        root = Pathname.new(dir)
+        build_shape_site(root, attachment: demo_exp, doc_html: <<~HTML)
+          <html><body><pre>
+          SCHEMA demo_schema;
+          ENTITY widget; a : STRING; END_ENTITY;
+          END_SCHEMA;
+          </pre></body></html>
+        HTML
+
+        expect(verify(root).report["incomplete_listings"]).to be_empty
+      end
+    end
+
+    it "flags a schema-doc page whose listing closed early" do
+      Dir.mktmpdir do |dir|
+        root = Pathname.new(dir)
+        build_shape_site(root, attachment: demo_exp, doc_html: <<~HTML)
+          <html><body><pre>
+          SCHEMA demo_schema;
+          ENTITY widget; a : STRING;
+          </pre>
+          <p>END_SCHEMA;</p>
+          </body></html>
+        HTML
+
+        expect(verify(root).report["incomplete_listings"])
+          .to eq(["schema_docs/doc_demo_schema.html"])
+      end
+    end
+
+    it "scopes listing checks to schema-doc pages" do
+      Dir.mktmpdir do |dir|
+        root = Pathname.new(dir)
+        write(root / "ISO_A_2025/member_1.xml.1.html",
+              "<html><body><p>END_SCHEMA;</p></body></html>")
+
+        expect(verify(root).report["incomplete_listings"]).to be_empty
+      end
+    end
+
+    it "passes a schema-doc page publishing its own remark" do
+      Dir.mktmpdir do |dir|
+        root = Pathname.new(dir)
+        build_shape_site(root, attachment: demo_exp, doc_html: <<~HTML)
+          <html><body><p>#{remark}</p>
+          <pre>SCHEMA demo_schema; END_SCHEMA;</pre>
+          </body></html>
+        HTML
+
+        expect(verify(root).report["missing_schema_remarks"]).to be_empty
+      end
+    end
+
+    it "flags a schema with remarks whose page lacks them" do
+      Dir.mktmpdir do |dir|
+        root = Pathname.new(dir)
+        page = "<html><body><pre>END_SCHEMA;</pre></body></html>"
+        build_shape_site(root, attachment: demo_exp, doc_html: page)
+
+        expect(verify(root).report["missing_schema_remarks"])
+          .to eq(["demo_schema"])
+      end
+    end
+
+    it "skips remark checks for schemas without an attachment" do
+      Dir.mktmpdir do |dir|
+        root = Pathname.new(dir)
+        build_shape_site(root, doc_html: "<html><body>orphan</body></html>")
+
+        expect(verify(root).report["missing_schema_remarks"]).to be_empty
+      end
+    end
+
+    it "counts asciidoc macro and forced-break text leakage" do
+      Dir.mktmpdir do |dir|
+        root = Pathname.new(dir)
+        write(root / "ISO_A_2025/ISO_A_2025_index.html", <<~HTML)
+          <html><body>
+          <p>image::fig1.png[] then link::other.html[]</p>
+          <p>+</p>
+          <img src="fig2.png" title="image::fig2.png[]"/>
+          </body></html>
+        HTML
+
+        report = verify(root).report
+
+        # The title attribute is markup, not page text: three leaks only.
+        expect(report["asciidoc_leak_pages"])
+          .to eq(["ISO_A_2025/ISO_A_2025_index.html"])
+        expect(report["asciidoc_leak_occurrences"]).to eq(3)
+      end
+    end
+
+    it "passes a clean page's asciidoc leakage check" do
+      Dir.mktmpdir do |dir|
+        root = Pathname.new(dir)
+        write(root / "page.html",
+              '<html><body><img src="f.png"/>' \
+              '<a href="o.html">o</a></body></html>')
+
+        report = verify(root).report
+
+        expect(report["asciidoc_leak_pages"]).to be_empty
+        expect(report["asciidoc_leak_occurrences"]).to be_zero
+      end
+    end
+
+    it "inventories per-page img and link counts" do
+      Dir.mktmpdir do |dir|
+        root = Pathname.new(dir)
+        write(root / "page.html", <<~HTML)
+          <html><body>
+          <img src="a.png"/><img src="b.png"/>
+          <a href="other.html">one</a>
+          <a href="#top">two</a>
+          </body></html>
+        HTML
+
+        expect(verify(root).report["page_inventory"])
+          .to eq("page.html" => { "imgs" => 2, "links" => 2 })
+      end
+    end
+  end
 end

@@ -17,6 +17,15 @@ module Suma
       # identity of an err.html row is category + rule, not the code,
       # which migrates across metanorma releases (iso-10303#859).
       attribute :diagnostics_max, :hash
+      # Page-shape gate maxima over the verifier's page-shape census
+      # (TRThurman, iso-10303#857). The path prefixes scanned for
+      # build-directory leakage default to the verifier's list; set
+      # them here to override.
+      attribute :forbidden_path_prefixes, :string, collection: true
+      attribute :build_dir_references_max, :integer, default: -> { 0 }
+      attribute :incomplete_listings_max, :integer, default: -> { 0 }
+      attribute :missing_schema_remarks_max, :integer, default: -> { 0 }
+      attribute :asciidoc_leaks_max, :integer, default: -> { 0 }
 
       key_value do
         map "sections_min", to: :sections_min
@@ -26,6 +35,11 @@ module Suma
         map "missing_express_max", to: :missing_express_max
         map "broken_links_max", to: :broken_links_max
         map "diagnostics_max", to: :diagnostics_max
+        map "forbidden_path_prefixes", to: :forbidden_path_prefixes
+        map "build_dir_references_max", to: :build_dir_references_max
+        map "incomplete_listings_max", to: :incomplete_listings_max
+        map "missing_schema_remarks_max", to: :missing_schema_remarks_max
+        map "asciidoc_leaks_max", to: :asciidoc_leaks_max
       end
 
       # Human-readable violation lines for every threshold the +report+
@@ -84,7 +98,8 @@ module Suma
 
       # Every threshold's observed value, keyed by threshold name. The
       # inventory carries the shape counts; missing_express_pages is a
-      # top-level report key.
+      # top-level report key; the page-shape maxima count against the
+      # verifier's page-shape census.
       def actuals(report, broken_links)
         inventory = report["inventory"] || {}
         {
@@ -92,9 +107,23 @@ module Suma
           "index_pages" => inventory["index_pages"],
           "schema_attachments_min" => inventory["schema_attachments"],
           "schema_docs_min" => inventory["schema_docs"],
-          "missing_express_max" =>
-            Array(report["missing_express_pages"]).size,
+          "missing_express_max" => Array(report["missing_express_pages"]).size,
           "broken_links_max" => broken_links.size,
+          **page_shape_actuals(report),
+        }
+      end
+
+      # The page-shape census (TRThurman, iso-10303#857): occurrences
+      # for build-dir paths and asciidoc leaks, page counts for
+      # incomplete listings and unpublished remarks.
+      def page_shape_actuals(report)
+        {
+          "build_dir_references_max" => report["build_dir_occurrences"].to_i,
+          "incomplete_listings_max" =>
+            Array(report["incomplete_listings"]).size,
+          "missing_schema_remarks_max" =>
+            Array(report["missing_schema_remarks"]).size,
+          "asciidoc_leaks_max" => report["asciidoc_leak_occurrences"].to_i,
         }
       end
     end

@@ -132,4 +132,76 @@ RSpec.describe Suma::Delivery::Expectations do
         .to eq(["Referencing/ISO_56: got 1, expected at most 0"])
     end
   end
+
+  # Page-shape maxima over the verifier's census (TRThurman,
+  # iso-10303#857): build-directory paths, incomplete listings,
+  # unpublished schema remarks, asciidoc leaks.
+  describe "page-shape maxima" do
+    let(:shaped_report) do
+      { **report,
+        "build_dir_pages" => %w[p.html q.html],
+        "build_dir_occurrences" => 4,
+        "incomplete_listings" => %w[doc_a.html],
+        "missing_schema_remarks" => %w[b_schema c_schema],
+        "asciidoc_leak_pages" => %w[p.html],
+        "asciidoc_leak_occurrences" => 16 }
+    end
+
+    it "flags every census over its cap in one pass" do
+      e = expectations(build_dir_references_max: 3,
+                       incomplete_listings_max: 0,
+                       missing_schema_remarks_max: 1,
+                       asciidoc_leaks_max: 15)
+
+      expect(e.violations(shaped_report, [])).to contain_exactly(
+        "build_dir_references_max: got 4, expected at most 3",
+        "incomplete_listings_max: got 1, expected at most 0",
+        "missing_schema_remarks_max: got 2, expected at most 1",
+        "asciidoc_leaks_max: got 16, expected at most 15",
+      )
+    end
+
+    it "passes a census at or under every cap" do
+      e = expectations(build_dir_references_max: 4,
+                       incomplete_listings_max: 1,
+                       missing_schema_remarks_max: 2,
+                       asciidoc_leaks_max: 16)
+
+      expect(e.violations(shaped_report, [])).to be_empty
+    end
+
+    it "defaults the page-shape maxima to zero tolerance" do
+      expect(expectations.violations(shaped_report, [])).to contain_exactly(
+        "build_dir_references_max: got 4, expected at most 0",
+        "incomplete_listings_max: got 1, expected at most 0",
+        "missing_schema_remarks_max: got 2, expected at most 0",
+        "asciidoc_leaks_max: got 16, expected at most 0",
+      )
+    end
+
+    it "round-trips the prefixes and maxima through YAML" do
+      yaml = <<~YAML
+        forbidden_path_prefixes:
+        - /export/
+        - /scratch/
+        build_dir_references_max: 5
+        incomplete_listings_max: 43
+        missing_schema_remarks_max: 3
+        asciidoc_leaks_max: 16
+      YAML
+      e = described_class.from_yaml(yaml)
+
+      expect(e.forbidden_path_prefixes).to eq(["/export/", "/scratch/"])
+      expect(e.build_dir_references_max).to eq(5)
+      expect(e.incomplete_listings_max).to eq(43)
+      expect(e.missing_schema_remarks_max).to eq(3)
+      expect(e.asciidoc_leaks_max).to eq(16)
+    end
+
+    it "reads page-shape keys absent from a sparse report as zero" do
+      e = expectations
+
+      expect(e.violations(report, [])).to be_empty
+    end
+  end
 end
