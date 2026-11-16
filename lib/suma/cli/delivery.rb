@@ -17,7 +17,10 @@ module Suma
            "hrefs to files, fragments to anchors in their target. Without " \
            "--expectations the gate is zero broken links; with one, the " \
            "manifest's thresholds (broken_links_max included) govern. " \
-           "Intra-file fragment hrefs are reported but do not fail."
+           "Also censuses the page shape: build-directory paths, " \
+           "incomplete listings, unpublished schema remarks, asciidoc " \
+           "leaks, and the per-page img/link inventory. Intra-file " \
+           "fragment hrefs are reported but do not fail."
       option :out, type: :string,
                    desc: "Also write the report as JSON to this path"
       option :no_fragments, type: :boolean, default: false,
@@ -29,22 +32,35 @@ module Suma
                                   "missing_express_max, broken_links_max, " \
                                   "diagnostics_max: category => rule => " \
                                   "max rows over the site's .err.html " \
-                                  "files); violations fail the verify"
+                                  "files, forbidden_path_prefixes, " \
+                                  "build_dir_references_max, " \
+                                  "incomplete_listings_max, " \
+                                  "missing_schema_remarks_max, " \
+                                  "asciidoc_leaks_max); violations fail " \
+                                  "the verify"
+      option :inventory_baseline, type: :string,
+                                  desc: "YAML ratchet baseline (page => " \
+                                        "{imgs:, links:}) over the " \
+                                        "per-page inventory; pages whose " \
+                                        "counts changed fail the verify"
 
       def verify(site_dir)
-        result = Suma::Delivery::SiteVerifier.new(site_dir,
-                                                  **verify_options).verify
+        expectations = load_expectations
+        result = Suma::Delivery::SiteVerifier
+          .new(site_dir, **verify_options(expectations)).verify
         log_verify(result)
-        failures = expectation_failures(result)
-        verify_failures(result, failures)
+        verify_failures(result, failures(result, expectations))
       end
 
       # Without an expectations manifest the contract is zero broken
       # links. With one, broken_links_max IS the broken-link contract:
       # the unconditional raise would fire first and make the cap
-      # unreachable (TRThurman, iso-10303#835). Defined inside
-      # no_commands so Thor does not register a command for a helper
-      # and warn about the missing usage/description on every run.
+      # unreachable (TRThurman, iso-10303#835). The inventory baseline,
+      # when given, is its own gate: any page whose img/link counts
+      # moved since the baseline fails, whatever the expectations mode.
+      # Defined inside no_commands so Thor does not register a command
+      # for a helper and warn about the missing usage/description on
+      # every run.
       no_commands do
         def verify_failures(result, failures)
           if options[:expectations]
@@ -55,6 +71,24 @@ module Suma
           else
             raise "broken links found (#{result.broken_count})"
           end
+          raise_inventory_drift(result)
+        end
+
+        def raise_inventory_drift(result)
+          return unless options[:inventory_baseline]
+
+          changes = Suma::Delivery::PageInventory.changes(
+            result.report["page_inventory"], load_baseline
+          )
+          return if changes.empty?
+
+          raise "page inventory changed: " \
+                "#{Suma::Delivery::PageInventory.format_changes(changes)}"
+        end
+
+        def load_baseline
+          Suma::Delivery::PageInventory
+            .load_baseline(File.read(options[:inventory_baseline]))
         end
       end
 
@@ -149,8 +183,9 @@ module Suma
 
       private
 
-      def verify_options
-        { check_fragments: !options[:no_fragments] }
+      def verify_options(expectations)
+        { check_fragments: !options[:no_fragments],
+          forbidden_path_prefixes: expectations&.forbidden_path_prefixes }
       end
 
       def load_expectations
@@ -160,10 +195,9 @@ module Suma
           .from_yaml(File.read(options[:expectations]))
       end
 
-      def expectation_failures(result)
-        expectations = load_expectations or return []
-        expectations.violations(result.report,
-                                result.report["broken_links"])
+      def failures(result, expectations)
+        expectations&.violations(result.report,
+                                 result.report["broken_links"]) || []
       end
 
       def log_verify(result)
@@ -186,7 +220,18 @@ module Suma
           "indexes=#{inv['index_pages']} " \
           "attachments=#{inv['schema_attachments']} " \
           "schema_docs=#{inv['schema_docs']}; " \
-          "missing-express pages=#{report['missing_express_pages'].size}"
+          "missing-express pages=#{report['missing_express_pages'].size}; " \
+          "#{page_shape_summary(report)}"
+      end
+
+      # The page-shape census line (TRThurman, iso-10303#857):
+      # occurrences for build-dir paths and leaks, page counts for
+      # incomplete listings and unpublished remarks.
+      def page_shape_summary(report)
+        "build-dir=#{report['build_dir_occurrences']} " \
+          "listings=#{Array(report['incomplete_listings']).size} " \
+          "remarks=#{Array(report['missing_schema_remarks']).size} " \
+          "leaks=#{report['asciidoc_leak_occurrences']}"
       end
 
       # The err.html census the verify walked: total diagnostic rows over
