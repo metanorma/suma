@@ -156,3 +156,13 @@ The `compare` command uses an external `eengine` binary to diff two EXPRESS sche
 - Internal library code uses Ruby `autoload` (defined in the immediate parent namespace's file); no `require_relative`
 - No `send` to call private methods, no `instance_variable_set`/`get`, no `respond_to?` for type checking
 - Use `Utils.log` for user-facing output (writes to `$stderr`, prefix `[suma]`; `level: :debug` gated by `SUMA_DEBUG`)
+
+## Release integrity (fleet contracts) — learned 2026-11-16
+
+These rules exist because 0.5.43 shipped with its schema templates calling `metanorma-plugin-lutaml`'s `formatted_hyperlinked_adoc_listing` without a gemspec declaration of that gem — paired with 0.7.69, Liquid rendered `nil` silently and every schema page lost its listing (issue suma#211; found by TRThurman, not by us).
+
+1. **Every cross-gem method the templates call is a declared gemspec dependency with an explicit floor.** A method that exists only in an unreleased sibling makes this gem uninstallable-with-prereleases and silently broken with released ones.
+2. **Renderer-affecting changes carry positive content assertions**: assert the built dummy collection's schema pages CONTAIN a listing (`<pre>` with `END_SCHEMA`) — never only absence-of-error.
+3. **Gemspec/floor bumps move only after CI proves them on figure-bearing corpora** (smol, part2). The dummy collection is the unit harness, not the integration surface: 0.7.71 passed it and FATALed smol's express-g staging.
+4. **Verifier checks rescue external-tool failures**: a datum that fails to parse (Expressir::Express::Error::SchemaParseFailure) is a finding counted under its cap, never a crash of the whole verify (0.5.44).
+5. **VERSIONING: the GHA release workflow owns it exclusively** (`release -f next_version=x.y.z`); never edit `version.rb` to bump a version.

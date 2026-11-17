@@ -47,5 +47,12 @@ Gem::Specification.new do |spec| # rubocop:disable Metrics/BlockLength
   spec.add_dependency "table_tennis"
   spec.add_dependency "thor", ">= 0.20"
 
+  # 0.5.45: the schema templates call formatted_hyperlinked_adoc_listing
+  # (plugin-lutaml >= 0.7.70); without this declaration the 0.7.69
+  # pairing renders Liquid nil silently and every schema page loses its
+  # listing (suma#211).
+  spec.add_dependency "metanorma-plugin-lutaml", ">= 0.7.72"
+
   spec.metadata["rubygems_mfa_required"] = "true"
 end
+
