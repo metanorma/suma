@@ -152,6 +152,11 @@ module Suma
       # leakage).
       def check_asciidoc_leakage(doc, rel_path, report)
         leaks = doc.xpath("//text()").sum do |node|
+          # The annotated-EXPRESS source listing shows the macros as
+          # written by design (the source-fidelity listing); only macros
+          # rendered outside listings are leakage.
+          next 0 if inside_listing?(node)
+
           text = node.text.to_s
           text.scan(ASCIIDOC_MACROS_RE).size + (text.strip == "+" ? 1 : 0)
         end

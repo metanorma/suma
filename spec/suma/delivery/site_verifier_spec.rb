@@ -299,6 +299,26 @@ RSpec.describe Suma::Delivery::SiteVerifier do
       end
     end
 
+    it "does not count macros inside source listings" do
+      Dir.mktmpdir do |dir|
+        root = Pathname.new(dir)
+        write(root / "ISO_A_2025/ISO_A_2025_index.html", <<~HTML)
+          <html><body>
+          <pre class="sourcecode">(*"schema.ent.__figure"
+          image::fig1.png[]
+          ====)</pre>
+          <p>image::fig2.png[]</p>
+          </body></html>
+        HTML
+
+        report = verify(root).report
+
+        # The source listing shows the annotated macros as written; only
+        # the macro rendered outside the listing is leakage.
+        expect(report["asciidoc_leak_occurrences"]).to eq(1)
+      end
+    end
+
     it "passes a clean page's asciidoc leakage check" do
       Dir.mktmpdir do |dir|
         root = Pathname.new(dir)
