@@ -25,7 +25,12 @@ RSpec.describe Suma::SchemaExporter do
     # rule in CLAUDE.md.
     let(:parsed) do
       Class.new do
-        def to_s(no_remarks: true) = no_remarks ? "PLAIN OUTPUT" : "ANNOTATED"
+        def format(no_remarks: false, keep_untagged_remarks: false)
+          return "PLAIN OUTPUT" if no_remarks
+
+          keep_untagged_remarks ? "ANNOTATED+COMMENTS" : "ANNOTATED"
+        end
+
         def schemas = [Struct.new(:id).new("widget_arm")]
       end.new
     end

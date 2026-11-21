@@ -144,7 +144,7 @@ module Suma
         output_path_docs: "schema_docs",
         output_path_schemas: "plain_schemas",
         options: {
-          annotations: true,
+          annotations: false,
           incremental: @incremental,
           state_file: @state_file,
           jobs: @jobs,
