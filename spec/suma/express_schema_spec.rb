@@ -338,5 +338,35 @@ RSpec.describe Suma::ExpressSchema do
           .to be < plain.index("SCHEMA demo_schema;")
       end
     end
+
+    it "keeps a header whose comment body names SCHEMA at line start" do
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, "draft.exp")
+        File.write(path, <<~EXPRESS)
+          (*
+          DRAFT notes.
+          made this update
+          SCHEMA draft_mim '{iso standard 10303 part(1)}';
+          *)
+          SCHEMA draft_mim;
+          END_SCHEMA;
+        EXPRESS
+
+        schema = described_class.new(
+          id: "draft_mim", path: path, output_path: File.join(dir, "out"),
+        )
+        plain = schema.to_plain
+
+        # the whole comment, inner SCHEMA line included, is header; the
+        # statement keyword the parser saw is the formatter's body start
+        expect(plain.lines.count do |line|
+          line.start_with?("SCHEMA draft_mim;")
+        end).to eq(1)
+        expect(plain).to include("DRAFT notes.")
+        expect(plain).to include(
+          "SCHEMA draft_mim '{iso standard 10303 part(1)}';"
+        )
+      end
+    end
   end
 end
