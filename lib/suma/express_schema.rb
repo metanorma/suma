@@ -90,11 +90,29 @@ module Suma
 
     # expressir drops the pre-SCHEMA header comment at parse time
     # (lutaml/expressir#696); the plain face keeps it verbatim from the
-    # source so the attachment carries the schema's provenance text.
+    # source. The scan skips comment bodies, so a "SCHEMA" line inside a
+    # header comment (ap243_open_jt mim's draft notes) is not mistaken
+    # for the statement; a file with no SCHEMA statement (express-g
+    # diagram stubs) is all commentary and is kept whole.
+    PRE_SCHEMA_TOKEN = /
+      \(\*.*?\*\)          # block comment (EXPRESS comments do not nest)
+      | --[^\n]*           # line comment
+      | ^[ \t]*SCHEMA\b    # the statement keyword
+    /mx
+
     def header_from_source
       source = File.read(@path.to_s, encoding: "UTF-8")
-      match = source.match(/\A(.*?)^\s*SCHEMA\b/m)
-      match ? match[1] : ""
+      pos = 0
+      while (match = PRE_SCHEMA_TOKEN.match(source, pos))
+        return source[0, match.begin(0)] if schema_keyword?(match.to_s)
+
+        pos = match.end(0)
+      end
+      source
+    end
+
+    def schema_keyword?(token)
+      token.lstrip.upcase.start_with?("SCHEMA")
     end
 
     def parse_and_cache(source)
