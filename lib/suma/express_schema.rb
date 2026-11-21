@@ -86,8 +86,6 @@ module Suma
       File.write(filename_plain, content)
     end
 
-    private
-
     # expressir drops the pre-SCHEMA header comment at parse time
     # (lutaml/expressir#696); the plain face keeps it verbatim from the
     # source. The scan skips comment bodies, so a "SCHEMA" line inside a
@@ -99,6 +97,8 @@ module Suma
       | --[^\n]*           # line comment
       | ^[ \t]*SCHEMA\b    # the statement keyword
     /mx
+
+    private
 
     def header_from_source
       source = File.read(@path.to_s, encoding: "UTF-8")
