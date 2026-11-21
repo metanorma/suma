@@ -241,7 +241,12 @@ module Suma
             end
             next unless schema
 
-            [File.basename(exp, ".exp"), schema.remarks]
+            # Expressir 2.4.70+ keeps tagged remarks in #remarks and the
+            # source's untagged comments in #untagged_remarks; the page
+            # publishes both channels (description blocks and the listing).
+            remarks = Array(schema.remarks) +
+              Array(schema.untagged_remarks).map(&:text)
+            [File.basename(exp, ".exp"), remarks]
           end.compact.to_h
       end
 

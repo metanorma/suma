@@ -28,17 +28,27 @@ module Suma
 
     # @return [Array<String>] source files determining the rendered site
     def source_files
-      @source_files ||= begin
-        files = @extra_inputs.select { |file| File.file?(file) }
-        (files + tree_files).uniq.sort
-      end
+      @source_files ||= scan_sources
+    end
+
+    # The freshness key's inputs: the source scan minus the files the
+    # previous build emitted into the source tree (render-extracted images
+    # beside their documents). The render runs after the freshness scan
+    # memoized in source_files, so those files appear mid-build; recorded
+    # on the state, they stay outputs of the previous build and never
+    # inputs of the next.
+    def key_files
+      emitted = Array(read_state&.fetch("emitted_files", nil))
+      return source_files if emitted.empty?
+
+      source_files.reject { |file| emitted.include?(relative(file)) }
     end
 
     # @return [String] digest of every source file and the render toolchain
     def key
       @key ||= begin
         digest = Digest::SHA256.new
-        source_files.each do |file|
+        key_files.each do |file|
           digest << relative(file) << "\0"
           digest << Digest::SHA256.file(file).hexdigest << "\0"
         end
@@ -60,7 +70,8 @@ module Suma
 
     # Persist the key and the produced files for the next build.
     def record
-      write_state("key" => key, "outputs" => output_files)
+      write_state("key" => key, "outputs" => output_files,
+                  "emitted_files" => emitted_files)
       self
     end
 
@@ -69,6 +80,17 @@ module Suma
     end
 
     private
+
+    def scan_sources
+      files = @extra_inputs.select { |file| File.file?(file) }
+      (files + tree_files).uniq.sort
+    end
+
+    # Files present after the build that the starting scan did not see:
+    # what the render wrote into the source tree.
+    def emitted_files
+      (scan_sources - source_files).map { |file| relative(file) }
+    end
 
     def tree_files
       excluded = excluded_paths

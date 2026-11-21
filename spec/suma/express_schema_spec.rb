@@ -304,4 +304,34 @@ RSpec.describe Suma::ExpressSchema do
       expect(File.basename(result)).to eq("arm_lf.exp")
     end
   end
+
+  describe "#to_plain" do
+    it "writes the plain form: no tagged description blocks, source comments kept" do
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, "demo.exp")
+        File.write(path, <<~EXPRESS)
+          (*
+          Demo header block.
+          *)
+          SCHEMA demo_schema;
+            (*"demo_schema.entity_one"
+            Description block for entity_one.
+            *)
+            ENTITY entity_one;
+              name : STRING;
+            END_ENTITY;
+          END_SCHEMA; -- demo_schema
+        EXPRESS
+
+        schema = described_class.new(
+          id: "demo_schema", path: path, output_path: File.join(dir, "out"),
+        )
+        plain = schema.to_plain
+
+        expect(plain).not_to include("Description block for entity_one")
+        expect(plain).to include("ENTITY entity_one;")
+        expect(plain).to include("END_SCHEMA;")
+      end
+    end
+  end
 end

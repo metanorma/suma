@@ -56,6 +56,27 @@ RSpec.describe Suma::SiteBuild do
     expect(site.current?).to be true
   end
 
+  it "keeps the key stable when the render emits files into the tree" do
+    # The render runs after the freshness scan: files it writes beside the
+    # documents (extracted images) must not make the next build stale.
+    site.current?
+    File.write(File.join(root, "documents", "armexpg1.svg"), "<svg/>")
+    site.record
+
+    expect(described_class.new(root: root, output_directory: output).current?)
+      .to be true
+  end
+
+  it "counts an image that existed before the build as a source" do
+    image = File.join(root, "documents", "figure1.svg")
+    File.write(image, "<svg/>")
+    site.record
+    File.write(image, "<svg changed/>")
+
+    expect(described_class.new(root: root, output_directory: output).current?)
+      .to be false
+  end
+
   it "does not count the bundler install directory as a source" do
     site.record
     gem_yaml = File.join(root, "vendor", "bundle", "ruby", "3.3.0",

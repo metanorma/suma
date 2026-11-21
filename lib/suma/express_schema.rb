@@ -52,7 +52,7 @@ module Suma
     end
 
     def to_plain
-      parsed.to_s
+      parsed.format(no_remarks: true, keep_untagged_remarks: true)
     end
 
     def filename_plain

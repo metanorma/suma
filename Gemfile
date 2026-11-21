@@ -20,7 +20,9 @@ gem "canon"
 # metanorma-standoc "Standoc::Document" split, so pin that from main too.
 # Flip both to released gems once metanorma-iso releases the migration.
 gem "metanorma-iso", github: "metanorma/metanorma-iso", branch: "main"
-gem "metanorma-standoc", github: "metanorma/metanorma-standoc", branch: "main"
+# released 3.5.22+ accepts moxml ~> 0.6 (metanorma-document >= 0.5.11
+# needs it); the git main still pins moxml ~> 0.5.84
+gem "metanorma-standoc", ">= 3.5.22"
 # metanorma#607 (drop localized <edition> variants before the relaton
 # parse; metanorma-iso main emits them) landed on main, where the
 # collection document parser lives at
@@ -28,7 +30,10 @@ gem "metanorma-standoc", github: "metanorma/metanorma-standoc", branch: "main"
 gem "metanorma", github: "metanorma/metanorma", branch: "main"
 # iso/standoc main also use unreleased metanorma-document 0.5.x model
 # classes (e.g. Components::Inline::TermrefElement).
-gem "metanorma-document", github: "metanorma/metanorma-document", branch: "main"
+# released >= 0.5.11 declares relaton ~> 3.1.1 (the git main still
+# requires the 3.0.0.pre.alpha family, conflicting with the relaton
+# floor below)
+gem "metanorma-document", ">= 0.5.11"
 # Collection/Compile implementation gem the main-line metanorma stack
 # resolves against (standoc main needs ~> 0.2.3).
 gem "metanorma-core", github: "metanorma/metanorma-core", branch: "main"
@@ -38,7 +43,11 @@ gem "metanorma-core", github: "metanorma/metanorma-core", branch: "main"
 # prerelease); the released 3.7.3 still pins relaton-render ~> 1.3.0
 # and crashes collection renders. Revert to the released gem once an
 # isodoc release carries the allowance.
-gem "isodoc", github: "metanorma/isodoc", branch: "main"
+# released isodoc pins relaton-render ~> 1.3.0 and crashed collection
+# renders (see the comment above) — main carried the allowance; the
+# consolidated relaton ~> 3.1.1 absorbed relaton-render, so the
+# release works again with the floor below
+gem "isodoc", ">= 3.7.17"
 # relaton floor: isodoc main (post-relaton#462 consolidation) requires
 # relaton ~> 3.1.1 -- the consolidated relaton gem absorbed
 # relaton-cli/relaton-render, whose standalone lines stop being the
@@ -47,7 +56,10 @@ gem "relaton", "~> 3.1.1"
 # gem "metanorma-plugin-lutaml", github: "metanorma/metanorma-plugin-lutaml", branch: "main"
 # gem "metanorma-standoc", github: "metanorma/metanorma-standoc", branch: "main"
 # gem "expressir", github: "lutaml/expressir", branch: "main"
-gem "expressir", "2.4.35"
+# 2.4.75: the keep_untagged_remarks formatter option to_plain needs
+# (the plain-schema face, suma#217); supersedes the 2.4.35 windows fix
+# and the 2.4.56 parse regression, both fixed upstream since.
+gem "expressir", "2.4.75"
 gem "nokogiri"
 gem "openssl", "~> 3.0"
 gem "rake"
