@@ -359,13 +359,13 @@ RSpec.describe Suma::ExpressSchema do
 
         # the whole comment, inner SCHEMA line included, is header; the
         # statement keyword the parser saw is the formatter's body start
-        expect(plain.lines.count do |line|
+        statement_lines = plain.lines.count do |line|
           line.start_with?("SCHEMA draft_mim;")
-        end).to eq(1)
+        end
+        expect(statement_lines).to eq(1)
         expect(plain).to include("DRAFT notes.")
-        expect(plain).to include(
-          "SCHEMA draft_mim '{iso standard 10303 part(1)}';"
-        )
+        expect(plain)
+          .to include("SCHEMA draft_mim '{iso standard 10303 part(1)}';")
       end
     end
   end
