@@ -52,7 +52,9 @@ module Suma
     end
 
     def to_plain
-      parsed.format(no_remarks: true, keep_untagged_remarks: true)
+      "#{header_from_source}#{parsed.format(
+        no_remarks: true, keep_untagged_remarks: true,
+      )}"
     end
 
     def filename_plain
@@ -85,6 +87,15 @@ module Suma
     end
 
     private
+
+    # expressir drops the pre-SCHEMA header comment at parse time
+    # (lutaml/expressir#696); the plain face keeps it verbatim from the
+    # source so the attachment carries the schema's provenance text.
+    def header_from_source
+      source = File.read(@path.to_s, encoding: "UTF-8")
+      match = source.match(/\A(.*?)^\s*SCHEMA\b/m)
+      match ? match[1] : ""
+    end
 
     def parse_and_cache(source)
       repository = Expressir::Express::Parser.from_file(@path.to_s)

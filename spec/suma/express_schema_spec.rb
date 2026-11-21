@@ -331,6 +331,11 @@ RSpec.describe Suma::ExpressSchema do
         expect(plain).not_to include("Description block for entity_one")
         expect(plain).to include("ENTITY entity_one;")
         expect(plain).to include("END_SCHEMA;")
+        # the pre-SCHEMA header survives verbatim (expressir#696 drops it
+        # at parse time; the plain face restores it from the source)
+        expect(plain).to include("Demo header block.")
+        expect(plain.index("Demo header block."))
+          .to be < plain.index("SCHEMA demo_schema;")
       end
     end
   end
