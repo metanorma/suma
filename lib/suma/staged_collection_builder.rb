@@ -250,15 +250,14 @@ module Suma
         "skipping reinflate"
     end
 
-    # Batch the members and run +@workers+ renderer child processes
-    # concurrently. Each batch file carries fully-rendered single-member
-    # manifests; children claim batches through O_EXCL markers, so a slow
-    # worker never starves. One Metanorma boot amortises over
-    # +@batch_size+ members (the boot dominates small members), and each
-    # child exit hands its memory back to the OS. Members write disjoint,
-    # identifier-keyed store entries, so concurrent children cannot race;
-    # sectionsplit only happens at reinflate (a single sequential pass).
-    # +members+ is the warm-skip's unstaged remainder.
+    # Batch the members and run one-batch child processes concurrently.
+    # Each batch file carries fully-rendered single-member manifests;
+    # children claim batches through O_EXCL markers, one batch per
+    # child, so a child's exit hands its heap back to the OS and the
+    # concurrent peak stays at workers x one batch. Members write
+    # disjoint, identifier-keyed store entries, so concurrent children
+    # cannot race; sectionsplit only happens at reinflate (a single
+    # sequential pass). +members+ is the warm-skip's unstaged remainder.
     def stage_parallel(members)
       paths, count = write_batch_files(members)
       run_batch_workers(count)
@@ -289,19 +288,47 @@ module Suma
       end
     end
 
+    # Supervise one-batch children: keep up to +@workers+ alive while any
+    # batch is unclaimed, respawn as children exit, and fail on any
+    # child's nonzero exit. The claim markers the children create make
+    # the drain observable to the parent, so supervision needs no
+    # coordinator: a child that finds nothing to claim exits 0 at once.
     def run_batch_workers(count)
-      children = Array.new([@workers, count].min) do
-        Process.spawn(RbConfig.ruby, "-e", CHILD_BOOT, "batch", @config_dir,
-                      count.to_s, @store_dir, @output_directory,
-                      @no_valid ? "1" : "0", chdir: @config_dir)
+      live = {}
+      failed = 0
+      until live.empty? && !unclaimed?(count)
+        spawn_batch_children(live, count)
+        reap_batch_child(live) { |ok| failed += 1 unless ok }
       end
-      failed = children
-        .filter_map { |pid| Process.waitpid2(pid) }
-        .map(&:last).reject(&:success?).size
       return if failed.zero?
 
-      raise "[staged] #{failed} of #{@workers} batch workers failed; " \
+      raise "[staged] #{failed} batch renders failed; " \
             "see the worker output above"
+    end
+
+    def spawn_batch_children(live, count)
+      while unclaimed?(count) && live.size < @workers
+        live[spawn_batch_child(count)] = true
+      end
+    end
+
+    def spawn_batch_child(count)
+      Process.spawn(RbConfig.ruby, "-e", CHILD_BOOT, "batch", @config_dir,
+                    count.to_s, @store_dir, @output_directory,
+                    @no_valid ? "1" : "0", chdir: @config_dir)
+    end
+
+    def reap_batch_child(live)
+      pid, status = Process.wait2
+      live.delete(pid)
+      yield status.success?
+    end
+
+    # Batches a child has not claimed yet (no O_EXCL marker).
+    def unclaimed?(count)
+      (0...count).any? do |i|
+        !File.exist?(File.join(@config_dir, "._suma_batch_#{i}.claim"))
+      end
     end
 
     def remove_batch_files(paths, count)
