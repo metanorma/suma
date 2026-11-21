@@ -369,4 +369,23 @@ RSpec.describe Suma::ExpressSchema do
       end
     end
   end
+
+  describe "#release_parsed" do
+    it "drops the memoized parse and reloads lazily" do
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, "demo.exp")
+        File.write(path, "SCHEMA demo_schema; END_SCHEMA;")
+
+        schema = described_class.new(
+          id: "demo_schema", path: path, output_path: File.join(dir, "out"),
+        )
+        first = schema.parsed
+        schema.release_parsed
+
+        reloaded = schema.parsed
+        expect(reloaded).not_to be(first)
+        expect(reloaded.schemas.first.id).to eq("demo_schema")
+      end
+    end
+  end
 end

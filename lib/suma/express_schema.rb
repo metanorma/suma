@@ -57,6 +57,15 @@ module Suma
       )}"
     end
 
+    # Drop the memoized parse result; the next #parsed re-loads it (from
+    # the cache when present). Long schema batches release between
+    # schemas, so a whole-corpus export holds one parsed model per
+    # worker instead of the entire corpus's models on the heap
+    # (~2-12 MB per schema).
+    def release_parsed
+      @parsed = nil
+    end
+
     def filename_plain
       ensure_id_loaded
       build_output_filename
