@@ -93,20 +93,18 @@ module Suma
         end
       end
 
-      # Batch stage: claim one batch file at a time through O_EXCL
-      # markers, so N concurrent children partition the batches without a
-      # coordinator; a child with no batches left exits and hands its
-      # memory back to the OS. Exits 1 when it could claim nothing while
-      # batches were announced (nothing was rendered).
+      # Batch stage: claim one batch through an O_EXCL marker and render
+      # it. One batch per child: a child's exit hands its whole heap back
+      # to the OS, so the concurrent peak stays at workers x one batch.
+      # A long-lived child ratchets its heap across members instead
+      # (measured at ~2x the single-member peak on the iso-10303 srl
+      # shards). The parent supervises by respawn while unclaimed
+      # batches exist; exiting 0 on the drain is success.
       def batch(config_dir, batch_count, store_dir, out_dir, no_valid)
         ctx = BatchContext.new(config_dir, Integer(batch_count), store_dir,
                                out_dir, no_valid)
-        claimed = 0
-        while (idx = claim_batch(ctx.config_dir, ctx.batch_count))
-          render_batch(ctx, idx)
-          claimed += 1
-        end
-        exit 1 if claimed.zero? && ctx.batch_count.positive?
+        idx = claim_batch(ctx.config_dir, ctx.batch_count)
+        render_batch(ctx, idx) if idx
       end
 
       def render_batch(ctx, idx)

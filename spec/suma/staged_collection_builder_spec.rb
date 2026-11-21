@@ -680,5 +680,60 @@ RSpec.describe Suma::StagedCollectionBuilder do
           .to eq(render_opts)
       end
     end
+
+    # One batch per child: a long-lived child ratchets its heap across
+    # members (~2x the single-member peak, measured on the iso-10303 srl
+    # shards); the one-batch contract is what lets the parent's respawn
+    # keep the concurrent peak at workers x one batch.
+    describe "Worker.batch (one batch per child)" do
+      def worker
+        Suma::StagedCollectionBuilder::Worker
+      end
+
+      def write_batches(dir, count)
+        count.times do |idx|
+          File.write(File.join(dir, "._suma_batch_#{idx}.bin"), "[]")
+        end
+      end
+
+      def claim_file(dir, idx)
+        File.join(dir, "._suma_batch_#{idx}.claim")
+      end
+
+      def claim_count(dir, count)
+        (0...count).count { |idx| File.exist?(claim_file(dir, idx)) }
+      end
+
+      def write_claimed_batches(dir, count)
+        write_batches(dir, count)
+        (0...count).each { |idx| FileUtils.touch(claim_file(dir, idx)) }
+      end
+
+      def run_batch(dir, count)
+        worker.batch(dir, count, File.join(dir, "store"),
+                     File.join(dir, "out"), "0")
+      end
+
+      def run_batch_expect_render_once(dir)
+        expect(worker).to receive(:render_batch).once
+        run_batch(dir, 2)
+      end
+
+      it "claims and renders exactly one batch" do
+        Dir.mktmpdir do |dir|
+          write_batches(dir, 2)
+          run_batch_expect_render_once(dir)
+          expect(claim_count(dir, 2)).to eq(1)
+        end
+      end
+
+      it "renders nothing when another child claimed every batch" do
+        Dir.mktmpdir do |dir|
+          write_claimed_batches(dir, 2)
+          expect(worker).not_to receive(:render_batch)
+          run_batch(dir, 2)
+        end
+      end
+    end
   end
 end
