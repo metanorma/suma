@@ -74,9 +74,19 @@ module Suma
     # concern, so it lives here in the service rather than in the ExpressSchema
     # data model.
     def export_single_schema(schema)
+      export_content(schema)
+    ensure
+      schema.release_parsed
+    end
+
+    def export_content(schema)
       source = File.read(schema.path.to_s, encoding: "UTF-8")
       cached = @cache.fetch(source, annotations: options[:annotations])
-      cached ? write_cached(schema, cached) : generate_and_cache(schema, source)
+      if cached
+        write_cached(schema, cached)
+      else
+        generate_and_cache(schema, source)
+      end
     end
 
     def generate_and_cache(schema, source)

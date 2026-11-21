@@ -38,6 +38,10 @@ RSpec.describe Suma::SchemaExporter do
     after { FileUtils.rm_rf(temp_dir) }
 
     def export(cache_dir:)
+      export_schema(cache_dir: cache_dir)
+    end
+
+    def export_schema(cache_dir:)
       schema = Suma::ExpressSchema.new(
         id: "widget_arm", path: source_file, output_path: output_path,
         is_standalone_file: false
@@ -46,6 +50,7 @@ RSpec.describe Suma::SchemaExporter do
         schemas: [schema], output_path: output_path,
         options: { cache_dir: cache_dir }
       ).export
+      schema
     end
 
     it "parses on a miss then reuses the cache without re-parsing" do
@@ -66,6 +71,15 @@ RSpec.describe Suma::SchemaExporter do
       expect(Expressir::Express::Parser)
         .to receive(:from_file).twice.and_return(parsed)
       2.times { export(cache_dir: "") }
+    end
+
+    it "releases each schema's parsed model after its export" do
+      schema = export_schema(cache_dir: "")
+
+      # the release dropped the memoized parse: the next access re-parses
+      expect(Expressir::Express::Parser)
+        .to receive(:from_file).once.and_call_original
+      schema.parsed
     end
   end
 end
