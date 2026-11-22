@@ -63,6 +63,41 @@ RSpec.describe Suma::Delivery::Expectations do
            )).to be_empty
   end
 
+  # The gate names what it counts (the 2026-11-22 SRL round: an unnamed
+  # 350-leak class cost a full assemble cycle per guess).
+  it "names the offending pages on a page-shape violation" do
+    e = expectations(asciidoc_leaks_max: 0, build_dir_references_max: 0)
+
+    failures = e.violations(
+      { **report,
+        "asciidoc_leak_occurrences" => 3,
+        "asciidoc_leak_pages" => %w[a.html b.html c.html],
+        "build_dir_occurrences" => 1,
+        "build_dir_pages" => ["docs/x.html"] },
+      [],
+    )
+
+    expect(failures).to contain_exactly(
+      "asciidoc_leaks_max: got 3, expected at most 0 " \
+      "(pages: a.html, b.html, c.html)",
+      "build_dir_references_max: got 1, expected at most 0 " \
+      "(pages: docs/x.html)",
+    )
+  end
+
+  it "truncates a long page list with a +N more suffix" do
+    e = expectations(asciidoc_leaks_max: 0)
+    pages = (1..25).map { |i| "page#{i}.html" }
+
+    failures = e.violations(
+      { **report, "asciidoc_leak_occurrences" => 25,
+                  "asciidoc_leak_pages" => pages },
+      [],
+    )
+
+    expect(failures.first).to include("page20.html, +5 more")
+  end
+
   it "round-trips through YAML" do
     yaml = <<~YAML
       sections_min: 650
@@ -154,10 +189,13 @@ RSpec.describe Suma::Delivery::Expectations do
                        asciidoc_leaks_max: 15)
 
       expect(e.violations(shaped_report, [])).to contain_exactly(
-        "build_dir_references_max: got 4, expected at most 3",
-        "incomplete_listings_max: got 1, expected at most 0",
-        "missing_schema_remarks_max: got 2, expected at most 1",
-        "asciidoc_leaks_max: got 16, expected at most 15",
+        "build_dir_references_max: got 4, expected at most 3 " \
+        "(pages: p.html, q.html)",
+        "incomplete_listings_max: got 1, expected at most 0 " \
+        "(pages: doc_a.html)",
+        "missing_schema_remarks_max: got 2, expected at most 1 " \
+        "(pages: b_schema, c_schema)",
+        "asciidoc_leaks_max: got 16, expected at most 15 (pages: p.html)",
       )
     end
 
@@ -172,10 +210,13 @@ RSpec.describe Suma::Delivery::Expectations do
 
     it "defaults the page-shape maxima to zero tolerance" do
       expect(expectations.violations(shaped_report, [])).to contain_exactly(
-        "build_dir_references_max: got 4, expected at most 0",
-        "incomplete_listings_max: got 1, expected at most 0",
-        "missing_schema_remarks_max: got 2, expected at most 0",
-        "asciidoc_leaks_max: got 16, expected at most 0",
+        "build_dir_references_max: got 4, expected at most 0 " \
+        "(pages: p.html, q.html)",
+        "incomplete_listings_max: got 1, expected at most 0 " \
+        "(pages: doc_a.html)",
+        "missing_schema_remarks_max: got 2, expected at most 0 " \
+        "(pages: b_schema, c_schema)",
+        "asciidoc_leaks_max: got 16, expected at most 0 (pages: p.html)",
       )
     end
 

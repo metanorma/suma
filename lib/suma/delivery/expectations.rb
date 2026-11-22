@@ -52,6 +52,15 @@ module Suma
           diagnostics_violations(report["diagnostics"])
       end
 
+      PAGE_SHAPE_PAGE_KEYS = {
+        "build_dir_references_max" => "build_dir_pages",
+        "incomplete_listings_max" => "incomplete_listings",
+        "missing_schema_remarks_max" => "missing_schema_remarks",
+        "asciidoc_leaks_max" => "asciidoc_leak_pages",
+      }.freeze
+
+      MAX_DETAIL_PAGES = 20
+
       private
 
       def threshold_violations(report, broken_links)
@@ -60,10 +69,25 @@ module Suma
           relation = relation_of(name)
           next if relation_met?(relation, actual, limit)
 
-          format("%<name>s: got %<actual>d, expected %<relation>s " \
-                 "%<limit>d", name: name, actual: actual,
-                              relation: relation, limit: limit)
+          line = format("%<name>s: got %<actual>d, expected %<relation>s " \
+                        "%<limit>d", name: name, actual: actual,
+                                     relation: relation, limit: limit)
+          detail = page_shape_detail(name, report)
+          detail ? "#{line} (#{detail})" : line
         end
+      end
+
+      # The gate names what it counts: a page-shape violation carries the
+      # offending pages, so a red run is a diagnosis and not another CI
+      # round trip (2026-11-22: an unnamed 350-leak class cost a full
+      # assemble cycle per guess).
+      def page_shape_detail(name, report)
+        pages = Array(report[PAGE_SHAPE_PAGE_KEYS[name]])
+        return if pages.empty?
+
+        shown = pages.first(MAX_DETAIL_PAGES).join(", ")
+        rest = pages.size - MAX_DETAIL_PAGES
+        rest.positive? ? "pages: #{shown}, +#{rest} more" : "pages: #{shown}"
       end
 
       # diagnostics_max: { "Referencing" => { "ISO_56" => 0 } }. A rule
