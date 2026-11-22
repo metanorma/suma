@@ -217,10 +217,16 @@ module Suma
       "#{@shortname}.gcr"
     end
 
+    # Entry headers carry the package timestamp: rubyzip defaults them
+    # to DOSTime.now, which made two byte-reproducible packages differ
+    # whenever their writes straddled a 2-second DOS-time bucket (the
+    # windows CI leg failed exactly there while every other platform
+    # passed by luck).
     def write_zip(path, entries)
+      time = Zip::DOSTime.from_time(@created_at)
       buffer = Zip::OutputStream.write_buffer do |stream|
         entries.each do |name, content|
-          stream.put_next_entry(name)
+          stream.put_next_entry(Zip::Entry.new(path, name, time: time))
           stream.write(content)
         end
       end
