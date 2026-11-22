@@ -40,9 +40,8 @@ module Suma
       # its <pre> early and leaked the tail as normal HTML.
       END_SCHEMA_TOKEN = "END_SCHEMA;"
 
-      # Asciidoc constructs that must never render as page text
-      # (source-authoring residuals): inline macros plus the bare
-      # forced-line-break "+".
+      # Asciidoc block macros that must never render as page text
+      # (source-authoring residuals).
       ASCIIDOC_MACROS_RE = /\b(?:image|link|include)::[^ \t\r\n]*\[\]/
       LISTING_TAGS = %w[pre code].freeze
 
@@ -149,7 +148,11 @@ module Suma
 
       # Asciidoc source constructs leaked as rendered page text,
       # counted over text nodes only (markup-inside-attributes is not
-      # leakage).
+      # leakage). Only block macros count: the retired bare-"+" heuristic
+      # never produced a true positive on real corpora — every hit was
+      # mathematical content (MathML <mo> operators, HTML subscript
+      # junctions, hyperlinked-code "+" operands), 354 phantom leaks on
+      # the 2026-11-22 SRL assemble alone.
       def check_asciidoc_leakage(doc, rel_path, report)
         leaks = doc.xpath("//text()").sum do |node|
           # The annotated-EXPRESS source listing shows the macros as
@@ -158,7 +161,7 @@ module Suma
           next 0 if inside_listing?(node)
 
           text = node.text.to_s
-          text.scan(ASCIIDOC_MACROS_RE).size + (text.strip == "+" ? 1 : 0)
+          text.scan(ASCIIDOC_MACROS_RE).size
         end
         return if leaks.zero?
 
@@ -202,7 +205,6 @@ module Suma
         false
       end
 
-      # A schema whose parsed attachment carries its own remarks must
       # publish them: the page text contains the whitespace-normalized
       # head of the first remark. Schemas without an attachment on the
       # site cannot be judged and are skipped.
