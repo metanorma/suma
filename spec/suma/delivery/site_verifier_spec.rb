@@ -279,23 +279,22 @@ RSpec.describe Suma::Delivery::SiteVerifier do
       end
     end
 
-    it "counts asciidoc macro and forced-break text leakage" do
+    it "counts asciidoc macro text leakage" do
       Dir.mktmpdir do |dir|
         root = Pathname.new(dir)
         write(root / "ISO_A_2025/ISO_A_2025_index.html", <<~HTML)
           <html><body>
           <p>image::fig1.png[] then link::other.html[]</p>
-          <p>+</p>
           <img src="fig2.png" title="image::fig2.png[]"/>
           </body></html>
         HTML
 
         report = verify(root).report
 
-        # The title attribute is markup, not page text: three leaks only.
+        # The title attribute is markup, not page text: two leaks only.
         expect(report["asciidoc_leak_pages"])
           .to eq(["ISO_A_2025/ISO_A_2025_index.html"])
-        expect(report["asciidoc_leak_occurrences"]).to eq(3)
+        expect(report["asciidoc_leak_occurrences"]).to eq(2)
       end
     end
 
@@ -316,6 +315,30 @@ RSpec.describe Suma::Delivery::SiteVerifier do
         # The source listing shows the annotated macros as written; only
         # the macro rendered outside the listing is leakage.
         expect(report["asciidoc_leak_occurrences"]).to eq(1)
+      end
+    end
+
+    # The retired bare-"+" heuristic never produced a true positive on
+    # real corpora: every hit was mathematical content — MathML renders
+    # each operator as its own <mo> text node, HTML sub/sup notation
+    # leaves "+" between elements, and hyperlinked code puts "+"
+    # between linked operands (the 2026-11-22 SRL assemble: 354 phantom
+    # leaks over 26 member section pages).
+    it "does not count mathematical plus signs as leakage" do
+      Dir.mktmpdir do |dir|
+        root = Pathname.new(dir)
+        write(root / "ISO_A_2025/ISO_A_2025_index.html", <<~HTML)
+          <html><body>
+          <p><span><math><mstyle><mo>+</mo></mstyle></math></span></p>
+          <p><i>C</i><sub><i>a</i></sub>+<i>C</i><sub><i>d</i></sub></p>
+          <p><span>a</span> + <span>b</span></p>
+          </body></html>
+        HTML
+
+        report = verify(root).report
+
+        expect(report["asciidoc_leak_pages"]).to be_empty
+        expect(report["asciidoc_leak_occurrences"]).to be_zero
       end
     end
 
