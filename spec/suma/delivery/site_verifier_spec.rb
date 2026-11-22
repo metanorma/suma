@@ -150,18 +150,20 @@ RSpec.describe Suma::Delivery::SiteVerifier do
     let(:remark) { "The demo schema defines the widget entity data type." }
 
     # A minimal attachment whose schema carries one own remark (an
-    # untagged remark block directly after the SCHEMA statement).
+    # untagged remark block before END_SCHEMA — expressir 2.4.80
+    # attaches a placement-less comment to the FOLLOWING declaration,
+    # so the schema-level channel needs the trailing placement).
     let(:demo_exp) do
       <<~EXP
         SCHEMA demo_schema;
 
-        (*
-        #{remark}
-        *)
-
           ENTITY widget;
             a : STRING;
           END_ENTITY;
+
+        (*
+        #{remark}
+        *)
         END_SCHEMA;
       EXP
     end
