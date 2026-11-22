@@ -56,10 +56,10 @@ gem "relaton", "~> 3.1.1"
 # gem "metanorma-plugin-lutaml", github: "metanorma/metanorma-plugin-lutaml", branch: "main"
 # gem "metanorma-standoc", github: "metanorma/metanorma-standoc", branch: "main"
 # gem "expressir", github: "lutaml/expressir", branch: "main"
-# 2.4.75: the keep_untagged_remarks formatter option to_plain needs
-# (the plain-schema face, suma#217); supersedes the 2.4.35 windows fix
-# and the 2.4.56 parse regression, both fixed upstream since.
-gem "expressir", "2.4.75"
+# >= 2.4.80: keep_untagged_remarks (the plain-schema face, suma#217)
+# and the #707/#711 remark/paren fixes; supersedes the 2.4.35 windows
+# fix and the 2.4.56 parse regression, both fixed upstream since.
+gem "expressir", ">= 2.4.80"
 gem "nokogiri"
 gem "openssl", "~> 3.0"
 gem "rake"

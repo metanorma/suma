@@ -368,6 +368,58 @@ RSpec.describe Suma::ExpressSchema do
           .to include("SCHEMA draft_mim '{iso standard 10303 part(1)}';")
       end
     end
+
+    # In-body untagged comments survive only on the schema formatter
+    # lane: repository-level format rides the core wire, which drops
+    # them even with keep_untagged_remarks (expressir#703 — the schema
+    # face keeps them, the repository face loses them on 2.4.80). The
+    # plain form formats each schema, so a mid-schema comment prints.
+    it "keeps in-body untagged comments in the plain form" do
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, "demo.exp")
+        File.write(path, <<~EXPRESS)
+          SCHEMA demo_schema;
+            (* an untagged in-body comment *)
+            ENTITY entity_one;
+              name : STRING;
+            END_ENTITY;
+          END_SCHEMA;
+        EXPRESS
+
+        schema = described_class.new(
+          id: "demo_schema", path: path, output_path: File.join(dir, "out"),
+        )
+        plain = schema.to_plain
+
+        expect(plain).to include("an untagged in-body comment")
+        expect(plain.index("an untagged in-body comment"))
+          .to be > plain.index("SCHEMA demo_schema;")
+        expect(plain.index("an untagged in-body comment"))
+          .to be < plain.index("ENTITY entity_one;")
+      end
+    end
+
+    it "writes multiple schemas joined by a blank line with a trailing newline" do
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, "multi.exp")
+        File.write(path, <<~EXPRESS)
+          SCHEMA schema_a;
+          END_SCHEMA;
+          SCHEMA schema_b;
+          END_SCHEMA;
+        EXPRESS
+
+        schema = described_class.new(
+          id: "schema_a", path: path, output_path: File.join(dir, "out"),
+        )
+        plain = schema.to_plain
+
+        expect(plain).to include("SCHEMA schema_a;")
+        expect(plain).to include("SCHEMA schema_b;")
+        expect(plain).to end_with("\n")
+        expect(plain).to match(/END_SCHEMA;\s*\n\nSCHEMA schema_b;/m)
+      end
+    end
   end
 
   describe "#release_parsed" do

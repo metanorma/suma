@@ -20,18 +20,26 @@ RSpec.describe Suma::SchemaExporter do
       end
     end
 
-    # A real stand-in for Expressir's parse result (which exposes no stable
-    # public class to verify against) — no RSpec doubles, per the no-doubles
-    # rule in CLAUDE.md.
+    # Real stand-ins for Expressir's parse result (which exposes no
+    # stable public class to verify against) — no RSpec doubles, per the
+    # no-doubles rule in CLAUDE.md. The plain face formats each schema
+    # individually (express_schema.rb#to_plain), so the schema elements
+    # carry their own format.
     let(:parsed) do
+      plain_schema = Struct.new(:id) do
+        def format(*)
+          "PLAIN SCHEMA OUTPUT"
+        end
+      end
       Class.new do
-        def format(no_remarks: false, keep_untagged_remarks: false)
-          return "PLAIN OUTPUT" if no_remarks
+        define_method(:schemas) { [plain_schema.new("widget_arm")] }
+
+        define_method(:format) do |no_remarks: false,
+                                   keep_untagged_remarks: false|
+          next "PLAIN OUTPUT" if no_remarks
 
           keep_untagged_remarks ? "ANNOTATED+COMMENTS" : "ANNOTATED"
         end
-
-        def schemas = [Struct.new(:id).new("widget_arm")]
       end.new
     end
 
@@ -64,7 +72,7 @@ RSpec.describe Suma::SchemaExporter do
       allow(Expressir::Express::Parser)
         .to receive(:from_file).and_return(parsed)
       2.times { export(cache_dir: cache_dir) }
-      expect(File.read(out)).to eq("PLAIN OUTPUT")
+      expect(File.read(out)).to eq("PLAIN SCHEMA OUTPUT\n")
     end
 
     it "parses every time when caching is disabled" do

@@ -51,10 +51,18 @@ module Suma
       @parsed
     end
 
+    # Each schema formats through the Ruby formatter lane: the ExpFile's
+    # own format rides the core lane, whose wire drops in-body untagged
+    # comments even with keep_untagged_remarks (expressir#703 — the
+    # schema face keeps them, the ExpFile face loses them on released
+    # 2.4.80). The join shape matches the ExpFile handler (schemas
+    # joined by a blank line, trailing newline), so the output is
+    # identical apart from the comments now surviving.
     def to_plain
-      "#{header_from_source}#{parsed.format(
-        no_remarks: true, keep_untagged_remarks: true,
-      )}"
+      body = parsed.schemas.map do |schema|
+        schema.format(no_remarks: true, keep_untagged_remarks: true)
+      end.join("\n\n")
+      "#{header_from_source}#{body}\n"
     end
 
     # Drop the memoized parse result; the next #parsed re-loads it (from
