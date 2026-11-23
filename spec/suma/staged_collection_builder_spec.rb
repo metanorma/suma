@@ -248,7 +248,7 @@ RSpec.describe Suma::StagedCollectionBuilder do
 
     it "renders the attachment docrefs in every part" do
       expect(attachment_shard_probe)
-        .to contain_exactly("ISO 1", "ISO 1-attachments")
+        .to contain_exactly("ISO 1", "x.exp")
     end
   end
 
