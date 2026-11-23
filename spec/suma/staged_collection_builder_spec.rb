@@ -184,7 +184,9 @@ RSpec.describe Suma::StagedCollectionBuilder do
       write_attachment_fixtures(dir)
       store = File.join(dir, "store")
       FileUtils.mkdir_p(store)
-      FileUtils.touch(File.join(store, "iso-1.abc.semantic.xml"))
+      # Seed the store under the EXACT slug spelling: ubuntu's glob is
+      # case-sensitive and Worker.slug preserves the identifier's case.
+      FileUtils.touch(File.join(store, "ISO-1.abc.semantic.xml"))
       described_class.new(collection_config_path: File.join(dir, "collection-output.yaml"),
                           output_directory: File.join(dir, "_site"),
                           store_dir: store, reinflate_shard: [0, 2])
