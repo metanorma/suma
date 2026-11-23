@@ -427,7 +427,12 @@ module Suma
         compile: compile_flags,
       }
       if @reinflate_shard && render_members
-        opts[:only_members] = render_members.filter_map { |m| m["identifier"] }
+        # Members shard; the attachment docrefs are shared site
+        # furniture: every part renders them (identical copies) or the
+        # unioned site ships without plain_schemas/schema_docs — the
+        # #874 ship verify counted 0 attachments against a floor of 100.
+        opts[:only_members] = render_members.filter_map { |m| m["identifier"] } +
+          Array(@reinflate_attachment_ids)
       end
       opts.compact
     end
@@ -481,17 +486,35 @@ module Suma
     def carried_attachments(member, reinf_dir)
       return [] unless member.is_a?(Hash) && member_entry?(member)
 
+      attachments = member_ref_attachments(member, reinf_dir)
+      return [] if attachments.empty?
+
+      attachment_grouping(member, attachments)
+    end
+
+    # The attachment docrefs of the member's own manifest reference.
+    def member_ref_attachments(member, reinf_dir)
       ref = member["fileref"] || member["file"]
       return [] unless manifest_ref?(ref)
 
+      nested_attachments(ref, reinf_dir)
+    end
+
+    # The grouping node grafted into the reinflate manifest; its
+    # identifier joins only_members on every reinflate part (#874).
+    def attachment_grouping(member, attachments)
+      identifier = [member["identifier"], "attachments"].compact.join("-")
+      (@reinflate_attachment_ids ||= []) << identifier
+      [{ "level" => "attachments", "title" => "Attachments",
+         "identifier" => identifier,
+         "docref" => attachments }]
+    end
+
+    # The attachment docrefs of the nested manifest +ref+ resolves to.
+    def nested_attachments(ref, reinf_dir)
       attachments = []
       collect_nested_attachments(ref, @config_dir, attachments, reinf_dir)
-      return [] if attachments.empty?
-
-      [{ "level" => "attachments", "title" => "Attachments",
-         "identifier" => [member["identifier"], "attachments"]
-           .compact.join("-"),
-         "docref" => attachments }]
+      attachments
     end
 
     def collect_nested_attachments(ref, dir, out, reinf_dir)

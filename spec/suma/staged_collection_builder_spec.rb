@@ -177,6 +177,77 @@ RSpec.describe Suma::StagedCollectionBuilder do
       expect(builder.send(:reinflate_render_options, members))
         .not_to have_key(:only_members)
     end
+
+    # One shared dir: the outer manifest, the nested manifest it
+    # references, the seeded store, and the reinflate workspace.
+    def attachment_shard_builder(dir)
+      write_attachment_fixtures(dir)
+      store = File.join(dir, "store")
+      FileUtils.mkdir_p(store)
+      FileUtils.touch(File.join(store, "iso-1.abc.semantic.xml"))
+      described_class.new(collection_config_path: File.join(dir, "collection-output.yaml"),
+                          output_directory: File.join(dir, "_site"),
+                          store_dir: store, reinflate_shard: [0, 2])
+    end
+
+    def write_attachment_fixtures(dir)
+      FileUtils.mkdir_p(File.join(dir, "nested"))
+      FileUtils.mkdir_p(File.join(dir, "reinf"))
+      File.write(File.join(dir, "nested", "inner.yml"),
+                 nested_manifest_with_attachments.to_yaml)
+      File.write(File.join(dir, "collection-output.yaml"),
+                 manifest_referencing_nested.to_yaml)
+    end
+
+    def nested_manifest_with_attachments
+      { "directives" => ["documents-inline"],
+        "manifest" => {
+          "level" => "collection",
+          "manifest" => [
+            { "level" => "attachments", "title" => "Attachments",
+              "docref" => [{ "fileref" => "x.exp",
+                             "identifier" => "x.exp",
+                             "attachment" => true }] },
+          ],
+        } }
+    end
+
+    def manifest_referencing_nested
+      { "directives" => ["documents-inline"],
+        "bibdata" => { "title" => "Coll", "type" => "collection" },
+        "manifest" => {
+          "level" => "collection",
+          "manifest" => [
+            { "level" => "subcollection", "title" => "Standards",
+              "docref" => [
+                { "fileref" => "nested/inner.yml",
+                  "identifier" => "ISO 1", "sectionsplit" => true },
+              ] },
+          ],
+        } }
+    end
+
+    # The attachment docrefs are shared site furniture: members shard,
+    # but every part renders them (identical copies) or the unioned
+    # site ships without plain_schemas/schema_docs — the #874 ship
+    # verify counted 0 attachments against a floor of 100.
+    def attachment_shard_probe
+      Dir.mktmpdir do |dir|
+        builder = attachment_shard_builder(dir)
+        members = builder.send(:collection_members)
+        slice = builder.send(:reinflate_selection, members)
+        builder.send(:write_reinflate_manifest,
+                     builder.send(:stored_docrefs,
+                                  members, File.join(dir, "reinf")),
+                     File.join(dir, "reinf"))
+        [builder.send(:reinflate_render_options, slice)[:only_members]]
+      end.first
+    end
+
+    it "renders the attachment docrefs in every part" do
+      expect(attachment_shard_probe)
+        .to contain_exactly("ISO 1", "ISO 1-attachments")
+    end
   end
 
   describe "#with_stubbed_members" do
