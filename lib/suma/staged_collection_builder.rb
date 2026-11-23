@@ -500,13 +500,17 @@ module Suma
       nested_attachments(ref, reinf_dir)
     end
 
-    # The grouping node grafted into the reinflate manifest; its
-    # identifier joins only_members on every reinflate part (#874).
+    # The grouping node grafted into the reinflate manifest. The
+    # attachment ENTRIES' identifiers join only_members on every
+    # reinflate part (#874): metanorma filters the flattened docrefs,
+    # whose identifiers are the entries' own, not the grouping's.
     def attachment_grouping(member, attachments)
-      identifier = [member["identifier"], "attachments"].compact.join("-")
-      (@reinflate_attachment_ids ||= []) << identifier
+      (@reinflate_attachment_ids ||= []).concat(
+        attachments.filter_map { |a| a["identifier"] },
+      )
       [{ "level" => "attachments", "title" => "Attachments",
-         "identifier" => identifier,
+         "identifier" => [member["identifier"], "attachments"]
+           .compact.join("-"),
          "docref" => attachments }]
     end
 
