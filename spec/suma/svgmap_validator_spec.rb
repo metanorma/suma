@@ -136,8 +136,7 @@ RSpec.describe Suma::SvgmapValidator do
 
       expect(second.violations.count { |v| v.type == "unlisted_shape" })
         .to eq(2)
-      expect(fresh).to eq(["#{root.join('schemas/demo_schema.exp')}|" \
-                           "unlisted_shape|4"])
+      expect(fresh).to eq(["schemas/demo_schema.exp|unlisted_shape|4"])
     end
   end
 end
