@@ -82,6 +82,12 @@ module Suma
            "Source-layer svgmap gate: every `__expressg` [.svgmap] block's " \
            "image exists, and its ordinal markers match the SVG's " \
            "anchor-wrapped shapes (exit 1 on violations)"
+      option :baseline, type: :string, default: nil,
+                        desc: "Baseline YAML path (default: " \
+                              "svgmap-baseline.yml beside the manifest)"
+      option :write_baseline, type: :boolean, default: false,
+                              desc: "Write the scanned violations as the " \
+                                    "new baseline instead of checking"
       def svgmap(schemas_manifest_file)
         result = Suma::SvgmapValidator.new.validate_manifest(
           schemas_manifest_file,
@@ -89,12 +95,12 @@ module Suma
         puts "svgmap: #{result.checked_schemas} schemas, " \
              "#{result.checked_blocks} blocks checked, " \
              "#{result.violations.size} violations"
-        print_svgmap_violations(result.violations)
-        return if result.violations.empty?
+        path = options[:baseline] || default_svgmap_baseline_path(
+          schemas_manifest_file,
+        )
+        return write_svgmap_baseline(result, path) if options[:write_baseline]
 
-        raise Thor::Error,
-              "svgmap validation failed: #{result.violations.size} " \
-              "violation(s)"
+        assert_svgmap_baseline!(result, path)
       end
 
       MAX_DETAIL_LINES = 20
@@ -109,6 +115,42 @@ module Suma
           remaining = group.size - MAX_DETAIL_LINES
           puts "  ... +#{remaining} more" if remaining.positive?
         end
+      end
+
+      def default_svgmap_baseline_path(schemas_manifest_file)
+        File.join(File.dirname(schemas_manifest_file),
+                  "svgmap-baseline.yml")
+      end
+
+      def write_svgmap_baseline(result, path)
+        File.write(path, SvgmapValidator::Report
+          .from_violations(result.violations).to_yaml)
+        puts "svgmap baseline written: #{result.violations.size} " \
+             "entrie(s) -> #{path}"
+      end
+
+      # Only NEW violations fail: the committed baseline floors the
+      # standing source defects (WG 12 figure-source follow-up), the
+      # MappingDrift pattern.
+      def assert_svgmap_baseline!(result, path)
+        unless File.file?(path)
+          raise Thor::Error, "no svgmap baseline at #{path} - generate " \
+                             "one with --write-baseline and commit it"
+        end
+
+        fresh = fresh_svgmap_violations(result, path)
+        print_svgmap_violations(fresh)
+        return if fresh.empty?
+
+        raise Thor::Error, "#{fresh.size} new svgmap violation(s) vs " \
+                           "#{path}"
+      end
+
+      def fresh_svgmap_violations(result, path)
+        known = SvgmapValidator::Report.from_yaml(File.read(path)).keys
+        result.violations
+          .reject { |v| known.include?(v.key) }
+          .uniq(&:key)
       end
 
       # Print the closure report and raise on any unresolved reference.

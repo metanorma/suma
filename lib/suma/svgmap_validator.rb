@@ -13,7 +13,42 @@ module Suma
     Result = Struct.new(:violations, :checked_schemas, :checked_blocks,
                         keyword_init: true)
 
-    Violation = Struct.new(:file, :type, :detail, keyword_init: true)
+    Violation = Struct.new(:file, :type, :detail, keyword_init: true) do
+      # The stable identity compared across runs for baseline gating:
+      # file, violation class, and the marker/image that violates.
+      def key
+        "#{file}|#{type}|#{detail}"
+      end
+    end
+
+    # One standing violation's stable identity for baseline comparison:
+    # "<exp path>|<type>|<marker-or-image>".
+    class Entry < Lutaml::Model::Serializable
+      attribute :key, :string
+
+      key_value do
+        map "key", to: :key
+      end
+    end
+
+    # Serializable violation report / baseline (same wire shape), the
+    # MappingDrift pattern: a committed baseline floors the standing
+    # violations so only NEW ones fail the build.
+    class Report < Lutaml::Model::Serializable
+      attribute :entries, Entry, collection: true
+
+      key_value do
+        map "entries", to: :entries
+      end
+
+      def keys
+        entries.map(&:key)
+      end
+
+      def self.from_violations(violations)
+        new(entries: violations.map { |v| Entry.new(key: v.key) })
+      end
+    end
 
     REMARK_BLOCK_RE = /
       \(\*"(?<schema>[^"]+)\.__expressg"\s*\n
