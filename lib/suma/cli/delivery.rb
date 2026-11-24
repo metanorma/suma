@@ -211,6 +211,7 @@ module Suma
           "broken; fragments: #{r['total_fragments']} total, " \
           "#{r['broken_fragments'].size} broken; " \
           "#{r['cross_document_links']} cross-document; " \
+          "hotspots=#{r['hotspots']} broken=#{r['hotspots_broken'].size}; " \
           "#{inventory_summary(r)}; #{diagnostics_summary(r)}"
       end
 
