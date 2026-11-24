@@ -374,4 +374,53 @@ RSpec.describe Suma::Delivery::SiteVerifier do
       end
     end
   end
+
+  # The svgmap hotspot gate (TRThurman, iso-10303#875): anchor elements
+  # inside SVG figures are the figure hotspots. A dead hotspot carries
+  # live hover styling and a fragment whose anchor no longer exists, and
+  # it passes both the plain link gate and the non-gating intra-fragment
+  # census — the SRL shipped months of dead figure hotspots that way.
+  describe "svg hotspot gate" do
+    it "counts svg-internal anchors and reports unresolvable targets" do
+      Dir.mktmpdir do |dir|
+        root = Pathname.new(dir)
+        write(root / "fig.html", <<~HTML)
+          <html><body>
+          <h2 id="live-target">Live</h2>
+          <svg xmlns="http://www.w3.org/2000/svg">
+            <a href="#live-target"><rect id="hot-1"/></a>
+            <a href="#dead-fragment"><rect id="hot-2"/></a>
+            <a href="fig.html#live-target"><rect id="hot-3"/></a>
+            <a href="missing.html"><rect id="hot-4"/></a>
+          </svg>
+          <a href="#dead-fragment">plain dead fragment, not a hotspot</a>
+          </body></html>
+        HTML
+
+        report = verify(root).report
+
+        expect(report["hotspots"]).to eq 4
+        expect(report["hotspots_broken"]).to contain_exactly(
+          { "source" => "fig.html", "href" => "#dead-fragment" },
+          { "source" => "fig.html", "href" => "missing.html" },
+        )
+      end
+    end
+
+    it "gates the hotspot count and broken cap through expectations" do
+      Dir.mktmpdir do |dir|
+        root = Pathname.new(dir)
+        write(root / "fig.html",
+              '<html><body><svg><a href="#nope"><rect/></a></svg>' \
+              "</body></html>")
+        expectations = Suma::Delivery::Expectations.from_yaml(
+          { "hotspots_min" => 5, "hotspots_broken_max" => 0 }.to_yaml,
+        )
+        report = verify(root).report
+        violations = expectations.violations(report, []).join("; ")
+        expect(violations).to include("hotspots_min")
+        expect(violations).to include("hotspots_broken_max")
+      end
+    end
+  end
 end

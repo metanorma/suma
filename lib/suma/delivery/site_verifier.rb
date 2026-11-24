@@ -78,6 +78,7 @@ module Suma
           doc = Leptris::XML.parse_html(content)
           verify_intra_fragments(doc, rel_path, html_file, report)
           verify_links(doc, rel_path, html_file, anchor_index, report)
+          check_hotspots(doc, rel_path, html_file, anchor_index, report)
           check_build_dir_references(content, rel_path, report)
           check_asciidoc_leakage(doc, rel_path, report)
           check_page_inventory(doc, rel_path, report)
@@ -105,6 +106,8 @@ module Suma
           "total_intra_fragments" => 0,
           "resolved_intra_fragments" => 0,
           "broken_intra_fragments" => [],
+          "hotspots" => 0,
+          "hotspots_broken" => [],
           "missing_express_pages" => [],
           "build_dir_pages" => [],
           "build_dir_occurrences" => 0,
@@ -288,6 +291,45 @@ module Suma
               { "source" => rel_path, "fragment" => fragment }
           end
         end
+      end
+
+      # The svgmap hotspots (TRThurman, iso-10303#875): anchor elements
+      # inside SVG figures. A dead hotspot carries live hover styling and
+      # a fragment pointing at an anchor that no longer exists, and it
+      # sits in svg-internal <a> elements the plain link and
+      # intra-fragment gates do not fail on — the SRL shipped months of
+      # dead figure hotspots through both. Same resolution rules as
+      # verify_links for page-relative hrefs; fragments must hit the
+      # page's own anchors.
+      def check_hotspots(doc, rel_path, html_file, anchor_index, report)
+        own_anchors = anchors_of(html_file)
+        doc.xpath("//*[local-name() = 'svg']" \
+                  "//*[local-name() = 'a'][@href]").each do |a|
+          href = a["href"].to_s.strip
+          next if href.empty?
+
+          report["hotspots"] += 1
+          broken = if href.start_with?("#")
+                     !own_anchors.include?(href[1..]) && href.length > 1
+                   else
+                     hotspot_page_broken?(html_file, href, anchor_index)
+                   end
+          if broken
+            report["hotspots_broken"] << { "source" => rel_path,
+                                           "href" => href }
+          end
+        end
+      end
+
+      def hotspot_page_broken?(html_file, href, anchor_index)
+        file_part, fragment = href.split("#", 2)
+        target = html_file.parent / file_part.delete_prefix("./")
+        return true unless target.exist?
+
+        return true if fragment && !anchor_index[target
+          .relative_path_from(@site_dir).to_s].to_a.include?(fragment)
+
+        false
       end
 
       def verify_links(doc, rel_path, html_file, anchor_index, report)

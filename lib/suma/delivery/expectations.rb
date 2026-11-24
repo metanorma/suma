@@ -26,6 +26,12 @@ module Suma
       attribute :incomplete_listings_max, :integer, default: -> { 0 }
       attribute :missing_schema_remarks_max, :integer, default: -> { 0 }
       attribute :asciidoc_leaks_max, :integer, default: -> { 0 }
+      # svgmap hotspot gates (TRThurman, iso-10303#875): the floor is the
+      # delivered count of SVG-internal anchors, the cap the count whose
+      # targets do not resolve. Measured floors ride each corpus's
+      # expectations manifest.
+      attribute :hotspots_min, :integer
+      attribute :hotspots_broken_max, :integer, default: -> { 0 }
 
       key_value do
         map "sections_min", to: :sections_min
@@ -40,6 +46,8 @@ module Suma
         map "incomplete_listings_max", to: :incomplete_listings_max
         map "missing_schema_remarks_max", to: :missing_schema_remarks_max
         map "asciidoc_leaks_max", to: :asciidoc_leaks_max
+        map "hotspots_min", to: :hotspots_min
+        map "hotspots_broken_max", to: :hotspots_broken_max
       end
 
       # Human-readable violation lines for every threshold the +report+
@@ -125,6 +133,16 @@ module Suma
       # top-level report key; the page-shape maxima count against the
       # verifier's page-shape census.
       def actuals(report, broken_links)
+        {
+          **site_shape_actuals(report, broken_links),
+          **hotspot_actuals(report),
+          **page_shape_actuals(report),
+        }
+      end
+
+      # The site-shape thresholds count against the verifier's inventory;
+      # missing-express pages are a top-level report key.
+      def site_shape_actuals(report, broken_links)
         inventory = report["inventory"] || {}
         {
           "sections_min" => inventory["sections"],
@@ -133,7 +151,15 @@ module Suma
           "schema_docs_min" => inventory["schema_docs"],
           "missing_express_max" => Array(report["missing_express_pages"]).size,
           "broken_links_max" => broken_links.size,
-          **page_shape_actuals(report),
+        }
+      end
+
+      # The svgmap hotspot thresholds count against the verifier's
+      # hotspot census (iso-10303#875).
+      def hotspot_actuals(report)
+        {
+          "hotspots_min" => report["hotspots"].to_i,
+          "hotspots_broken_max" => Array(report["hotspots_broken"]).size,
         }
       end
 
