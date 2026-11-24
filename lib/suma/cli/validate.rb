@@ -78,7 +78,38 @@ module Suma
               "Anchor validation failed: #{violations.size} dead link(s)"
       end
 
+      desc "svgmap SCHEMAS_MANIFEST",
+           "Source-layer svgmap gate: every `__expressg` [.svgmap] block's " \
+           "image exists, and its ordinal markers match the SVG's " \
+           "anchor-wrapped shapes (exit 1 on violations)"
+      def svgmap(schemas_manifest_file)
+        result = Suma::SvgmapValidator.new.validate_manifest(
+          schemas_manifest_file,
+        )
+        puts "svgmap: #{result.checked_schemas} schemas, " \
+             "#{result.checked_blocks} blocks checked, " \
+             "#{result.violations.size} violations"
+        print_svgmap_violations(result.violations)
+        return if result.violations.empty?
+
+        raise Thor::Error,
+              "svgmap validation failed: #{result.violations.size} " \
+              "violation(s)"
+      end
+
+      MAX_DETAIL_LINES = 20
+
       private
+
+      def print_svgmap_violations(violations)
+        violations.group_by(&:type).each do |type, group|
+          puts "#{type}: #{group.size}"
+          group.first(MAX_DETAIL_LINES)
+            .each { |v| puts "  #{v.file}: #{v.detail}" }
+          remaining = group.size - MAX_DETAIL_LINES
+          puts "  ... +#{remaining} more" if remaining.positive?
+        end
+      end
 
       # Print the closure report and raise on any unresolved reference.
       def emit_closure_report(violations)
