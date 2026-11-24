@@ -104,4 +104,40 @@ RSpec.describe Suma::SvgmapValidator do
       expect(result.violations.first.detail).to eq("nowhere.expg1.svg")
     end
   end
+  # The baseline floors the standing violations (MappingDrift pattern):
+  # a committed svgmap-baseline.yml keeps the corpus source defects from
+
+  # The baseline floors the standing violations (MappingDrift pattern):
+  # a committed svgmap-baseline.yml keeps the corpus's known source
+  # defects from failing every run, while a NEW violation fails.
+  it "writes a baseline and fails only on violations absent from it" do
+    Dir.mktmpdir do |dir|
+      root = Pathname.new(dir)
+      write(root / "schemas/demo_schema.exp", exp_source("demo.expg1.svg"))
+      write(root / "schemas/demo.expg1.svg", svg(%w[1 2 3]))
+      manifest = root / "schemas.yaml"
+      write(manifest, <<~YAML)
+        schemas:
+          demo_schema:
+            path: schemas/demo_schema.exp
+      YAML
+
+      first = described_class.new.validate_manifest(manifest.to_s)
+      baseline = File.join(dir, "svgmap-baseline.yml")
+      File.write(baseline, described_class::Report
+        .from_violations(first.violations).to_yaml)
+
+      # A schema whose block gained a shape no entry covers: NEW.
+      write(root / "schemas/demo.expg1.svg", svg(%w[1 2 3 4]))
+
+      second = described_class.new.validate_manifest(manifest.to_s)
+      fresh = described_class::Report.from_violations(second.violations)
+        .keys - described_class::Report.from_yaml(File.read(baseline)).keys
+
+      expect(second.violations.count { |v| v.type == "unlisted_shape" })
+        .to eq(2)
+      expect(fresh).to eq(["#{root.join('schemas/demo_schema.exp')}|" \
+                           "unlisted_shape|4"])
+    end
+  end
 end
