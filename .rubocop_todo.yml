@@ -122,6 +122,7 @@ Lint/UnusedMethodArgument:
 # Configuration parameters: AllowedMethods, AllowedPatterns, CountRepeatedAttributes, Max.
 Metrics/AbcSize:
   Exclude:
+    - 'lib/suma/svgmap_validator.rb'
     - 'spec/suma/delivery/part_union_spec.rb'
     - 'bin/benchmark_corpus'
     - 'lib/suma/change_manifest.rb'
@@ -277,6 +278,7 @@ RSpec/ContextWording:
 # Configuration parameters: Max, CountAsOne.
 RSpec/ExampleLength:
   Exclude:
+    - 'spec/suma/svgmap_validator_spec.rb'
     - 'spec/suma/delivery/part_union_spec.rb'
     - 'spec/suma/delivery/expectations_spec.rb'
     - 'spec/suma/delivery/page_inventory_spec.rb'
@@ -380,6 +382,7 @@ RSpec/MessageSpies:
 # Configuration parameters: Max.
 RSpec/MultipleExpectations:
   Exclude:
+    - 'spec/suma/svgmap_validator_spec.rb'
     - 'spec/suma/delivery/part_union_spec.rb'
     - 'spec/suma/delivery/expectations_spec.rb'
     - 'spec/suma/delivery/page_inventory_spec.rb'

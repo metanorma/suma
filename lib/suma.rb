@@ -37,6 +37,7 @@ module Suma
   autoload :Delivery, "suma/delivery"
   autoload :RegisterManifestGenerator, "suma/register_manifest_generator"
   autoload :SchemaCache,            "suma/schema_cache"
+  autoload :SvgmapValidator,        "suma/svgmap_validator"
   autoload :SchemaCategory,         "suma/schema_category"
   autoload :SchemaCollection,       "suma/schema_collection"
   autoload :SchemaComparer,         "suma/schema_comparer"
