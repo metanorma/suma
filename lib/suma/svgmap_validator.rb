@@ -72,6 +72,10 @@ module Suma
     end
 
     def validate_manifest(manifest_path)
+      # Violation keys (and displays) carry the path relative to the
+      # manifest, so a committed baseline matches on every machine and
+      # in CI - absolute paths would key to one checkout.
+      @base = File.dirname(File.expand_path(manifest_path))
       manifest = Expressir::SchemaManifest.from_file(manifest_path)
       manifest.schemas.each { |entry| validate_file(entry.path.to_s) }
       summary
@@ -80,14 +84,20 @@ module Suma
     def validate_file(path)
       body = File.read(path)
       @checked_schemas += 1
-      body.scan(REMARK_BLOCK_RE) do |_schema, remark_body|
-        remark_body.scan(SVGMAP_BLOCK_RE) do |(block_body)|
-          validate_block(path, block_body)
-        end
+      scan_svgmap_blocks(body) do |block_body|
+        validate_block(relative(path), block_body, path)
       end
     rescue StandardError => e
-      @violations << Violation.new(file: path, type: "unreadable_file",
-                                   detail: e.message)
+      @violations << Violation.new(file: relative(path),
+                                   type: "unreadable_file", detail: e.message)
+    end
+
+    def scan_svgmap_blocks(body, &)
+      body.scan(REMARK_BLOCK_RE) do |_schema, remark_body|
+        remark_body.scan(SVGMAP_BLOCK_RE) do |(block_body)|
+          yield(block_body)
+        end
+      end
     end
 
     def summary
@@ -97,34 +107,42 @@ module Suma
 
     private
 
-    def validate_block(path, block_body)
+    # +rel+ keys and displays the violation; +abs+ locates the diagram.
+    def validate_block(rel, block_body, abs)
       @checked_blocks += 1
       images = block_body.scan(IMAGE_RE).flatten
       markers = block_body.scan(MARKER_RE).flatten
-      check_images(path, images)
-      check_markers(path, markers, svg_shapes(path, images.first))
+      check_images(rel, abs, images)
+      check_markers(rel, markers, svg_shapes(abs, images.first))
     end
 
-    def check_images(path, images)
-      images.reject { |image| image_path(path, image) }
+    def check_images(rel, abs, images)
+      images.reject { |image| image_path(abs, image) }
         .each do |image|
-          @violations << Violation.new(file: path, type: "missing_image",
+          @violations << Violation.new(file: rel, type: "missing_image",
                                        detail: image)
         end
     end
 
-    def check_markers(path, markers, shapes)
+    def check_markers(rel, markers, shapes)
       return if shapes.nil?
 
       markers.reject { |marker| shapes.include?(marker) }
         .each do |marker|
-          @violations << Violation.new(file: path, type: "missing_shape",
+          @violations << Violation.new(file: rel, type: "missing_shape",
                                        detail: marker)
         end
       (shapes - markers).each do |shape|
-        @violations << Violation.new(file: path, type: "unlisted_shape",
+        @violations << Violation.new(file: rel, type: "unlisted_shape",
                                      detail: shape)
       end
+    end
+
+    def relative(path)
+      return path unless @base
+
+      prefix = "#{@base}#{File::SEPARATOR}"
+      path.start_with?(prefix) ? path.delete_prefix(prefix) : path
     end
 
     def image_path(exp_path, image)
