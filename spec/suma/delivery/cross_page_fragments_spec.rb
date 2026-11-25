@@ -111,10 +111,12 @@ RSpec.describe Suma::Delivery::CrossPageFragments do
     expect([result[:remapped], a["href"]]).to eq(
       [1, "../../member_0.xml.11.html#the_target"],
     )
-    page, fragment = a["href"].split("#")
-    expect(site_dir.join("schema_docs/pair", page)).to be_file
-    expect(site_dir.join("schema_docs/pair", page).read)
-      .to include(%(id="#{fragment}"))
+    page, = a["href"].split("#")
+    target = site_dir.join("schema_docs/pair", page)
+    expect(target).to be_file
+    # The target page was not remapped, so its bytes stay untouched -
+    # the resolver only re-serializes pages whose anchors moved.
+    expect(target.read).to include("id='the_target'")
   end
 
   it "counts unresolved fragments without touching them" do
