@@ -37,30 +37,41 @@ module Suma
       def repair
         pages = html_pages
         id_index = index_ids(pages)
+        scopes = scope_index(id_index)
         counts = Hash.new(0)
-        pages.each do |path, doc|
-          remap_page(doc, path, id_index, counts)
-          path.write(doc.to_html)
-        end
+        rewrite_changed(pages, id_index, scopes, counts)
         Result.new(**counts.slice(:own, :remapped, :ambiguous, :unresolved))
       end
 
       private
 
-      def remap_page(doc, path, id_index, counts)
-        doc.css("a[href^='#']").each do |a|
+      # Only pages whose anchors moved get re-serialized: writing every
+      # page of a 700-page site dominates the pass otherwise, and
+      # unchanged pages keep their bytes exactly.
+      def rewrite_changed(pages, id_index, scopes, counts)
+        pages.each do |path, doc|
+          remap_page?(doc, path, id_index, scopes, counts) and
+            path.write(doc.to_html)
+        end
+      end
+
+      def remap_page?(doc, path, id_index, scopes, counts)
+        doc.css("a[href^='#']").filter_map do |a|
           status, href = resolve(a["href"].to_s.delete_prefix("#"),
-                                 path, id_index)
+                                 path, id_index, scopes)
           status = :unresolved if status.nil?
           counts[status] += 1
-          a["href"] = href if href
-        end
+          next unless href
+
+          a["href"] = href
+          true
+        end.any?
       end
 
       # [status, href-or-nil]: :own = the target id is on the citing
       # page (fine as written); :ambiguous = several candidates;
       # :unresolved = no candidate; :remapped carries the new href.
-      def resolve(frag, path, id_index)
+      def resolve(frag, path, id_index, scopes)
         exact = id_index[frag]
         if exact
           uniq = exact[:pages].uniq
@@ -70,11 +81,11 @@ module Suma
           return [:remapped, cross_href(path, uniq.first, frag)]
         end
 
-        scoped_resolve(frag, path, id_index)
+        scoped_resolve(frag, path, scopes)
       end
 
-      def scoped_resolve(frag, path, id_index)
-        candidates = matching_scopes(frag, path, id_index)
+      def scoped_resolve(frag, path, scopes)
+        candidates = matching_scopes(frag, path, scopes)
         return [:ambiguous] if candidates.size > 1
 
         id, pages = candidates.first
@@ -85,13 +96,35 @@ module Suma
 
       # [id, pages] pairs for stamped anchors whose scope names the
       # fragment, rendered on some page other than the citing one.
-      def matching_scopes(frag, path, id_index)
-        id_index.filter_map do |id, entry|
+      #
+      # A scope matches when it equals the fragment or the fragment is
+      # one of its dot-boundary suffixes. The index is built once —
+      # scanning the whole id index per fragment made the pass O(ids ×
+      # fragments), ~73 minutes on the SRL site.
+      def scope_index(id_index)
+        index = Hash.new { |h, k| h[k] = [] }
+        id_index.each do |id, entry|
+          (scope = scope_of(id)) or next
+          index_scope_tails(index, id, entry, scope)
+        end
+        index
+      end
+
+      # A scope matches a fragment when the fragment equals it or is one
+      # of its dot-boundary suffixes; the buckets are those suffixes.
+      def index_scope_tails(index, id, entry, scope)
+        tail = scope
+        index[tail] << [id, entry]
+        while (dot = tail.index("."))
+          tail = tail[(dot + 1)..]
+          index[tail] << [id, entry]
+        end
+      end
+
+      def matching_scopes(frag, path, scope_index)
+        scope_index[frag].filter_map do |id, entry|
           pages = entry[:pages].uniq
           next if pages == [path]
-
-          scope = scope_of(id)
-          next unless scope && (scope == frag || scope.end_with?(".#{frag}"))
 
           [id, pages]
         end
