@@ -231,17 +231,23 @@ module Suma
     # Longest-processing-time bin packing over source sizes.
     # Returns an array of index arrays, one per shard.
     def balanced_bins(members, total)
-      weights = members.map { |m| member_weight(m) }
       totals = Array.new(total, 0)
       bins = Array.new(total) { [] }
-      members.each_index
-        .sort_by { |i| [-weights[i], i] }
-        .each do |i|
-          bin = (0...total).min_by { |b| [totals[b], b] }
-          bins[bin] << i
-          totals[bin] += weights[i]
-        end
+      heaviest_first(members).each do |i|
+        bin = lightest_bin(totals)
+        bins[bin] << i
+        totals[bin] += member_weight(members[i])
+      end
       bins
+    end
+
+    # Member indices ordered heaviest-first, ties by position.
+    def heaviest_first(members)
+      members.each_index.sort_by { |i| [-member_weight(members[i]), i] }
+    end
+
+    def lightest_bin(totals)
+      (0...totals.size).min_by { |b| [totals[b], b] }
     end
 
     # The member's compiled source size proxies its render time; an
