@@ -31,6 +31,7 @@ module Suma
       # targets do not resolve. Measured floors ride each corpus's
       # expectations manifest.
       attribute :hotspots_min, :integer
+      attribute :keyed_remarks_max, :integer
       attribute :hotspots_broken_max, :integer, default: -> { 0 }
 
       key_value do
@@ -47,6 +48,7 @@ module Suma
         map "missing_schema_remarks_max", to: :missing_schema_remarks_max
         map "asciidoc_leaks_max", to: :asciidoc_leaks_max
         map "hotspots_min", to: :hotspots_min
+        map "keyed_remarks_max", to: :keyed_remarks_max
         map "hotspots_broken_max", to: :hotspots_broken_max
       end
 
@@ -174,6 +176,7 @@ module Suma
           "missing_schema_remarks_max" =>
             Array(report["missing_schema_remarks"]).size,
           "asciidoc_leaks_max" => report["asciidoc_leak_occurrences"].to_i,
+          "keyed_remarks_max" => report["keyed_remark_occurrences"].to_i,
         }
       end
     end

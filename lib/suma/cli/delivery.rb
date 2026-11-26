@@ -212,6 +212,7 @@ module Suma
           "#{r['broken_fragments'].size} broken; " \
           "#{r['cross_document_links']} cross-document; " \
           "hotspots=#{r['hotspots']} broken=#{r['hotspots_broken'].size}; " \
+          "keyed=#{r['keyed_remark_occurrences']}; " \
           "#{inventory_summary(r)}; #{diagnostics_summary(r)}"
       end
 

@@ -44,6 +44,12 @@ module Suma
       # (source-authoring residuals).
       ASCIIDOC_MACROS_RE = /\b(?:image|link|include)::[^ \t\r\n]*\[\]/
       LISTING_TAGS = %w[pre code].freeze
+      # A keyed description block rides its declaration only on the
+      # annotated face; a listing face that prints one is the
+      # expressir plain-form regression (metanorma-cli#522). Both
+      # spellings: the `(*"path.__note"` blocks and the `--"path.__note"`
+      # where-rule tails.
+      KEYED_REMARK_RE = /(?:\(\*|--)"[^"]*\.(?:__note|__remark|__example)/
 
       Report = Struct.new(:report, keyword_init: true) do
         def broken_count
@@ -79,6 +85,7 @@ module Suma
           verify_intra_fragments(doc, rel_path, html_file, report)
           verify_links(doc, rel_path, html_file, anchor_index, report)
           check_hotspots(doc, rel_path, html_file, anchor_index, report)
+          check_keyed_remarks(doc, rel_path, report)
           check_build_dir_references(content, rel_path, report)
           check_asciidoc_leakage(doc, rel_path, report)
           check_page_inventory(doc, rel_path, report)
@@ -115,6 +122,8 @@ module Suma
           "missing_schema_remarks" => [],
           "asciidoc_leak_pages" => [],
           "asciidoc_leak_occurrences" => 0,
+          "keyed_remark_pages" => [],
+          "keyed_remark_occurrences" => 0,
           "page_inventory" => {},
           "inventory" => {},
           "diagnostics" => {},
@@ -170,6 +179,21 @@ module Suma
 
         report["asciidoc_leak_pages"] << rel_path
         report["asciidoc_leak_occurrences"] += leaks
+      end
+
+      # Keyed description blocks inside a listing: the plain-form
+      # listing faces never print them; a hit is the expressir
+      # regression (metanorma-cli#522), not corpus content.
+      def check_keyed_remarks(doc, rel_path, report)
+        count = doc.xpath("//text()").sum do |node|
+          next 0 unless inside_listing?(node)
+
+          node.text.to_s.scan(KEYED_REMARK_RE).size
+        end
+        return if count.zero?
+
+        report["keyed_remark_pages"] << rel_path
+        report["keyed_remark_occurrences"] += count
       end
 
       # The per-page inventory ratchet rides in the machine-readable
