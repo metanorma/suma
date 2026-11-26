@@ -216,9 +216,40 @@ module Suma
       return members unless @shard
 
       index, total = @shard
-      members.each_with_index.filter_map do |member, position|
-        member if (position % total) == index
-      end
+      # Balanced sharding (the srl critical path): members sorted
+      # heaviest-first - source bytes as the render-time proxy - are
+      # dealt onto the bin with the smallest running total (LPT), so
+      # mega-members spread instead of clustering: the round-robin form
+      # let one shard hold the heavy members and run 39 minutes while
+      # its siblings ran 12, and the phase wall is the worst shard.
+      # Bins stay disjoint and cover every member; each bin's members
+      # keep collection order so batch slicing stays deterministic.
+      bins = balanced_bins(members, total)
+      bins[index].sort.map { |i| members[i] }
+    end
+
+    # Longest-processing-time bin packing over source sizes.
+    # Returns an array of index arrays, one per shard.
+    def balanced_bins(members, total)
+      weights = members.map { |m| member_weight(m) }
+      totals = Array.new(total, 0)
+      bins = Array.new(total) { [] }
+      members.each_index
+        .sort_by { |i| [-weights[i], i] }
+        .each do |i|
+          bin = (0...total).min_by { |b| [totals[b], b] }
+          bins[bin] << i
+          totals[bin] += weights[i]
+        end
+      bins
+    end
+
+    # The member's compiled source size proxies its render time; an
+    # unreadable fileref weighs nothing and rides the index ordering.
+    def member_weight(member)
+      File.size(File.expand_path(member["fileref"].to_s, @config_dir))
+    rescue StandardError
+      0
     end
 
     # Isolation stages the single member whose fileref path contains the
