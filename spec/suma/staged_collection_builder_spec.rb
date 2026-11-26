@@ -100,16 +100,50 @@ RSpec.describe Suma::StagedCollectionBuilder do
       expect(builder.send(:shard_members, members)).to eq(members)
     end
 
-    it "selects the members matching index % total, in order" do
-      expect(shard_ids([0, 2])).to eq(["ISO 1", "ISO 3"])
-      expect(shard_ids([1, 2])).to eq(["ISO 2"])
-    end
-
-    it "partitions the members across all shards of a total" do
+    # Balanced sharding: heaviest source first, dealt onto the smallest
+    # bin - so the mega-members spread and the phase wall is the mean,
+    # not the worst cluster.
+    it "selects balanced bins: disjoint, complete, in collection order" do
       picked = (0...3).flat_map do |i|
         builder_for(manifest, shard: [i, 3]).send(:shard_members, members)
       end
       expect(picked).to eq(members)
+    end
+
+    it "splits the heaviest member away from the pile" do
+      # Make "ISO 3" the mega-member (10x the others): under LPT it
+      # lands in a bin without the next-heaviest member.
+      Dir.mktmpdir do |dir|
+        File.write(File.join(dir, "a.xml"), "x")
+        File.write(File.join(dir, "b.xml"), "xx")
+        File.write(File.join(dir, "c.xml"), "x" * 10_000)
+        path = File.join(dir, "collection-output.yaml")
+        File.write(path, manifest.to_yaml)
+
+        big = described_class.new(collection_config_path: path,
+                                  output_directory: File.join(dir, "_site"),
+                                  shard: [0, 2])
+          .send(:shard_members, members)
+        small = described_class.new(collection_config_path: path,
+                                    output_directory: File.join(dir, "_site"),
+                                    shard: [1, 2])
+          .send(:shard_members, members)
+        big_ids = big.map { |m| m["identifier"] }
+        small_ids = small.map { |m| m["identifier"] }
+        expect(big_ids).to include("ISO 3")
+        expect(small_ids).not_to include("ISO 3")
+        expect(big_ids | small_ids).to contain_exactly("ISO 1", "ISO 2",
+                                                       "ISO 3")
+      end
+    end
+
+    it "keeps each shard's members in collection order" do
+      ids = shard_ids([0, 2])
+      expect(ids).to eq(ids.sort_by { |i| members.index { |m| m["identifier"] == i } })
+    end
+
+    it "stays deterministic across calls" do
+      expect(shard_ids([1, 4])).to eq(shard_ids([1, 4]))
     end
   end
 
