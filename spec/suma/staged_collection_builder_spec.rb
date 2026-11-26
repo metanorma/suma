@@ -110,40 +110,47 @@ RSpec.describe Suma::StagedCollectionBuilder do
       expect(picked).to eq(members)
     end
 
-    it "splits the heaviest member away from the pile" do
-      # Make "ISO 3" the mega-member (10x the others): under LPT it
-      # lands in a bin without the next-heaviest member.
+    # Make "ISO 3" the mega-member (10x the others): under LPT it
+    # lands in a bin without the next-heaviest member.
+    def shards_with_mega_member
       Dir.mktmpdir do |dir|
-        File.write(File.join(dir, "a.xml"), "x")
-        File.write(File.join(dir, "b.xml"), "xx")
-        File.write(File.join(dir, "c.xml"), "x" * 10_000)
-        path = File.join(dir, "collection-output.yaml")
-        File.write(path, manifest.to_yaml)
-
-        big = described_class.new(collection_config_path: path,
-                                  output_directory: File.join(dir, "_site"),
-                                  shard: [0, 2])
-          .send(:shard_members, members)
-        small = described_class.new(collection_config_path: path,
-                                    output_directory: File.join(dir, "_site"),
-                                    shard: [1, 2])
-          .send(:shard_members, members)
-        big_ids = big.map { |m| m["identifier"] }
-        small_ids = small.map { |m| m["identifier"] }
-        expect(big_ids).to include("ISO 3")
-        expect(small_ids).not_to include("ISO 3")
-        expect(big_ids | small_ids).to contain_exactly("ISO 1", "ISO 2",
-                                                       "ISO 3")
+        seed_mega_member_fixtures(dir)
+        shards(dir)
       end
+    end
+
+    def seed_mega_member_fixtures(dir)
+      File.write(File.join(dir, "a.xml"), "x")
+      File.write(File.join(dir, "b.xml"), "xx")
+      File.write(File.join(dir, "c.xml"), "x" * 10_000)
+      File.write(File.join(dir, "collection-output.yaml"), manifest.to_yaml)
+    end
+
+    def shards(dir)
+      (0...2).map do |i|
+        builder = described_class.new(collection_config_path: File.join(dir, "collection-output.yaml"),
+                                      output_directory: File.join(dir, "_site"),
+                                      shard: [i, 2])
+        builder.send(:shard_members, members).map { |m| m["identifier"] }
+      end
+    end
+
+    it "splits the heaviest member away from the pile" do
+      big, small = shards_with_mega_member
+      expect(big).to include("ISO 3")
+      expect(small).not_to include("ISO 3")
+      expect(big | small).to contain_exactly("ISO 1", "ISO 2", "ISO 3")
     end
 
     it "keeps each shard's members in collection order" do
       ids = shard_ids([0, 2])
-      expect(ids).to eq(ids.sort_by { |i| members.index { |m| m["identifier"] == i } })
+      positions = ids.map { |i| members.index { |m| m["identifier"] == i } }
+      expect(positions).to eq(positions.sort)
     end
 
     it "stays deterministic across calls" do
-      expect(shard_ids([1, 4])).to eq(shard_ids([1, 4]))
+      first = shard_ids([1, 4])
+      expect(first).to eq(shard_ids([1, 4]))
     end
   end
 
