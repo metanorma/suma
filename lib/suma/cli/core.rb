@@ -44,6 +44,11 @@ module Suma
                                     desc: "Stage only the member whose " \
                                           "fileref contains this slug " \
                                           "(requires --staged)"
+      option :staged_shard_exclude, type: :string,
+                                    desc: "Comma-separated fileref slugs " \
+                                          "dropped from this shard's " \
+                                          "selection (requires " \
+                                          "--staged-shard)"
       option :staged_reinflate_shard, type: :string,
                                       desc: "Reinflate only this shard as " \
                                             "INDEX/TOTAL (requires --staged)"
