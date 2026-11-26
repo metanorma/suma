@@ -422,5 +422,60 @@ RSpec.describe Suma::Delivery::SiteVerifier do
         expect(violations).to include("hotspots_broken_max")
       end
     end
+
+    # The plain-form listing faces never print keyed description blocks
+    # (metanorma-cli#522): a hit is the expressir regression, not
+    # corpus content.
+    it "flags keyed description blocks inside listings" do
+      Dir.mktmpdir do |dir|
+        root = Pathname.new(dir)
+        write(root / "ISO_A_2025/member_1.xml.1.html", <<~HTML)
+          <html><body><pre>
+          ENTITY widget;
+            name : STRING;
+            (*"toy_schema.widget.name.__note" keyed. *)
+          END_ENTITY;
+          </pre></body></html>
+        HTML
+        write(root / "ISO_A_2025/member_1.xml.2.html", <<~HTML)
+          <html><body><pre>
+          WR1: size > 0;
+          --"toy_schema.widget.WR1.__note" keyed to a rule.
+          </pre>
+          <p>mentions __note outside a listing: harmless</p>
+          </body></html>
+        HTML
+        write(root / "ISO_A_2025/member_1.xml.3.html", <<~HTML)
+          <html><body><pre>
+          (* an untagged comment stays *)
+          END_ENTITY;
+          </pre></body></html>
+        HTML
+
+        report = verify(root).report
+        expect(report["keyed_remark_pages"]).to eq(
+          ["ISO_A_2025/member_1.xml.1.html",
+           "ISO_A_2025/member_1.xml.2.html"],
+        )
+        expect(report["keyed_remark_occurrences"]).to eq(2)
+      end
+    end
+
+    it "gates the keyed-remark cap through expectations" do
+      Dir.mktmpdir do |dir|
+        root = Pathname.new(dir)
+        write(root / "ISO_A_2025/member_1.xml.1.html", <<~HTML)
+          <html><body><pre>
+          (*"toy_schema.widget.name.__note" keyed. *)
+          </pre></body></html>
+        HTML
+        expectations = Suma::Delivery::Expectations.from_yaml(
+          { "keyed_remarks_max" => 0 }.to_yaml,
+        )
+        report = verify(root).report
+        violations = expectations.violations(report, []).join("; ")
+        expect(violations).to include("keyed_remarks_max")
+      end
+    end
   end
 end
