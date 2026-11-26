@@ -106,12 +106,17 @@ module Suma
     # reinflation is skipped, so disjoint shards of one collection can render
     # concurrently in separate build runs into a shared store. +isolate+ is
     # a fileref slug with the same shard semantics for a single member.
+    # +exclude+ is an array of fileref slugs dropped from the shard's
+    # selection; bin packing still covers every member, so all legs of one
+    # collection compute identical bins and an excluded member is staged
+    # exactly once — by the dedicated isolate leg.
     # (a data-declaring initializer)
     def initialize(collection_config_path:, output_directory:, coverpage: nil,
                    store_dir: nil, formats: %i[xml html], no_valid: false,
                    unresolved_eref_markers: false,
                    workers: 1, batch_size: DEFAULT_BATCH_SIZE,
-                   shard: nil, isolate: nil, reinflate_shard: nil) # rubocop:disable Metrics/ParameterLists
+                   shard: nil, isolate: nil, exclude: nil,
+                   reinflate_shard: nil) # rubocop:disable Metrics/ParameterLists
       @config_path = collection_config_path
       @config_dir = File.dirname(File.expand_path(collection_config_path))
       @output_directory = output_directory
@@ -120,10 +125,19 @@ module Suma
       @formats = formats
       @no_valid = no_valid
       @unresolved_eref_markers = unresolved_eref_markers
+      assign_worker_options(workers, batch_size)
+      assign_shard_options(shard, isolate, exclude, reinflate_shard)
+    end
+
+    def assign_worker_options(workers, batch_size)
       @workers = [workers.to_i, 1].max
       @batch_size = [batch_size.to_i, 1].max
+    end
+
+    def assign_shard_options(shard, isolate, exclude, reinflate_shard)
       @shard = shard
       @isolate = isolate
+      @exclude = Array(exclude)
       @reinflate_shard = reinflate_shard
     end
 
@@ -178,9 +192,27 @@ module Suma
     private
 
     # The staged slice of the collection: an isolate selection wins over a
-    # modulo shard when both are given.
+    # modulo shard when both are given; exclusions belong to the shard legs
+    # (the isolate leg IS the excluded member's home).
     def staged_selection(members)
-      @isolate ? isolate_members(members) : shard_members(members)
+      validate_selection_flags
+      return isolate_members(members) if @isolate
+
+      shard_members(members)
+    end
+
+    def validate_selection_flags
+      if @isolate && @exclude.any?
+        raise ArgumentError,
+              "--staged-shard-isolate and --staged-shard-exclude are " \
+              "alternatives; one leg isolates the member, the others " \
+              "exclude it"
+      end
+      return if @isolate || @exclude.empty?
+
+      raise ArgumentError,
+            "--staged-shard-exclude requires --staged-shard: the member " \
+            "is dropped from the shard's bin, not from the collection"
     end
 
     # Render the staged members, serially or across the worker pool, then
@@ -224,8 +256,12 @@ module Suma
       # its siblings ran 12, and the phase wall is the worst shard.
       # Bins stay disjoint and cover every member; each bin's members
       # keep collection order so batch slicing stays deterministic.
+      # Excluded members (staged by a dedicated isolate leg) are dropped
+      # AFTER packing: every leg packs the same full member list, so bin
+      # membership is identical across legs and no member is staged
+      # twice or missed.
       bins = balanced_bins(members, total)
-      bins[index].sort.map { |i| members[i] }
+      bins[index].reject { |i| excluded?(members[i]) }.sort.map { |i| members[i] }
     end
 
     # Longest-processing-time bin packing over source sizes.
@@ -258,20 +294,29 @@ module Suma
       0
     end
 
-    # Isolation stages the single member whose fileref path contains the
+    # Isolation stages the members whose fileref path contains the
     # +isolate+ slug (e.g. a mega-member that needs a whole runner to
     # itself, away from sibling workers), and skips reinflation like a
     # shard. Empty selection means the slug matched nothing, which is a
     # caller error worth failing on rather than silently rendering
     # nothing.
     def isolate_members(members)
-      staged = members.select do |member|
-        File.basename(member["fileref"]).include?(@isolate)
-      end
+      staged = members.select { |member| slug_match?(member, @isolate) }
       return staged unless staged.empty?
 
       raise ArgumentError,
             "--staged-shard-isolate matched no member for #{@isolate.inspect}"
+    end
+
+    def excluded?(member)
+      @exclude.any? { |slug| slug_match?(member, slug) }
+    end
+
+    # Fileref-path containment, not basename: staged member filerefs are
+    # per-document paths (documents/iso-10303-104/document.xml) whose
+    # basename is identical across all members.
+    def slug_match?(member, slug)
+      member["fileref"].to_s.include?(slug)
     end
 
     def shard_log(staged_count, total_count)
@@ -283,8 +328,9 @@ module Suma
       end
       return line unless @shard
 
+      excluded = @exclude.any? ? "; excluded #{@exclude.inspect}" : ""
       "#{line}; shard #{@shard[0]}/#{@shard[1]}: staging #{staged_count}, " \
-        "skipping reinflate"
+        "skipping reinflate#{excluded}"
     end
 
     # Batch the members and run one-batch child processes concurrently.

@@ -45,6 +45,29 @@ RSpec.describe Suma::StagedCollectionBuilder do
     }
   end
 
+  # The corpus layout: one directory per document, identical basenames.
+  def path_manifest
+    docrefs = {
+      "ISO 1" => "documents/iso-1/document.xml",
+      "ISO 2" => "documents/iso-2/document.xml",
+      "ISO 3" => "documents/iso-3/document.xml",
+      "ISO 104" => "documents/mega-104/document.xml",
+    }.map do |identifier, fileref|
+      { "identifier" => identifier, "fileref" => fileref }
+    end
+    {
+      "directives" => ["documents-inline"],
+      "bibdata" => { "title" => "Coll", "type" => "collection" },
+      "manifest" => {
+        "level" => "collection",
+        "manifest" => [
+          { "level" => "subcollection", "title" => "Standards",
+            "docref" => docrefs },
+        ],
+      },
+    }
+  end
+
   describe "#collection_members" do
     let(:members) { builder.send(:collection_members) }
 
@@ -157,16 +180,72 @@ RSpec.describe Suma::StagedCollectionBuilder do
   describe "#isolate_members" do
     let(:members) { builder.send(:collection_members) }
 
-    it "stages exactly the member whose fileref basename contains the slug" do
+    it "stages exactly the member whose fileref contains the slug" do
       picked = builder_for(manifest, isolate: "b")
         .send(:isolate_members, members)
       expect(picked.map { |m| m["identifier"] }).to eq(["ISO 2"])
+    end
+
+    # Staged member filerefs are per-document paths whose basename
+    # (document.xml) is identical across every member, so the slug has
+    # to match against the path (the corpus isolates iso-10303-104).
+    it "matches against the fileref path, not the basename" do
+      builder = builder_for(path_manifest, isolate: "mega-104")
+      picked = builder.send(:isolate_members,
+                            builder.send(:collection_members))
+      expect(picked.map { |m| m["identifier"] }).to eq(["ISO 104"])
     end
 
     it "raises on a slug that matches no member" do
       expect do
         builder_for(manifest, isolate: "nope").send(:isolate_members, members)
       end.to raise_error(ArgumentError, /matched no member/)
+    end
+  end
+
+  describe "shard exclude (the isolate leg's counterpart)" do
+    let(:path_members) { builder_for(path_manifest).send(:collection_members) }
+
+    def excluded_shard_ids(index, total)
+      builder_for(path_manifest, shard: [index, total], exclude: ["mega-104"])
+        .send(:shard_members, path_members).map { |m| m["identifier"] }
+    end
+
+    # The mega-member (documents/mega-104/document.xml) is dropped from
+    # every shard leg's bin and staged by the dedicated isolate leg: the
+    # union of the shard legs plus the isolate leg is exactly the
+    # collection, with nothing rendered twice.
+    it "drops the excluded member from every shard and keeps the rest" do
+      staged = (0...2).flat_map { |i| excluded_shard_ids(i, 2) }
+      expect(staged).to contain_exactly("ISO 1", "ISO 2", "ISO 3")
+    end
+
+    it "stages the excluded member only via the isolate leg" do
+      expect(excluded_shard_ids(0, 2)).not_to include("ISO 104")
+      isolate_leg = builder_for(path_manifest, isolate: "mega-104")
+        .send(:isolate_members, path_members).map { |m| m["identifier"] }
+      expect(isolate_leg).to eq(["ISO 104"])
+    end
+
+    it "raises when combined with the isolate selection" do
+      expect do
+        builder_for(path_manifest, isolate: "mega-104",
+                                   exclude: ["mega-104"])
+          .send(:staged_selection, path_members)
+      end.to raise_error(ArgumentError, /alternatives/)
+    end
+
+    it "raises on a shard-less leg, where the drop would silently no-op" do
+      expect do
+        builder_for(path_manifest, exclude: ["mega-104"])
+          .send(:staged_selection, path_members)
+      end.to raise_error(ArgumentError, /requires --staged-shard/)
+    end
+
+    it "reports the exclusion in the shard log" do
+      log = builder_for(path_manifest, shard: [0, 2], exclude: ["mega-104"])
+        .send(:shard_log, 2, 4)
+      expect(log).to include('excluded ["mega-104"]')
     end
   end
 

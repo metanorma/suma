@@ -40,6 +40,14 @@ module Suma
                                           "skip reinflate: gives a " \
                                           "mega-member a build run of its " \
                                           "own (requires --staged)"
+      option :staged_shard_exclude, type: :string,
+                                    desc: "Comma-separated fileref slugs " \
+                                          "dropped from this shard's " \
+                                          "selection: the members are " \
+                                          "staged by a dedicated " \
+                                          "--staged-shard-isolate leg " \
+                                          "instead (requires " \
+                                          "--staged-shard)"
       option :staged_reinflate_shard, type: :string,
                                       desc: "Reinflate only this shard of " \
                                             "the collection as INDEX/TOTAL " \
@@ -122,6 +130,7 @@ module Suma
           staged_batch_size: options[:staged_batch_size],
           staged_shard: parse_shard(options[:staged_shard]),
           staged_shard_isolate: options[:staged_shard_isolate],
+          staged_shard_exclude: parse_excludes(options[:staged_shard_exclude]),
           staged_reinflate_shard: parse_shard(options[:staged_reinflate_shard]) }
       end
 
@@ -136,6 +145,19 @@ module Suma
         end
 
         [index, total]
+      end
+
+      def parse_excludes(value)
+        return nil unless value
+
+        slugs = value.split(",").map(&:strip).reject(&:empty?)
+        if slugs.empty?
+          raise ArgumentError,
+                "--staged-shard-exclude expects at least one slug, " \
+                "got #{value.inspect}"
+        end
+
+        slugs
       end
 
       def log_error(error)
