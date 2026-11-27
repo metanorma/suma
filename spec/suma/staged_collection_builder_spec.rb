@@ -220,6 +220,23 @@ RSpec.describe Suma::StagedCollectionBuilder do
       expect(staged).to contain_exactly("ISO 1", "ISO 2", "ISO 3")
     end
 
+    # The end-to-end selection path (shard + exclude together): the
+    # combination is legal and stages the bin minus the excluded member.
+    # 0.5.60 raised here unconditionally - the refactor of the flag
+    # validation dropped the shard guard - and every corpus shard leg
+    # died on it (iso-10303#889's first run).
+    def staged_bin_ids(index, total)
+      builder_for(path_manifest, shard: [index, total], exclude: ["mega-104"])
+        .send(:staged_selection, path_members).map { |m| m["identifier"] }
+    end
+
+    it "selects the shard bin minus the exclusion through staged_selection" do
+      bin1 = staged_bin_ids(1, 2)
+      bin0 = staged_bin_ids(0, 2)
+      expect(bin1 | bin0).to contain_exactly("ISO 1", "ISO 2", "ISO 3")
+      expect(bin1).not_to include("ISO 104")
+    end
+
     it "stages the excluded member only via the isolate leg" do
       expect(excluded_shard_ids(0, 2)).not_to include("ISO 104")
       isolate_leg = builder_for(path_manifest, isolate: "mega-104")
