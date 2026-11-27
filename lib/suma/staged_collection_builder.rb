@@ -209,10 +209,11 @@ module Suma
               "exclude it"
       end
       return if @isolate || @exclude.empty?
-
-      raise ArgumentError,
-            "--staged-shard-exclude requires --staged-shard: the member " \
-            "is dropped from the shard's bin, not from the collection"
+      unless @shard
+        raise ArgumentError,
+              "--staged-shard-exclude requires --staged-shard: the member " \
+              "is dropped from the shard's bin, not from the collection"
+      end
     end
 
     # Render the staged members, serially or across the worker pool, then
