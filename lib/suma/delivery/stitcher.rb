@@ -48,7 +48,8 @@ module Suma
       FRAME_ASSET_DIRS = %w[images sys].freeze
 
       Registries = Struct.new(:anchors, :docs, :attachments)
-      Result = Struct.new(:resolved, :broken, :parts, keyword_init: true)
+      Result = Struct.new(:resolved, :broken, :parts, :svgmaps_bound,
+                          keyword_init: true)
 
       # (a data-declaring initializer)
       def initialize(bundles_dir:, plan_path:, out_dir:, assets_dir: nil,
@@ -71,6 +72,7 @@ module Suma
         validate_injection(@inject, bundles) if @inject
         registries = build_registries(bundles)
         out_tmp = stage_merged_site(bundles)
+        svgmaps_bound = bind_svgmaps(out_tmp)
         registries.attachments = build_attachment_registry(out_tmp)
         counts = patch_xrefs(out_tmp, registries)
         write_merged_index(out_tmp, bundles)
@@ -80,7 +82,7 @@ module Suma
         write_stitch_summary(out_tmp, bundles, registries, counts)
         atomic_swap(out_tmp)
         Result.new(resolved: counts[:resolved], broken: counts[:broken],
-                   parts: bundles.keys.sort)
+                   parts: bundles.keys.sort, svgmaps_bound: svgmaps_bound)
       end
 
       private
@@ -155,6 +157,17 @@ module Suma
       end
 
       # -- merge + rewrite ----------------------------------------------
+
+      # The shards bind their schema pages' svgmap hotspots shard-locally
+      # and stamp the ones this tree lacks (another shard's schema); the
+      # merged tree sees every schema page, so the stamped remainder
+      # binds here (see SvgmapBinder).
+      def bind_svgmaps(out_dir)
+        docs = out_dir.join("schema_docs")
+        return 0 unless docs.directory?
+
+        SvgmapBinder.new(docs).bind.bound
+      end
 
       def stage_merged_site(bundles)
         out_tmp = out_tmp_dir

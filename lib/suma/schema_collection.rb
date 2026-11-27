@@ -52,6 +52,7 @@ module Suma
       exporter.export
 
       docs_for(targets).each_value(&:compile)
+      bind_svgmap_hotspots
       persist_build_state
     end
 
@@ -70,6 +71,18 @@ module Suma
     end
 
     private
+
+    # The schema pages' cross-schema svgmap hotspots bind only here: the
+    # standalone document render leaves them as raw ordinals and no
+    # collection render re-processes these pages.
+    def bind_svgmap_hotspots
+      return unless File.directory?(@output_path_docs)
+
+      result = Delivery::SvgmapBinder.new(@output_path_docs).bind
+      Utils.log "Svgmaps: #{result.bound} hotspots bound over " \
+                "#{result.pages} schema pages, #{result.skipped.size} " \
+                "pages without presentation XML skipped"
+    end
 
     def plan
       @plan ||= BuildPlan.new(

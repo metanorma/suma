@@ -13,5 +13,6 @@ module Suma
     autoload :Plan, "suma/delivery/plan"
     autoload :SiteVerifier, "suma/delivery/site_verifier"
     autoload :Stitcher, "suma/delivery/stitcher"
+    autoload :SvgmapBinder, "suma/delivery/svgmap_binder"
   end
 end
