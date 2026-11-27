@@ -105,6 +105,19 @@ module Suma
                   "#{result[:unresolved]} unresolved"
       end
 
+      desc "bind-svgmaps SCHEMA_DOCS_DIR",
+           "Assembly-time svgmap hotspot binding: rewrite the schema " \
+           "doc pages' ordinal svgmap hotspots onto the owning schema " \
+           "pages, driven by each page's presentation XML and checked " \
+           "against the schema_docs anchor index. Targets with no live " \
+           "anchor keep their ordinals."
+      def bind_svgmaps(docs_dir)
+        result = Suma::Delivery::SvgmapBinder.new(docs_dir).bind
+        Utils.log "Svgmaps: #{result.bound} hotspots bound over " \
+                  "#{result.pages} schema pages, #{result.skipped.size} " \
+                  "pages without presentation XML skipped"
+      end
+
       desc "stitch BUNDLES_DIR",
            "Merge per-part bundles (each bundle.json + site/) into one " \
            "_site/, resolving every unresolved-eref span through the " \
@@ -129,7 +142,8 @@ module Suma
       def stitch(bundles_dir)
         result = Suma::Delivery::Stitcher.new(**stitch_options(bundles_dir)).stitch
         Utils.log "Stitched #{result.parts.size} into #{options[:out]}: " \
-                  "#{result.resolved} ok, #{result.broken} broken"
+                  "#{result.resolved} ok, #{result.broken} broken, " \
+                  "#{result.svgmaps_bound} svgmap hotspots bound"
       end
 
       desc "plan", "Enumerate parts from the collection manifest and " \
