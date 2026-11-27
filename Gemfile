@@ -59,7 +59,7 @@ gem "relaton", "~> 3.1.1"
 # >= 2.4.82: the five placement fixes (TRThurman #721-#728) ride it;
 # keep_untagged_remarks (the plain-schema face, suma#217) and the
 # #707/#711 remark/paren fixes came earlier in the line.
-gem "expressir", ">= 2.5.0"
+gem "expressir", "~> 2.5.0"
 gem "nokogiri"
 gem "openssl", "~> 3.0"
 gem "rake"
