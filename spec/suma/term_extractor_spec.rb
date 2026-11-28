@@ -342,5 +342,52 @@ RSpec.describe Suma::TermExtractor do
         expect(content).to include("tech:Decl_arm.Holder")
       end
     end
+
+    describe "note xref re-qualification (iso-10303#848)" do
+      let(:note_manifest_file) do
+        File.expand_path("../fixtures/extract_terms/schemas-chain.yml", __dir__)
+      end
+
+      def concept_with_id(id)
+        described_class
+          .new(note_manifest_file, test_output_path,
+               urn: "urn:iso:std:iso:10303:-2:ed-2:en")
+          .call.flat_map(&:managed_concepts)
+          .find { |c| c.data.id == id }
+      end
+
+      def outer_note
+        concept = concept_with_id("Outer_arm.outer_thing")
+        expect(concept).not_to be_nil
+        concept.localization("eng").data.notes.map(&:content).join(" ")
+      end
+
+      it "re-qualifies a note xref the citing schema only imports" do
+        notes = outer_note
+        # deep_thing sits two bare USE FROMs away; the note citation must
+        # name the declaring schema like the definition-side supertype
+        # citations already do.
+        expect(notes).to include("tech:Deep_arm.deep_thing,")
+        expect(notes).not_to include("tech:Outer_arm.deep_thing")
+      end
+
+      it "re-qualifies attribute-tail xrefs and leaves unresolvable " \
+         "ones as written" do
+        notes = outer_note
+        expect(notes).to include("tech:Deep_arm.deep_thing.name,")
+        # nosuch_thing has no declarer anywhere in the closure: the
+        # citation stays as written for the render-time gate to count.
+        expect(notes).to include("tech:Outer_arm.nosuch_thing,")
+      end
+
+      it "resolves a type-named xref through the closure" do
+        # middle_kind is a TYPE (not an entity) declared in Middle_arm,
+        # one bare USE FROM away: the declared-element check must cover
+        # every declaration kind the remarks cite.
+        notes = outer_note
+        expect(notes).to include("tech:Middle_arm.middle_kind,")
+        expect(notes).not_to include("tech:Outer_arm.middle_kind")
+      end
+    end
   end
 end

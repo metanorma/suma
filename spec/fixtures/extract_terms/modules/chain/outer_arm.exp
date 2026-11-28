@@ -7,4 +7,8 @@ ENTITY outer_thing
   name : STRING;
 END_ENTITY;
 
+(*"Outer_arm.outer_thing"
+A mis-qualified cite names the <<express:Outer_arm.deep_thing,deep thing>>, the attribute tail rides <<express:Outer_arm.deep_thing.name,deep thing name>>, nothing declares the <<express:Outer_arm.nosuch_thing,absent thing>>, and the <<express:Outer_arm.middle_kind,middle kind>> spelling is a type.
+*)
+
 END_SCHEMA;

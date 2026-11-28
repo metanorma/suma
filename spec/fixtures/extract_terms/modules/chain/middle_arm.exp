@@ -4,4 +4,7 @@ USE FROM Deep_arm;
 
 USE FROM Other_arm;
 
+TYPE middle_kind = STRING;
+END_TYPE;
+
 END_SCHEMA;

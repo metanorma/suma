@@ -10,6 +10,14 @@ module Suma
     # cannot resolve: a URN would fabricate an owner for the declaration.
     UNRESOLVED_TARGET = "target unresolved"
 
+    # The declared-element collections the citation closure accepts:
+    # remarks cite types, functions and rules exactly like entities, and
+    # the mis-qualification class does not care which kind carries the
+    # name. EXPRESS names are unique per schema, so the broader check
+    # cannot shadow the entity-only one the supertype walk relies on.
+    DECLARED_ELEMENT_COLLECTIONS = %i[entities types functions rules
+                                      subtype_constraints constants].freeze
+
     def initialize(schema_manifest_file, output_path, urn:,
                    language_code: "eng", profile: nil, edition: nil,
                    language_codes: nil)
@@ -193,7 +201,29 @@ module Suma
     end
 
     def xref_to_mention(full_ref, display)
-      urn_mention(express_entity_urn(full_ref), display)
+      urn_mention(express_entity_urn(citation_ref(full_ref)), display)
+    end
+
+    # full_ref: "<qualifier>.<declaration>[.<attribute>]". The remark
+    # pipeline qualifies source names with the citing schema regardless
+    # of the true declarer, so a citation naming a declaration the
+    # qualifier only imports mis-cites its owner (iso-10303#835: 2,489
+    # distinct undefined targets on the part2 build). The interface
+    # closure re-qualifies with the declaring schema when it proves one;
+    # a ref the closure cannot resolve stays as written and the
+    # render-time gate counts it honestly (WG 12 position, iso-10303
+    # #848 - no guessed owners).
+    def citation_ref(full_ref)
+      parts = full_ref.split(".")
+      return full_ref if parts.length < 2
+
+      schema = loaded_schema(parts[0])
+      return full_ref unless schema
+
+      owner = declaring_schema_id(schema, parts[1])
+      return full_ref unless owner
+
+      [owner, *parts[1..]].join(".")
     end
 
     def get_section_ref(schema)
@@ -352,12 +382,23 @@ module Suma
       return [] if visited.include?(schema.id)
 
       visited << schema.id
-      return [schema.id] if schema.entities.any? { |e| e.id == entity_id }
+      return [schema.id] if declares?(schema, entity_id)
 
       item_matches, bare_sources = use_from_sources(schema, entity_id)
       return item_matches.uniq if item_matches.any?
 
       walk_bare_sources(bare_sources, entity_id, visited)
+    end
+
+    # Any declared element kind: remarks cite types, functions and rules
+    # exactly like entities, and the mis-qualification class does not
+    # care which kind carries the name. EXPRESS names are unique per
+    # schema, so the broader check cannot shadow the entity-only one the
+    # supertype walk relies on.
+    def declares?(schema, name)
+      DECLARED_ELEMENT_COLLECTIONS.any? do |collection|
+        schema.public_send(collection).any? { |element| element.id == name }
+      end
     end
 
     def walk_bare_sources(bare_sources, entity_id, visited)
