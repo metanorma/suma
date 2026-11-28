@@ -116,11 +116,9 @@ RSpec.describe Suma::Delivery::SvgmapBinder do
 
     result = described_class.new(docs_dir).bind
 
-    expect(result.pages).to eq(1)
+    expect(result.pages).to eq(2)
     expect(result.bound).to eq(3)
-    expect(result.skipped).to eq(
-      ["support_resource_schema/doc_support_resource_schema.html"],
-    )
+    expect(result.skipped).to eq([])
 
     fig1 = hrefs_of("basic_attribute_schema/doc_basic_attribute_schema.html",
                     "basic_attribute_schema_expg1")
@@ -167,9 +165,7 @@ RSpec.describe Suma::Delivery::SvgmapBinder do
     result = described_class.new(docs_dir).bind
 
     expect(result.bound).to eq(0)
-    no_presentation = %w[lonely_schema support_resource_schema]
-      .map { |s| "#{s}/doc_#{s}.html" }
-    expect(result.skipped).to eq(no_presentation)
+    expect(result.skipped).to eq([])
 
     fig = hrefs_of("basic_attribute_schema/doc_basic_attribute_schema.html",
                    "basic_attribute_schema_expg1")
@@ -264,6 +260,42 @@ RSpec.describe Suma::Delivery::SvgmapBinder do
     expect(stamped_of(
              "basic_attribute_schema/doc_basic_attribute_schema.html",
            )).to eq({})
+  end
+
+  it "binds stamps on pages the published tree carries without their " \
+     "presentation XML" do
+    # The ship-time pass runs over the unioned part sites: the pages
+    # carry their stamps, the build XMLs do not ride the artifacts.
+    write_tree(
+      pages: {
+        "support_resource_schema" =>
+          schema_page("support_resource_schema"),
+        "basic_attribute_schema" => schema_page(
+          "basic_attribute_schema",
+          { "basic_attribute_schema_expg1" => %w[1] },
+        ),
+      },
+      presentations: {},
+    )
+    page = docs_dir.join(
+      "basic_attribute_schema/doc_basic_attribute_schema.html",
+    )
+    doc = Leptris::XML.parse_html(page.read)
+    doc.xpath("//*[local-name() = 'svg']//*[local-name() = 'a']")
+      .find { |a| a["href"] == "1" }["data-svgmap-bibitemid"] =
+      "express_support_resource_schema.identifier"
+    page.write(doc.to_html)
+
+    result = described_class.new(docs_dir).bind
+
+    expect(result.bound).to eq(1)
+    expect(stamped_of(
+             "basic_attribute_schema/doc_basic_attribute_schema.html",
+           )).to eq({})
+    cross = "../support_resource_schema/doc_support_resource_schema.html" \
+            "#support_resource_schema.identifier"
+    expect(hrefs_of("basic_attribute_schema/doc_basic_attribute_schema.html",
+                    "basic_attribute_schema_expg1")).to include(cross)
   end
 end
 

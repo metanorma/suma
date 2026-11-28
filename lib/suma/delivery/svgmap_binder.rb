@@ -25,7 +25,11 @@ module Suma
     # hotspots onto the owning schema pages
     # (`../<schema>/doc_<schema>.html#<schema>.<entity>`), checking each
     # target against the anchor index of the schema_docs tree; targets
-    # with no live anchor (WG 12 source data referencing undeclared
+    # with no live anchor in THIS tree (a schema page another shard
+    # owns) are stamped with their bibitemid, and a pass over the
+    # assembled tree - which sees every schema page but not the build
+    # XMLs - binds the stamps from the anchors themselves. Targets with
+    # no live anchor anywhere (WG 12 source data referencing undeclared
     # elements) keep their ordinals and stay visible to the verifier's
     # hotspot gate.
     #
@@ -53,9 +57,15 @@ module Suma
       private
 
       # Returns [bound hotspot count, skipped page rel path or nil].
+      # A page without its presentation XML (the published site trees:
+      # the part artifacts carry the pages and their stamps, not the
+      # build XMLs) still binds its stamps - that is the assembled-tree
+      # mode the ship-time pass runs in.
       def bind_page_or_skip(html, index)
         pres = presentation_path(html)
-        return [0, rel_path(html)] unless pres.file?
+        unless pres.file?
+          return [bind_stamps_only(html, index), nil]
+        end
 
         [bind_page(html, pres, index), nil]
       end
@@ -115,6 +125,16 @@ module Suma
         dirty = bound.positive? ||
           doc.xpath("//*[@data-svgmap-bibitemid]").any?
         html.write(doc.to_html) if dirty
+        bound
+      end
+
+      # The assembled-tree mode: the page's stamps carry the bibitemid
+      # the presentation XML would have; the ordinals stay when this
+      # tree still lacks the target page.
+      def bind_stamps_only(html, index)
+        doc = Leptris::XML.parse_html(html.read)
+        bound = bind_stamped_anchors(doc, index, rel_path(html))
+        html.write(doc.to_html) if bound.positive?
         bound
       end
 

@@ -80,8 +80,7 @@ module Suma
 
       result = Delivery::SvgmapBinder.new(@output_path_docs).bind
       Utils.log "Svgmaps: #{result.bound} hotspots bound over " \
-                "#{result.pages} schema pages, #{result.skipped.size} " \
-                "pages without presentation XML skipped"
+                "#{result.pages} schema pages"
     end
 
     def plan

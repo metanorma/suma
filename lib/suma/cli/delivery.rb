@@ -109,13 +109,13 @@ module Suma
            "Assembly-time svgmap hotspot binding: rewrite the schema " \
            "doc pages' ordinal svgmap hotspots onto the owning schema " \
            "pages, driven by each page's presentation XML and checked " \
-           "against the schema_docs anchor index. Targets with no live " \
-           "anchor keep their ordinals."
+           "against the schema_docs anchor index; pages the published " \
+           "tree carries without their build XMLs bind from their " \
+           "stamps. Targets with no live anchor keep their ordinals."
       def bind_svgmaps(docs_dir)
         result = Suma::Delivery::SvgmapBinder.new(docs_dir).bind
         Utils.log "Svgmaps: #{result.bound} hotspots bound over " \
-                  "#{result.pages} schema pages, #{result.skipped.size} " \
-                  "pages without presentation XML skipped"
+                  "#{result.pages} schema pages"
       end
 
       desc "stitch BUNDLES_DIR",
